@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Information | ANU Dorm Guide</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="information">
+  <main class="subpage-main">
+    <section class="subpage-hero">
+      <div class="container">
+        <p class="eyebrow">INFORMATION</p>
+        <h1 id="informationTitle">Information</h1>
+        <p id="informationSubtitle" class="subtitle">
+          This page is a placeholder for practical knowledge, guides, and structured dorm details.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container placeholder-grid">
+        <article id="informationDormCard" class="placeholder-card information-card">
+<h2 id="informationDormName">Information Page Placeholder</h2>
+          <p id="informationDormDescription">
+            Later, this page can hold laundries, printers, front desk details, access rules, and useful survival tips.
+          </p>
+
+          <div id="informationDormDetails"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-nav-root"></div>
+
+
+  <div id="informationDrawerBackdrop" class="information-drawer-backdrop" hidden></div>
+
+  <aside id="informationDrawer" class="information-drawer" aria-hidden="true">
+    <button id="informationDrawerClose" class="information-drawer__close" type="button" aria-label="Close residence details">
+      ×
+    </button>
+    <div id="informationDrawerContent" class="information-drawer__content"></div>
+  </aside>
+
+  <aside id="informationCompareDrawer" class="information-drawer information-drawer--compare" aria-hidden="true" hidden>
+    <button id="informationCompareDrawerClose" class="information-drawer__close" type="button" aria-label="Close compare residence details">
+      ×
+    </button>
+    <div id="informationCompareDrawerContent" class="information-drawer__content"></div>
+  </aside>
+
+  <script src="src/data/dorms.js"></script>
+  <script src="nav.js"></script>
+  <script src="src/pages/information.js"></script>
+</body>
+</html>

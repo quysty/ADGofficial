@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ANU Dorm Guide</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="home">
+  <section class="hero hero-home">
+    <div class="hero-overlay"></div>
+    <div class="container hero-inner">
+      <p class="eyebrow">ANU ACCOMMODATION PROJECT</p>
+      <h1>Find the residence that fits your life.</h1>
+      <p class="subtitle">
+        Explore ANU dorm options through lifestyle paths, not just static descriptions.
+      </p>
+
+      <div class="hero-actions">
+        <button class="primary-button" type="button">Start Exploring</button>
+        <button class="secondary-button" type="button">See Compare Table</button>
+      </div>
+
+      <p class="status-label">Current mode:</p>
+      <p id="path-result" class="status-text">
+        Build your preference path below, then continue to see ranked dorm suggestions.
+      </p>
+    </div>
+  </section>
+
+  <main class="container page-main">
+    <!-- =====================================================
+         Explore by Path
+         新版结构：
+         - Major：单选，6个标签，3行2列
+         - Lifestyle：可选 + 已选顺序区
+         - Requirements：自由选择，无顺序
+         - Continue / Reset 同一行左右对置
+         ===================================================== -->
+    <section id="homePath" class="home-path section section-path-designer">
+      <div class="path-designer">
+        <div class="path-designer__intro">
+          <p class="path-designer__eyebrow">Explore by Path</p>
+          <h2 class="path-designer__title">Choose your tags, then continue to the next step.</h2>
+          <p class="path-designer__text">
+            Start with the three decision panels below. Drag the panels left or right to set high-level priority,
+            then choose detailed tags inside each panel.
+          </p>
+        </div>
+
+        <div id="pathPanelRail" class="priority-panels">
+          <!-- Major -->
+          <article class="priority-card" data-panel="major" draggable="true">
+            <div class="priority-card__top">
+              <div class="priority-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 4 3 8.5 12 13l7-3.5V15h2V8.5L12 4Zm-5 8.4V16c0 1.7 3 4 5 4s5-2.3 5-4v-3.6L12 15l-5-2.6Z" fill="currentColor"/>
+                </svg>
+              </div>
+              <span class="priority-card__badge" data-rank-for="major">1</span>
+            </div>
+
+            <p class="priority-card__label">Priority Panel</p>
+            <h3 class="priority-card__title">Major</h3>
+            <p class="priority-card__desc">
+              Choose one study direction. In the current placeholder algorithm, this is the only live
+              factor that decides the first-ranked dorm.
+            </p>
+
+            <div id="majorOptions" class="major-grid"></div>
+          </article>
+
+          <!-- Lifestyle -->
+          <article class="priority-card" data-panel="habit" draggable="true">
+            <div class="priority-card__top">
+              <div class="priority-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm10 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM7 14c-3 0-5 1.5-5 3.5V20h10v-2.5C12 15.5 10 14 7 14Zm10 0c-1.8 0-3.3.5-4.3 1.4A4.3 4.3 0 0 1 14 18.5V20h8v-2.5C22 15.5 20 14 17 14Z" fill="currentColor"/>
+                </svg>
+              </div>
+              <span class="priority-card__badge" data-rank-for="habit">2</span>
+            </div>
+
+            <p class="priority-card__label">Priority Panel</p>
+            <h3 class="priority-card__title">Lifestyle</h3>
+            <p class="priority-card__desc">
+              Choose multiple lifestyle tags, then drag the selected tags to rank them internally.
+            </p>
+
+            <div class="priority-subsection">
+              <p class="priority-subsection__label">Selected order</p>
+              <div id="habitSelected" class="selected-stack"></div>
+            </div>
+
+            <div class="priority-subsection">
+              <p class="priority-subsection__label">Available tags</p>
+              <div id="habitOptions" class="available-grid"></div>
+            </div>
+          </article>
+
+          <!-- Requirements -->
+          <article class="priority-card" data-panel="requirement" draggable="true">
+            <div class="priority-card__top">
+              <div class="priority-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 3a1 1 0 0 1 1 1v1h6V4a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a2 2 0 0 1 2-2h1V4a1 1 0 0 1 1-1Zm10 7H6v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-8ZM8 13h3v3H8v-3Z" fill="currentColor"/>
+                </svg>
+              </div>
+              <span class="priority-card__badge" data-rank-for="requirement">3</span>
+            </div>
+
+            <p class="priority-card__label">Priority Panel</p>
+            <h3 class="priority-card__title">Requirements</h3>
+            <p class="priority-card__desc">
+              These are optional dorm requirements. You may select any that matter to you.
+              There is no order.
+            </p>
+
+            <div class="priority-subsection">
+              <p class="priority-subsection__label">Available options</p>
+              <div id="requirementOptions" class="requirement-grid"></div>
+            </div>
+
+            <!-- 兼容旧脚本查询，保留但隐藏 -->
+            <div id="requirementSelected" hidden aria-hidden="true"></div>
+          </article>
+        </div>
+
+        <div class="path-actions">
+          <button id="pathContinueBtn" class="path-action-button path-action-button--primary" type="button">
+            <span>Continue</span>
+            <span class="path-action-button__arrow">→</span>
+          </button>
+
+          <button id="pathResetBtn" class="path-action-button path-action-button--ghost" type="button" disabled>
+            <span class="path-action-button__reset-icon">↺</span>
+            <span>Reset</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         Ranked results
+         Continue 后滚动到这里
+         从左到右显示 #1 / #2 / #3
+         ===================================================== -->
+    <section id="homeResults" class="home-results section">
+      <div class="home-results__head">
+        <p class="eyebrow">MATCHED RESULTS</p>
+        <h2>Your ranked dorms</h2>
+        <p class="home-results__intro">
+          The current placeholder algorithm uses major as the only live ranking rule. Lifestyle and requirements are already captured in the interface and left ready for later scoring expansion.
+        </p>
+      </div>
+
+      <div id="rankedDormGrid" class="ranked-dorm-grid"></div>
+
+      <div id="selectedDormSummary" class="selected-summary-card">
+        <p class="selected-summary-card__kicker">SELECTED DORM QUICK SUMMARY</p>
+        <h3>No dorm selected yet</h3>
+        <p><strong>Best for:</strong> —</p>
+        <p><strong>Location feel:</strong> —</p>
+        <p><strong>Main trade-off:</strong> —</p>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         Compare
+         这块保留原结构
+         ===================================================== -->
+    <section id="compare" class="section">
+      <div class="section-heading">
+        <h2>Mini Compare Snapshot</h2>
+        <p>
+          This compare table is generated from the same dorm data source and can now
+          switch between different comparison modes.
+        </p>
+      </div>
+
+      <div class="compare-toolbar">
+        <p id="compare-mode-text" class="compare-mode-text">
+          Current compare mode: default overview.
+        </p>
+
+        <div class="compare-mode-buttons">
+          <button class="compare-mode-button active" data-mode="default">Default</button>
+          <button class="compare-mode-button" data-mode="quiet">Quiet-first</button>
+          <button class="compare-mode-button" data-mode="city">City-first</button>
+          <button class="compare-mode-button" data-mode="value">Value-first</button>
+        </div>
+      </div>
+
+      <div class="compare-table-wrapper">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Dorm</th>
+              <th>Best For</th>
+              <th>Location Feel</th>
+              <th>Main Trade-off</th>
+            </tr>
+          </thead>
+          <tbody id="compare-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-nav-root"></div>
+
+  <script src="src/data/dorms.js"></script>
+  <script src="src/data/path-options.js"></script>
+  <script src="src/components/DormCard.js"></script>
+  <script src="src/components/DormList.js"></script>
+  <script src="src/components/DormSummary.js"></script>
+  <script src="nav.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

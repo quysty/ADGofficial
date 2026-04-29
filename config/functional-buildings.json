@@ -1,0 +1,130 @@
+{
+  "777": {
+    "buildingId": "dorm_lena",
+    "type": "dorm",
+    "name": "Lena Karmel Lodge",
+    "shortName": "Lena",
+    "interactive": true
+  },
+  "838": {
+    "buildingId": "dorm_kinloch",
+    "type": "dorm",
+    "name": "Kinloch Lodge",
+    "shortName": "Kinloch",
+    "interactive": true
+  },
+  "821": {
+    "buildingId": "dorm_warrumbul",
+    "type": "dorm",
+    "name": "Warrumbul Lodge",
+    "shortName": "Warrumbul",
+    "interactive": true
+  },
+  "930": {
+    "buildingId": "dorm_davey",
+    "type": "dorm",
+    "name": "Davey Lodge",
+    "shortName": "Davey",
+    "interactive": true
+  },
+  "666": {
+    "buildingId": "dorm_wright",
+    "type": "dorm",
+    "name": "Wright Hall",
+    "shortName": "Wright",
+    "interactive": true
+  },
+
+  "928": {
+    "buildingId": "academic_928",
+    "type": "academic",
+    "name": "Academic Building 928",
+    "shortName": "928",
+    "interactive": true
+  },
+  "804": {
+    "buildingId": "academic_804",
+    "type": "academic",
+    "name": "Academic Building 804",
+    "shortName": "804",
+    "interactive": false
+  },
+  "907": {
+    "buildingId": "academic_907",
+    "type": "academic",
+    "name": "Academic Building 907",
+    "shortName": "907",
+    "interactive": false
+  },
+  "915": {
+    "buildingId": "academic_915",
+    "type": "academic",
+    "name": "Academic Building 915",
+    "shortName": "915",
+    "interactive": false
+  },
+  "900": {
+    "buildingId": "academic_900",
+    "type": "academic",
+    "name": "Academic Building 900",
+    "shortName": "900",
+    "interactive": false
+  },
+  "881": {
+    "buildingId": "academic_881",
+    "type": "academic",
+    "name": "Academic Building 881",
+    "shortName": "881",
+    "interactive": false
+  },
+  "932": {
+    "buildingId": "academic_932",
+    "type": "academic",
+    "name": "Academic Building 932",
+    "shortName": "932",
+    "interactive": false
+  },
+  "934": {
+    "buildingId": "academic_934",
+    "type": "academic",
+    "name": "Academic Building 934",
+    "shortName": "934",
+    "interactive": false
+  },
+  "942": {
+    "buildingId": "academic_942",
+    "type": "academic",
+    "name": "Academic Building 942",
+    "shortName": "942",
+    "interactive": false
+  },
+
+  "1176": {
+    "buildingId": "retail_1176",
+    "type": "retail",
+    "name": "Retail Building 1176",
+    "shortName": "1176",
+    "interactive": false
+  },
+  "1089": {
+    "buildingId": "retail_1089",
+    "type": "retail",
+    "name": "Retail Building 1089",
+    "shortName": "1089",
+    "interactive": true
+  },
+  "1016": {
+    "buildingId": "retail_1016",
+    "type": "retail",
+    "name": "Retail Building 1016",
+    "shortName": "1016",
+    "interactive": false
+  },
+  "963": {
+    "buildingId": "retail_963",
+    "type": "retail",
+    "name": "Retail Building 963",
+    "shortName": "963",
+    "interactive": true
+  }
+}

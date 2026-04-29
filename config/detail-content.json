@@ -1,0 +1,92 @@
+{
+  "dorm_lena": {
+    "title": "Lena Karmel Lodge",
+    "subtitle": "Dormitory",
+    "summary": "Placeholder dorm detail for Lena. Later you can replace this with official accommodation notes, room style, social atmosphere, and your own comparison logic.",
+    "bullets": [
+      "Dorm placeholder note 1",
+      "Dorm placeholder note 2",
+      "Dorm placeholder note 3",
+      "Dorm placeholder note 4"
+    ]
+  },
+  "dorm_kinloch": {
+    "title": "Kinloch Lodge",
+    "subtitle": "Dormitory",
+    "summary": "Placeholder dorm detail for Kinloch. Later you can replace this with official accommodation notes, room style, social atmosphere, and your own comparison logic.",
+    "bullets": [
+      "Dorm placeholder note 1",
+      "Dorm placeholder note 2",
+      "Dorm placeholder note 3",
+      "Dorm placeholder note 4"
+    ]
+  },
+  "dorm_warrumbul": {
+    "title": "Warrumbul Lodge",
+    "subtitle": "Dormitory",
+    "summary": "Placeholder dorm detail for Warrumbul. Later you can replace this with official accommodation notes, room style, social atmosphere, and your own comparison logic.",
+    "bullets": [
+      "Dorm placeholder note 1",
+      "Dorm placeholder note 2",
+      "Dorm placeholder note 3",
+      "Dorm placeholder note 4"
+    ]
+  },
+  "dorm_davey": {
+    "title": "Davey Lodge",
+    "subtitle": "Dormitory",
+    "summary": "Placeholder dorm detail for Davey. Later you can replace this with official accommodation notes, room style, social atmosphere, and your own comparison logic.",
+    "bullets": [
+      "Dorm placeholder note 1",
+      "Dorm placeholder note 2",
+      "Dorm placeholder note 3",
+      "Dorm placeholder note 4"
+    ]
+  },
+  "dorm_wright": {
+    "title": "Wright Hall",
+    "subtitle": "Dormitory",
+    "summary": "Placeholder dorm detail for Wright. Later you can replace this with official accommodation notes, room style, social atmosphere, and your own comparison logic.",
+    "bullets": [
+      "Dorm placeholder note 1",
+      "Dorm placeholder note 2",
+      "Dorm placeholder note 3",
+      "Dorm placeholder note 4"
+    ]
+  },
+
+  "academic_928": {
+    "title": "Academic Building 928",
+    "subtitle": "Academic building",
+    "summary": "Placeholder academic detail for building 928. This is one of the first teaching buildings used as an interaction trial.",
+    "bullets": [
+      "Academic placeholder note 1",
+      "Academic placeholder note 2",
+      "Academic placeholder note 3",
+      "Academic placeholder note 4"
+    ]
+  },
+
+  "retail_963": {
+    "title": "Retail Building 963",
+    "subtitle": "Retail / shopping",
+    "summary": "Placeholder retail detail for building 963. This is one of the first shopping buildings used as an interaction trial.",
+    "bullets": [
+      "Retail placeholder note 1",
+      "Retail placeholder note 2",
+      "Retail placeholder note 3",
+      "Retail placeholder note 4"
+    ]
+  },
+  "retail_1089": {
+    "title": "Retail Building 1089",
+    "subtitle": "Retail / shopping",
+    "summary": "Placeholder retail detail for building 1089. This is one of the first shopping buildings used as an interaction trial.",
+    "bullets": [
+      "Retail placeholder note 1",
+      "Retail placeholder note 2",
+      "Retail placeholder note 3",
+      "Retail placeholder note 4"
+    ]
+  }
+}

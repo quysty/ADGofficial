@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explore | ANU Dorm Guide</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body data-page="explore">
+  <main class="subpage-main">
+    <section class="subpage-hero">
+      <div class="container">
+        <p class="eyebrow">EXPLORE</p>
+        <h1>Explore</h1>
+        <p class="subtitle">
+          This page is intentionally light for now. It marks a real destination in your site structure.
+        </p>
+      </div>
+    </section>
+
+    <section class="section explore-map-section">
+      <div class="container">
+        <div id="exploreSceneLayout" class="explore-layout-v3">
+          <div id="exploreMapWrap" class="explore-map-wrap">
+            <div class="explore-map-shell">
+              <div class="explore-map-toolbar">
+                <div id="sceneModeToggle" class="explore-mode-toggle" data-mode="3d">
+                  <button id="btn3D" class="explore-mode-button is-active" type="button">3D</button>
+                  <button id="btn2D" class="explore-mode-button" type="button">2D</button>
+                </div>
+
+                <button id="btnNumbers" class="explore-toolbar-button is-active" type="button">
+                  Numbers
+                </button>
+
+                <button id="btnReset" class="explore-toolbar-button" type="button">
+                  Reset
+                </button>
+              </div>
+
+              <div id="sceneVeil" class="explore-scene-veil"></div>
+              <div id="map3dContainer" class="explore-map-canvas"></div>
+            </div>
+          </div>
+
+          <aside id="exploreSideWrap" class="explore-side-wrap">
+            <section id="overviewPanel" class="scene-panel scene-panel-overview is-active">
+              <p class="eyebrow">MAP MODE</p>
+              <h2>ANU building massing prototype</h2>
+
+              <p>
+                This is a local 3D scene built from the extracted building polygons.
+              </p>
+
+              <p class="scene-panel-note">
+                White numbered labels are for rough developer reading only and can be hidden.
+                Green functional dorm labels remain available for interaction.
+              </p>
+
+              <p id="mapStatus" class="scene-panel-status">
+                Loading building scene...
+              </p>
+            </section>
+
+            <section id="detailPanel" class="scene-panel scene-panel-detail" aria-hidden="true">
+              <div class="scene-detail-head">
+                <p class="scene-detail-kicker">DORM DETAIL</p>
+                <h3 id="detailTitle">Dorm detail</h3>
+                <p id="detailCode" class="scene-detail-code">—</p>
+              </div>
+
+              <div id="detailScroll" class="scene-detail-scroll"></div>
+
+              <button id="btnBackOverview" class="scene-detail-back" type="button">
+                Return to Explore
+              </button>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-nav-root"></div>
+
+  <script src="nav.js"></script>
+  <script src="src/data/dorms.js"></script>
+  <script type="module" src="explore.js"></script>
+</body>
+</html>
