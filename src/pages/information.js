@@ -64,7 +64,7 @@
       card.classList.remove("information-card--detail", "information-card--fallback");
     }
 
-    if (pageTitle) pageTitle.textContent = "Information";
+    if (pageTitle) pageTitle.textContent = "Residence overview";
     if (pageSubtitle) {
       pageSubtitle.textContent =
         "Browse ANU residence information, compare living styles, and open a residence profile when you need more detail.";
@@ -75,10 +75,10 @@
       image.alt = "Information page overview image";
     }
 
-    if (cardTitle) cardTitle.textContent = "Residence overview";
+    if (cardTitle) cardTitle.textContent = "";
     if (cardText) {
       cardText.textContent =
-        "Choose a residence below to view its current summary, location feel, main trade-off, pros, and cons.";
+        "";
     }
 
     if (details) {
@@ -106,7 +106,7 @@
       card.classList.remove("information-card--overview", "information-card--detail");
     }
 
-    if (pageTitle) pageTitle.textContent = "Information";
+    if (pageTitle) pageTitle.textContent = "Residence overview";
     if (pageSubtitle) {
       pageSubtitle.textContent =
         "Residence information is not available yet.";
@@ -138,7 +138,7 @@
       card.classList.remove("information-card--overview", "information-card--fallback");
     }
 
-    if (pageTitle) pageTitle.textContent = "Information";
+    if (pageTitle) pageTitle.textContent = dorm.name;
     if (pageSubtitle) {
       pageSubtitle.textContent =
         dorm.description || "Dorm information loaded from centralized dorm data.";
@@ -149,10 +149,10 @@
       image.alt = `${dorm.name} image`;
     }
 
-    if (cardTitle) cardTitle.textContent = dorm.name;
+    if (cardTitle) cardTitle.textContent = "";
     if (cardText) {
       cardText.textContent =
-        dorm.description || dorm.summary || "No description is currently available.";
+        "";
     }
 
     function renderItems(items) {

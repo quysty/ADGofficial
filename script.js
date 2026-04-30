@@ -29,6 +29,7 @@
   if (!body || body.dataset.page !== "home") return;
 
   const pathResult = document.querySelector("#path-result");
+  const heroSection = document.querySelector(".hero-home");
   const startExploringBtn = document.querySelector(".primary-button");
   const compareHeroBtn = document.querySelector(".secondary-button");
 
@@ -55,6 +56,7 @@
 
   if (
     !pathResult ||
+    !heroSection ||
     !homePath ||
     !homeResults ||
     !compareSection ||
@@ -95,6 +97,68 @@
     requirements: [],
     compareMode: "default"
   };
+
+  let homeStage = "hero";
+  let curtainProgress = 0;
+  let isLeavingForExplore = false;
+
+  body.classList.add("home-paged");
+  body.style.setProperty("--home-curtain-progress", "0");
+
+  function setCurtainProgress(value) {
+    curtainProgress = Math.max(0, Math.min(value, 1));
+    body.style.setProperty("--home-curtain-progress", curtainProgress.toFixed(3));
+  }
+
+  function setHomeStage(stage) {
+    homeStage = stage;
+    body.classList.toggle("home-stage-hero", stage === "hero");
+    body.classList.toggle("home-stage-path", stage === "path");
+    body.classList.toggle("home-stage-results", stage === "results");
+
+    if (stage !== "hero") {
+      setCurtainProgress(1);
+    }
+
+    if (stage !== "results") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }
+
+  function showResultsPage(target = homeResults) {
+    setHomeStage("results");
+    window.requestAnimationFrame(() => {
+      renderResultsSection();
+      target.scrollIntoView({
+        behavior: "auto",
+        block: "start"
+      });
+    });
+  }
+
+  function transitionToExplorePage() {
+    if (isLeavingForExplore) return;
+
+    isLeavingForExplore = true;
+    body.classList.add("home-transition-to-explore");
+    window.setTimeout(() => {
+      window.location.href = "explore.html?from=homePath";
+    }, 560);
+  }
+
+  function handleHeroCurtainWheel(event) {
+    if (homeStage !== "hero" || isLeavingForExplore) return;
+
+    event.preventDefault();
+    if (event.deltaY <= 0) return;
+
+    const step = Math.min(Math.abs(event.deltaY), 180) / 720;
+    setCurtainProgress(curtainProgress + step);
+
+    if (curtainProgress >= 1) {
+      setHomeStage("path");
+    }
+  }
 
   const state = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
@@ -186,6 +250,15 @@
     );
   }
 
+  function hasChangedFromDefault() {
+    return !(
+      arraysEqual(state.panelOrder, DEFAULT_STATE.panelOrder) &&
+      state.major === DEFAULT_STATE.major &&
+      arraysEqual(state.habits, DEFAULT_STATE.habits) &&
+      arraysEqual(state.requirements, DEFAULT_STATE.requirements)
+    );
+  }
+
   // =====================================================
   // General UI state updates
   // 通用界面状态更新：hero 文案、面板序号、按钮状态
@@ -228,6 +301,7 @@
     const valid = isSelectionValid();
     const applied = hasAppliedSelection();
     const changed = hasUnappliedChanges();
+    const changedFromDefault = hasChangedFromDefault();
 
     continueBtn.classList.remove(
       "path-action-button--primary",
@@ -243,10 +317,10 @@
 
     if (!applied) {
       continueBtn.disabled = !valid;
-      resetBtn.disabled = true;
+      resetBtn.disabled = !changedFromDefault;
 
       continueBtn.classList.add(valid ? "path-action-button--primary" : "path-action-button--ghost");
-      resetBtn.classList.add("path-action-button--ghost");
+      resetBtn.classList.add(changedFromDefault ? "path-action-button--reset-active" : "path-action-button--ghost");
       return;
     }
 
@@ -586,6 +660,24 @@
     selectedDormSummary.innerHTML = dormSummaryComponent.createSummaryMarkup(dorm);
   }
 
+  function renderSummaryForCarouselItem(item) {
+    const dormId = item ? item.dataset.summaryDormId : "";
+    const dorm = dormId ? getDormById(dormId) : null;
+
+    if (dorm) {
+      renderSummary(dorm);
+      return;
+    }
+
+    renderSummary({
+      name: item && item.dataset.summaryPlaceholder ? item.dataset.summaryPlaceholder : "Coming soon",
+      bestFor: "Future residence updates.",
+      locationFeel: "To be added.",
+      tradeOff: "Details are not connected yet.",
+      summary: "Reserved for future residence updates."
+    });
+  }
+
   // =====================================================
   // Dorm card actions and list rendering
   // 宿舍卡片事件与列表渲染：HTML 由 DormCard / DormList 生成
@@ -631,6 +723,9 @@
           <p class="ranked-dorm-card__eyebrow">Placeholder</p>
           <h3 class="ranked-dorm-card__title">Coming soon</h3>
           <p class="ranked-dorm-card__text">Reserved for future residence updates.</p>
+          <div class="ranked-dorm-card__actions" aria-hidden="true">
+            <span class="ranked-dorm-card__button-placeholder">have a look</span>
+          </div>
         </div>
       </article>
     `;
@@ -654,6 +749,9 @@
     let wheelSettleTimer = null;
     let startX = 0;
     let startTranslate = 0;
+    let lastPointerX = 0;
+    let lastPointerTime = 0;
+    let dragVelocity = 0;
 
     function syncOffsets() {
       itemOffsets = items.map((item) => item.offsetLeft);
@@ -669,6 +767,7 @@
       const safeIndex = Math.max(0, Math.min(index, itemOffsets.length - 1));
       currentIndex = safeIndex;
       setTranslate(-(itemOffsets[currentIndex] || 0), animate);
+      renderSummaryForCarouselItem(items[currentIndex]);
     }
 
     function findNearestIndexFromTranslate(value = currentTranslate) {
@@ -687,9 +786,9 @@
       return nearestIndex;
     }
 
-    function settleToNearest() {
+    function settleToNearest(projectedTranslate = currentTranslate) {
       if (!itemOffsets.length) return;
-      moveTo(findNearestIndexFromTranslate(), true);
+      moveTo(findNearestIndexFromTranslate(projectedTranslate), true);
     }
 
     function normalizeLoop() {
@@ -726,7 +825,7 @@
       clickSuppressTimer = window.setTimeout(() => {
         suppressNextClick = false;
       }, 250);
-      settleToNearest();
+      settleToNearest(currentTranslate + dragVelocity * 260);
     }
 
     syncOffsets();
@@ -745,6 +844,9 @@
       window.clearTimeout(wheelSettleTimer);
       startX = event.clientX;
       startTranslate = currentTranslate;
+      lastPointerX = event.clientX;
+      lastPointerTime = performance.now();
+      dragVelocity = 0;
       track.classList.remove("is-animating");
       track.setPointerCapture(event.pointerId);
       track.classList.add("is-dragging");
@@ -755,6 +857,12 @@
       const deltaX = event.clientX - startX;
       if (Math.abs(deltaX) > 6) hasDragged = true;
       setTranslate(startTranslate + deltaX, false);
+
+      const now = performance.now();
+      const elapsed = Math.max(now - lastPointerTime, 1);
+      dragVelocity = (event.clientX - lastPointerX) / elapsed;
+      lastPointerX = event.clientX;
+      lastPointerTime = now;
     });
 
     track.addEventListener("pointerup", handlePointerEnd);
@@ -767,8 +875,8 @@
         event.preventDefault();
         window.clearTimeout(wheelSettleTimer);
         track.classList.remove("is-animating");
-        setTranslate(currentTranslate - event.deltaX, false);
-        wheelSettleTimer = window.setTimeout(settleAfterWheel, 120);
+        setTranslate(currentTranslate - event.deltaX * 1.45, false);
+        wheelSettleTimer = window.setTimeout(settleAfterWheel, 90);
       },
       { passive: false },
     );
@@ -794,16 +902,28 @@
       <p class="eyebrow">FEATURED DORMS</p>
       <h2>Featured dorms</h2>
       <p class="home-results__intro">
-        Browse the current dorm options below. Continue after setting your tags to refresh this section into ranked results.
+        Browse the current dorm options after the map handoff. Your tag path stays available above whenever you want to reset and adjust it.
       </p>
     `;
 
-    const featuredCards = DORMS.map((dorm) => createDormCard(dorm));
+    const featuredCards = DORMS.map((dorm) => ({
+      markup: createDormCard(dorm),
+      dormId: dorm.id
+    }));
     const placeholderCards = [0, 1, 2].map((index) => createPlaceholderDormCard(index));
-    const cardPool = [...featuredCards, ...placeholderCards];
+    const cardPool = [
+      ...featuredCards,
+      ...placeholderCards.map((markup) => ({ markup, dormId: "" }))
+    ];
     const createCardItems = (isReal) =>
       cardPool
-        .map((card) => `<div class="featured-dorm-carousel__item" data-carousel-real="${isReal ? "true" : "false"}">${card}</div>`)
+        .map(
+          (card) => `
+            <div class="featured-dorm-carousel__item" data-carousel-real="${isReal ? "true" : "false"}" data-summary-dorm-id="${escapeHtml(card.dormId)}" data-summary-placeholder="${card.dormId ? "" : "Coming soon"}">
+              ${card.markup}
+            </div>
+          `
+        )
         .join("");
 
     rankedDormGrid.className = "featured-dorm-carousel";
@@ -816,7 +936,6 @@
     `;
     bindCardActions(rankedDormGrid);
     initFeaturedDormCarousel();
-    renderSummary(DORMS[0]);
   }
 
   function renderRankedDormCards(rankedDorms) {
@@ -828,8 +947,14 @@
       </p>
     `;
 
-    const rankedCards = rankedDorms.map((dorm, index) => createDormCard(dorm, `#${index + 1}`));
-    const placeholderCards = [3, 4, 5].map((index) => createPlaceholderDormCard(index, `#${index + 1}`));
+    const rankedCards = rankedDorms.map((dorm, index) => ({
+      markup: createDormCard(dorm, `#${index + 1}`),
+      dormId: dorm.id
+    }));
+    const placeholderCards = [3, 4, 5].map((index) => ({
+      markup: createPlaceholderDormCard(index, `#${index + 1}`),
+      dormId: ""
+    }));
     const rankedCardsAll = [...rankedCards, ...placeholderCards];
 
     rankedDormGrid.className = "ranked-dorm-carousel";
@@ -839,7 +964,13 @@
       </div>
       <div class="ranked-dorm-carousel__track">
         ${rankedCardsAll
-          .map((card, index) => `<div class="ranked-dorm-carousel__item" data-ranked-step="${index}">${card}</div>`)
+          .map(
+            (card, index) => `
+              <div class="ranked-dorm-carousel__item" data-ranked-step="${index}" data-summary-dorm-id="${escapeHtml(card.dormId)}" data-summary-placeholder="${card.dormId ? "" : "Coming soon"}">
+                ${card.markup}
+              </div>
+            `
+          )
           .join("")}
       </div>
     `;
@@ -876,6 +1007,7 @@
       const target = rankedItems[rankedSliderStep];
       isProgrammaticScroll = true;
       rankedTrack.scrollTo({ left: target.offsetLeft, behavior });
+      renderSummaryForCarouselItem(target);
       if (nextBtn) nextBtn.disabled = rankedSliderStep >= getMaxRankedStep();
       window.setTimeout(() => {
         isProgrammaticScroll = false;
@@ -967,7 +1099,6 @@
 
     scrollToStep(rankedSliderStep, "auto");
     bindCardActions(rankedDormGrid);
-    renderSummary(rankedDorms[0]);
   }
 
   function renderResultsSection() {
@@ -1075,9 +1206,8 @@
     }
   }
 
-  function runSelectionFlow() {
-    if (continueBtn.disabled) return;
-
+  function applySelectionFlow() {
+    if (!isSelectionValid()) return false;
     rankedSliderStep = 0;
 
     appliedSnapshot = {
@@ -1090,11 +1220,14 @@
     renderResultsSection();
     updateActionButtons();
     updateHeroStatusText();
+    return true;
+  }
 
-    homeResults.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+  function runSelectionFlow() {
+    if (continueBtn.disabled) return;
+    if (!applySelectionFlow()) return;
+
+    transitionToExplorePage();
   }
 
   function resetSelectionFlow() {
@@ -1115,11 +1248,9 @@
 
     renderAll();
     renderResultsSection();
-
-    homePath.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+    if (homeStage !== "path") {
+      setHomeStage("path");
+    }
   }
 
   // =====================================================
@@ -1129,21 +1260,17 @@
 
   if (startExploringBtn) {
     startExploringBtn.addEventListener("click", () => {
-      homePath.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+      setHomeStage("path");
     });
   }
 
   if (compareHeroBtn) {
     compareHeroBtn.addEventListener("click", () => {
-      compareSection.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
+      showResultsPage(compareSection);
     });
   }
+
+  window.addEventListener("wheel", handleHeroCurtainWheel, { passive: false });
 
   continueBtn.addEventListener("click", runSelectionFlow);
   resetBtn.addEventListener("click", resetSelectionFlow);
@@ -1162,4 +1289,14 @@
 
   renderAll();
   renderResultsSection();
+
+  if (window.location.hash === "#homeResults") {
+    showResultsPage(homeResults);
+  } else if (window.location.hash === "#compare") {
+    showResultsPage(compareSection);
+  } else if (window.location.hash === "#homePath") {
+    setHomeStage("path");
+  } else {
+    setHomeStage("hero");
+  }
 })();

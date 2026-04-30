@@ -140,9 +140,26 @@ const guidedPreviewState = {
   entryBuildingId: null,
   entryDormId: null
 };
+const isHomePathEntry = !guidedPreviewState.active && guidedPreviewState.from === "homePath";
+
+const cityOverviewState = {
+  active: !guidedPreviewState.active,
+  dismissed: false,
+  defaultDistance: 0,
+  wheelZoomFade: 0
+};
 
 if (guidedPreviewState.active) {
   document.body.classList.add("is-guided-preview");
+} else {
+  document.body.classList.add("is-city-overview");
+}
+
+if (isHomePathEntry) {
+  document.body.classList.add("is-home-path-entry", "is-home-path-explore");
+  window.setTimeout(() => {
+    document.body.classList.remove("is-home-path-entry");
+  }, 680);
 }
 
 /* =========================================================
@@ -223,6 +240,38 @@ function setSidePanelState(mode) {
   detailPanel.setAttribute("aria-hidden", isDetail ? "false" : "true");
 }
 
+function setGuidedDetailActions(isGuidedEntry) {
+  let actionWrap = detailPanel.querySelector(".guided-detail-actions");
+
+  if (!isGuidedEntry) {
+    if (actionWrap) {
+      detailPanel.appendChild(btnBackOverview);
+      actionWrap.remove();
+    }
+    btnBackOverview.textContent = "Return to Explore";
+    return;
+  }
+
+  if (!actionWrap) {
+    actionWrap = document.createElement("div");
+    actionWrap.className = "guided-detail-actions";
+    detailPanel.insertBefore(actionWrap, btnBackOverview);
+    actionWrap.appendChild(btnBackOverview);
+
+    const viewDetailsBtn = document.createElement("button");
+    viewDetailsBtn.id = "btnGuidedViewDetails";
+    viewDetailsBtn.className = "scene-detail-back scene-detail-back--details";
+    viewDetailsBtn.type = "button";
+    viewDetailsBtn.textContent = "View Dorms";
+    viewDetailsBtn.addEventListener("click", () => {
+      window.location.href = "index.html#homeResults";
+    });
+    actionWrap.appendChild(viewDetailsBtn);
+  }
+
+  btnBackOverview.textContent = "Return to Explore";
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -259,6 +308,7 @@ function renderGuidedDetailContent(building) {
   if (!dorm) return false;
 
   detailPanel.classList.add("scene-panel-detail--guided");
+  setGuidedDetailActions(guidedPreviewState.active || isHomePathEntry);
   guidedPreviewState.entryBuildingId = building.functionalConfig?.buildingId || null;
   guidedPreviewState.entryDormId = dorm.id || null;
 
@@ -312,9 +362,6 @@ function renderGuidedDetailContent(building) {
         </section>
       </div>
 
-      <div class="information-drawer__actions">
-        <a class="information-drawer__full-link" href="information.html?dorm=${encodeURIComponent(dorm.id)}">Open detail</a>
-      </div>
     </div>
   `;
 
@@ -731,7 +778,26 @@ window.addEventListener("resize", () => {
 
 controls.addEventListener("change", () => {
   labelsDirty = true;
+  updateCityOverviewFade();
 });
+
+renderer.domElement.addEventListener(
+  "wheel",
+  (event) => {
+    if (!cityOverviewState.active || cityOverviewState.dismissed) return;
+
+    const strength = Math.min(Math.abs(event.deltaY) / 260, 1.4);
+    const direction = event.deltaY < 0 ? 1 : -1;
+    cityOverviewState.wheelZoomFade = THREE.MathUtils.clamp(
+      cityOverviewState.wheelZoomFade + direction * strength,
+      0,
+      1
+    );
+
+    updateCityOverviewFade();
+  },
+  { passive: true }
+);
 
 function apply3DView() {
   if (!sceneState) return;
@@ -882,6 +948,88 @@ function restoreCapturedViewState(viewState) {
   syncSceneAfterLayoutChange();
 }
 
+function applyCityOverviewCamera() {
+  if (!sceneState || !cityOverviewState.active || currentMode !== "3d") return;
+
+  const squareSide = sceneState.size.x;
+  const target = sceneState.center3D.clone();
+  const position = target.clone().add(
+    new THREE.Vector3(
+      squareSide * 0.52,
+      Math.max(squareSide * 0.56, 860),
+      squareSide * 0.58
+    )
+  );
+
+  controls.target.copy(target);
+  perspectiveCamera.position.copy(position);
+  perspectiveCamera.lookAt(target);
+  perspectiveCamera.updateProjectionMatrix();
+  controls.update();
+  cityOverviewState.defaultDistance = perspectiveCamera.position.distanceTo(controls.target);
+  cityOverviewState.wheelZoomFade = 0;
+  labelsDirty = true;
+  updateCityOverviewFade();
+}
+
+function getCityOverviewInfoOpacity() {
+  if (!sceneState) return 1;
+  if (!cityOverviewState.active || cityOverviewState.dismissed) return 0;
+
+  if (activeCamera.isOrthographicCamera) {
+    const fadeStartZoom = 1.25;
+    const fadeEndZoom = 2.65;
+    const t = THREE.MathUtils.clamp(
+      (orthoCamera.zoom - fadeStartZoom) / (fadeEndZoom - fadeStartZoom),
+      0,
+      1
+    );
+
+    return 1 - t;
+  }
+
+  const distance = perspectiveCamera.position.distanceTo(controls.target);
+  const baseDistance = cityOverviewState.defaultDistance || distance;
+  const fadeStartDistance = baseDistance * 0.98;
+  const fadeEndDistance = baseDistance * 0.88;
+
+  const distanceOpacity = THREE.MathUtils.clamp(
+    (distance - fadeEndDistance) / (fadeStartDistance - fadeEndDistance),
+    0,
+    1
+  );
+
+  return Math.min(distanceOpacity, 1 - cityOverviewState.wheelZoomFade);
+}
+
+function dismissCityOverview() {
+  if (!cityOverviewState.active || cityOverviewState.dismissed) return;
+
+  cityOverviewState.active = false;
+  cityOverviewState.dismissed = true;
+  cityOverviewState.wheelZoomFade = 1;
+  document.body.style.setProperty("--city-info-opacity", "0");
+  document.body.classList.add(
+    "is-city-info-hidden",
+    "is-city-overview-dismissed",
+    "is-free-map-explore"
+  );
+  labelsDirty = true;
+}
+
+function updateCityOverviewFade() {
+  if (!sceneState || !cityOverviewState.active || cityOverviewState.dismissed) return;
+
+  const opacity = getCityOverviewInfoOpacity();
+  const visualOpacity = opacity < 0.16 ? 0 : opacity * opacity;
+  document.body.style.setProperty("--city-info-opacity", visualOpacity.toFixed(3));
+  document.body.classList.toggle("is-city-info-hidden", visualOpacity < 0.04);
+
+  if (visualOpacity <= 0) {
+    dismissCityOverview();
+  }
+}
+
 function createFallbackDetail(building) {
   const fc = building.functionalConfig;
   return {
@@ -899,10 +1047,14 @@ function createFallbackDetail(building) {
 }
 
 function fillDetailContent(building) {
-  if (guidedPreviewState.active && renderGuidedDetailContent(building)) {
+  if (
+    (guidedPreviewState.active || cityOverviewState.dismissed) &&
+    renderGuidedDetailContent(building)
+  ) {
     return;
   }
 
+  setGuidedDetailActions(false);
   detailPanel.classList.remove("scene-panel-detail--guided");
   const fc = building.functionalConfig;
   const content = (fc && DETAIL_CONTENT[fc.buildingId]) || createFallbackDetail(building);
@@ -969,7 +1121,7 @@ function closeFunctionalDetail() {
 
 btnBackOverview.addEventListener("click", () => {
   if (guidedPreviewState.active) {
-    window.location.href = "index.html#homeResults";
+    window.location.href = "explore.html";
     return;
   }
 
@@ -1542,6 +1694,10 @@ async function loadScene() {
 
       if (functionalLabelEl && functionalConfig?.interactive) {
         functionalLabelEl.addEventListener("click", () => {
+          if (cityOverviewState.active && !cityOverviewState.dismissed) {
+            return;
+          }
+
           if (
             guidedPreviewState.active &&
             guidedPreviewState.entryBuildingId &&
@@ -1557,7 +1713,7 @@ async function loadScene() {
           if (currentMode !== "3d") {
             runModeTransition(() => {
               apply3DView();
-              if (guidedPreviewState.active) {
+              if (guidedPreviewState.active || cityOverviewState.dismissed) {
                 focusBuildingFromEntry(building);
               } else {
                 focusBuilding(building);
@@ -1565,7 +1721,7 @@ async function loadScene() {
               openFunctionalDetail(building);
             });
           } else {
-            if (guidedPreviewState.active) {
+            if (guidedPreviewState.active || cityOverviewState.dismissed) {
               focusBuildingFromEntry(building);
             } else {
               focusBuilding(building);
@@ -1621,8 +1777,10 @@ async function loadScene() {
     setSidePanelState("overview");
     updateOrthoFrustum(sceneState);
     apply3DView();
+    applyCityOverviewCamera();
     refreshBuildingStyles();
     updateStatusText();
+    updateCityOverviewFade();
     syncSceneAfterLayoutChange();
     updateLabels(true);
     focusBuildingFromUrl();
@@ -1867,6 +2025,7 @@ btnReset.addEventListener("click", () => {
 function animate(now = 0) {
   updateCameraTween(now);
   controls.update();
+  updateCityOverviewFade();
   updateLabels(false);
   renderer.render(scene, activeCamera);
   requestAnimationFrame(animate);
