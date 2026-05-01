@@ -52,12 +52,6 @@
           <p class="rank-card__tag">${escapeHtml(dorm.tag)}</p>
           <h3>${escapeHtml(dorm.name)}</h3>
           <p class="rank-card__summary">${escapeHtml(dorm.summary)}</p>
-
-          <div class="rank-card__actions">
-            <button class="rank-card__button rank-card__button--primary rank-card__button--explore" type="button" data-map="${escapeHtml(dorm.id)}">
-              have a look
-            </button>
-          </div>
         </div>
       </article>
     `;

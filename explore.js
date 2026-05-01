@@ -269,7 +269,7 @@ function setGuidedDetailActions(isGuidedEntry) {
     actionWrap.appendChild(viewDetailsBtn);
   }
 
-  btnBackOverview.textContent = "Return to Explore";
+  btnBackOverview.textContent = "Return to ANU";
 }
 
 function escapeHtml(value) {
@@ -308,7 +308,7 @@ function renderGuidedDetailContent(building) {
   if (!dorm) return false;
 
   detailPanel.classList.add("scene-panel-detail--guided");
-  setGuidedDetailActions(guidedPreviewState.active || isHomePathEntry);
+  setGuidedDetailActions(guidedPreviewState.active || isHomePathEntry || cityOverviewState.dismissed);
   guidedPreviewState.entryBuildingId = building.functionalConfig?.buildingId || null;
   guidedPreviewState.entryDormId = dorm.id || null;
 

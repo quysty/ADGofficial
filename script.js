@@ -93,7 +93,7 @@
   const DEFAULT_STATE = {
     panelOrder: ["major", "habit", "requirement"],
     major: "business",
-    habits: ["study", "shopping"],
+    habits: [],
     requirements: [],
     compareMode: "default"
   };
@@ -217,7 +217,7 @@
 
   function openDormInformation(dorm) {
     if (!dorm) return;
-    window.location.href = `information.html?dorm=${encodeURIComponent(dorm.id)}`;
+    window.location.href = `information.html?dorm=${encodeURIComponent(dorm.id)}&mode=full`;
   }
 
   const dormCardComponent = window.DormCardComponent;
@@ -649,7 +649,23 @@
   // 选中宿舍摘要渲染：HTML 由 DormSummaryComponent 生成
   // =====================================================
 
-  function renderSummary(dorm) {
+  let activeSummaryKey = "";
+  let summaryAnimationToken = 0;
+
+  function getSummaryKey(dorm) {
+    if (!dorm) return "empty";
+    if (dorm.id) return `dorm:${dorm.id}`;
+    return `placeholder:${dorm.name || "coming-soon"}`;
+  }
+
+  function createSummaryPanel(markup, extraClass = "") {
+    const panel = document.createElement("div");
+    panel.className = `selected-summary-card__panel${extraClass ? ` ${extraClass}` : ""}`;
+    panel.innerHTML = markup;
+    return panel;
+  }
+
+  function renderSummary(dorm, options = {}) {
     selectedDormSummary.className = "selected-summary-card";
 
     if (!dormSummaryComponent || typeof dormSummaryComponent.createSummaryMarkup !== "function") {
@@ -657,15 +673,66 @@
       return;
     }
 
-    selectedDormSummary.innerHTML = dormSummaryComponent.createSummaryMarkup(dorm);
+    const nextKey = getSummaryKey(dorm);
+    const nextMarkup = dormSummaryComponent.createSummaryMarkup(dorm);
+    const direction = Math.sign(options.direction || 0);
+    const viewport = selectedDormSummary.querySelector(".selected-summary-card__viewport");
+    const activePanel = viewport?.querySelector(".selected-summary-card__panel.is-active");
+    const shouldAnimate = Boolean(viewport && activePanel && activeSummaryKey && activeSummaryKey !== nextKey && direction);
+
+    activeSummaryKey = nextKey;
+    selectedDormSummary.dataset.summaryKey = nextKey;
+
+    if (!shouldAnimate) {
+      selectedDormSummary.innerHTML = `
+        <div class="selected-summary-card__viewport">
+          <div class="selected-summary-card__panel is-active">
+            ${nextMarkup}
+          </div>
+        </div>
+      `;
+      bindCardActions(selectedDormSummary);
+      return;
+    }
+
+    const token = summaryAnimationToken + 1;
+    summaryAnimationToken = token;
+    const enterClass = direction > 0 ? "selected-summary-card__panel--from-right" : "selected-summary-card__panel--from-left";
+    const exitClass = direction > 0 ? "selected-summary-card__panel--to-left" : "selected-summary-card__panel--to-right";
+    const nextPanel = createSummaryPanel(nextMarkup, enterClass);
+    const startHeight = activePanel.offsetHeight;
+
+    viewport.style.height = `${startHeight}px`;
+    viewport.appendChild(nextPanel);
+
+    const endHeight = nextPanel.offsetHeight;
+    viewport.style.height = `${Math.max(startHeight, endHeight)}px`;
+
+    requestAnimationFrame(() => {
+      activePanel.classList.remove("is-active");
+      activePanel.classList.add(exitClass);
+      nextPanel.classList.remove(enterClass);
+      nextPanel.classList.add("is-active");
+      viewport.style.height = `${endHeight}px`;
+    });
+
+    window.setTimeout(() => {
+      if (summaryAnimationToken !== token) return;
+
+      nextPanel.className = "selected-summary-card__panel is-active";
+      viewport.innerHTML = "";
+      viewport.appendChild(nextPanel);
+      viewport.style.height = "";
+      bindCardActions(nextPanel);
+    }, 360);
   }
 
-  function renderSummaryForCarouselItem(item) {
+  function renderSummaryForCarouselItem(item, options = {}) {
     const dormId = item ? item.dataset.summaryDormId : "";
     const dorm = dormId ? getDormById(dormId) : null;
 
     if (dorm) {
-      renderSummary(dorm);
+      renderSummary(dorm, options);
       return;
     }
 
@@ -675,7 +742,7 @@
       locationFeel: "To be added.",
       tradeOff: "Details are not connected yet.",
       summary: "Reserved for future residence updates."
-    });
+    }, options);
   }
 
   // =====================================================
@@ -735,6 +802,8 @@
     const track = rankedDormGrid.querySelector(".featured-dorm-carousel__track");
     if (!track) return;
 
+    const previousButton = rankedDormGrid.querySelector("[data-featured-previous]");
+    const nextButton = rankedDormGrid.querySelector("[data-featured-next]");
     const realItems = [...track.querySelectorAll("[data-carousel-real='true']")];
     const items = [...track.children];
     if (!realItems.length || !items.length) return;
@@ -765,9 +834,11 @@
 
     function moveTo(index, animate = true) {
       const safeIndex = Math.max(0, Math.min(index, itemOffsets.length - 1));
+      const previousIndex = currentIndex;
+      const direction = safeIndex === previousIndex ? 0 : safeIndex > previousIndex ? 1 : -1;
       currentIndex = safeIndex;
       setTranslate(-(itemOffsets[currentIndex] || 0), animate);
-      renderSummaryForCarouselItem(items[currentIndex]);
+      renderSummaryForCarouselItem(items[currentIndex], { direction: animate ? direction : 0 });
     }
 
     function findNearestIndexFromTranslate(value = currentTranslate) {
@@ -810,6 +881,12 @@
     function settleAfterWheel() {
       if (isPointerDown) return;
       settleToNearest();
+    }
+
+    function stepFeatured(direction) {
+      window.clearTimeout(wheelSettleTimer);
+      track.classList.remove("is-dragging");
+      moveTo(currentIndex + direction, true);
     }
 
     function handlePointerEnd(event) {
@@ -891,6 +968,18 @@
       true,
     );
 
+    if (previousButton) {
+      previousButton.addEventListener("click", () => {
+        stepFeatured(-1);
+      });
+    }
+
+    if (nextButton) {
+      nextButton.addEventListener("click", () => {
+        stepFeatured(1);
+      });
+    }
+
     window.addEventListener("resize", () => {
       syncOffsets();
       moveTo(currentIndex, false);
@@ -928,6 +1017,8 @@
 
     rankedDormGrid.className = "featured-dorm-carousel";
     rankedDormGrid.innerHTML = `
+      <button class="featured-dorm-carousel__cue featured-dorm-carousel__cue--left" type="button" data-featured-previous aria-label="Previous featured dorm">‹</button>
+      <button class="featured-dorm-carousel__cue featured-dorm-carousel__cue--right" type="button" data-featured-next aria-label="Next featured dorm">›</button>
       <div class="featured-dorm-carousel__track">
         ${createCardItems(false)}
         ${createCardItems(true)}
@@ -1003,11 +1094,13 @@
 
     function scrollToStep(step, behavior = "smooth") {
       if (!rankedTrack || !rankedItems.length) return;
+      const previousStep = rankedSliderStep;
       rankedSliderStep = Math.max(0, Math.min(step, getMaxRankedStep()));
+      const direction = rankedSliderStep === previousStep ? 0 : rankedSliderStep > previousStep ? 1 : -1;
       const target = rankedItems[rankedSliderStep];
       isProgrammaticScroll = true;
       rankedTrack.scrollTo({ left: target.offsetLeft, behavior });
-      renderSummaryForCarouselItem(target);
+      renderSummaryForCarouselItem(target, { direction: behavior === "auto" ? 0 : direction });
       if (nextBtn) nextBtn.disabled = rankedSliderStep >= getMaxRankedStep();
       window.setTimeout(() => {
         isProgrammaticScroll = false;

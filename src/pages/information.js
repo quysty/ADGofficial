@@ -17,6 +17,8 @@
   const dorms = allDorms.filter((dorm) => dorm.isInformationVisible !== false);
   const params = new URLSearchParams(window.location.search);
   const dormId = params.get("dorm");
+  const pageMode = params.get("mode") || "";
+  const isFullMode = pageMode === "full";
 
   const pageTitle = document.getElementById("informationTitle");
   const pageSubtitle = document.getElementById("informationSubtitle");
@@ -33,6 +35,12 @@
   const compareDrawerClose = document.getElementById("informationCompareDrawerClose");
   const compareDrawerContent = document.getElementById("informationCompareDrawerContent");
   let activePrimaryDormId = null;
+  let fullRevealProgress = 0;
+  let isFullRevealLocked = false;
+
+  if (isFullMode) {
+    document.body.classList.add("information-full-mode");
+  }
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -306,10 +314,13 @@
   function renderActions(dorm, options = {}) {
     const mode = options.mode === "compare" ? "compare" : "primary";
     const showCompare = Boolean(options.showCompare);
+    const detailHref =
+      options.detailHref ||
+      `information.html?dorm=${escapeHtml(dorm.id)}`;
 
     return `
       <div class="information-drawer__actions" data-drawer-actions="${mode}">
-        <a class="information-drawer__full-link" href="information.html?dorm=${escapeHtml(dorm.id)}">Open detail</a>
+        <a class="information-drawer__full-link" href="${detailHref}">Open detail</a>
         ${
           showCompare
             ? `
@@ -390,6 +401,217 @@
     });
   }
 
+  function bindFullModeActions(dorm) {
+    if (!details || !dorm) return;
+
+    const closeButton = details.querySelector("[data-information-full-close]");
+    const compareToggle = details.querySelector("[data-information-compare-toggle]");
+    const compareList = details.querySelector(".information-drawer__compare-list");
+
+    if (closeButton) {
+      closeButton.addEventListener("click", () => {
+        window.location.href = "index.html#homeResults";
+      });
+    }
+
+    if (compareToggle && compareList) {
+      compareToggle.addEventListener("click", () => {
+        const expanded = compareToggle.getAttribute("aria-expanded") === "true";
+        compareToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+        compareList.hidden = expanded;
+        compareList.classList.toggle("is-open", !expanded);
+      });
+
+      compareList.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-compare-dorm]");
+        if (!target) return;
+
+        const compareDormId = target.getAttribute("data-compare-dorm");
+        const compareDorm = dorms.find((item) => item.id === compareDormId);
+        if (!compareDorm) return;
+
+        compareList.hidden = true;
+        compareList.classList.remove("is-open");
+        compareToggle.setAttribute("aria-expanded", "false");
+        openFullCompareLayout(dorm, compareDorm);
+      });
+    }
+  }
+
+  function openFullCompareLayout(primaryDorm, compareDorm) {
+    if (!drawer || !drawerBackdrop || !drawerContent || !primaryDorm || !compareDorm) return;
+
+    activePrimaryDormId = primaryDorm.id;
+    drawerContent.innerHTML = renderDrawerBody(primaryDorm, { mode: "primary", showCompare: true });
+    bindPrimaryDrawerActions();
+
+    drawer.hidden = false;
+    drawerBackdrop.hidden = false;
+    drawer.classList.add("is-split");
+    drawer.scrollTop = 0;
+
+    requestAnimationFrame(() => {
+      drawer.classList.add("is-open");
+      drawerBackdrop.classList.add("is-open");
+      drawer.setAttribute("aria-hidden", "false");
+      openCompareDrawer(compareDorm);
+    });
+  }
+
+  function setFullRevealProgress(value, options = {}) {
+    if (isFullRevealLocked && !options.force) return;
+
+    const clampedValue = Math.max(0, Math.min(value, 1));
+    const nextProgress = clampedValue >= 0.995 ? 1 : clampedValue;
+    fullRevealProgress = nextProgress;
+    isFullRevealLocked = nextProgress >= 1;
+    document.body.style.setProperty("--full-detail-surface-x", `${(50 * (1 - nextProgress)).toFixed(3)}vw`);
+  }
+
+  function bindFullRevealControls() {
+    const screen = details?.querySelector(".information-full-screen");
+    const handle = details?.querySelector("[data-full-reveal-handle]");
+    if (!screen || !handle) return;
+
+    fullRevealProgress = 0;
+    isFullRevealLocked = false;
+    let suppressNextClick = false;
+    setFullRevealProgress(0, { force: true });
+
+    function updateFromHorizontalDelta(deltaX, scale = 720) {
+      if (isFullRevealLocked) return;
+      setFullRevealProgress(fullRevealProgress + deltaX / scale);
+    }
+
+    handle.addEventListener("click", () => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+
+      setFullRevealProgress(1);
+    });
+
+    screen.addEventListener(
+      "wheel",
+      (event) => {
+        if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+
+        event.preventDefault();
+        updateFromHorizontalDelta(event.deltaX);
+      },
+      { passive: false }
+    );
+
+    handle.addEventListener("pointerdown", (event) => {
+      if (isFullRevealLocked) return;
+
+      const startX = event.clientX;
+      const startProgress = fullRevealProgress;
+      const travelDistance = Math.max(window.innerWidth * 0.5, 320);
+
+      document.body.classList.add("is-full-detail-dragging");
+      handle.setPointerCapture(event.pointerId);
+
+      function onPointerMove(moveEvent) {
+        const dragDistance = startX - moveEvent.clientX;
+        if (Math.abs(dragDistance) > 6) {
+          suppressNextClick = true;
+        }
+
+        setFullRevealProgress(startProgress + dragDistance / travelDistance);
+      }
+
+      function onPointerUp(upEvent) {
+        handle.releasePointerCapture(upEvent.pointerId);
+        document.body.classList.remove("is-full-detail-dragging");
+        handle.removeEventListener("pointermove", onPointerMove);
+        handle.removeEventListener("pointerup", onPointerUp);
+        handle.removeEventListener("pointercancel", onPointerUp);
+
+        if (fullRevealProgress >= 0.86) {
+          setFullRevealProgress(1);
+        } else if (fullRevealProgress <= 0.08) {
+          setFullRevealProgress(0);
+        }
+      }
+
+      handle.addEventListener("pointermove", onPointerMove);
+      handle.addEventListener("pointerup", onPointerUp);
+      handle.addEventListener("pointercancel", onPointerUp);
+    });
+  }
+
+  function renderFullDorm(dorm) {
+    document.title = `${dorm.name} detail | ANU Dorm Guide`;
+
+    if (pageTitle) pageTitle.textContent = dorm.name;
+    if (pageSubtitle) {
+      pageSubtitle.textContent = dorm.description || dorm.summary || "Residence detail.";
+    }
+
+    if (card) {
+      card.classList.add("information-card--full");
+      card.classList.remove("information-card--overview", "information-card--detail", "information-card--fallback");
+    }
+
+    if (cardTitle) cardTitle.textContent = "";
+    if (cardText) cardText.textContent = "";
+
+    if (details) {
+      details.innerHTML = `
+        <div class="information-full-screen">
+          <button class="information-full-screen__close" type="button" data-information-full-close aria-label="Exit residence detail">
+            ×
+          </button>
+
+          <div class="information-full-screen__media">
+            ${dorm.image ? `<img src="${escapeHtml(dorm.image)}" alt="" />` : ""}
+            <div class="information-full-screen__media-title">
+              <p>Residence detail</p>
+              <h1>${escapeHtml(dorm.name)}</h1>
+            </div>
+            <button class="information-full-screen__reveal" type="button" data-full-reveal-handle aria-label="Reveal dorm detail panel">
+              <span aria-hidden="true">‹‹</span>
+            </button>
+          </div>
+
+          <div class="information-full-screen__surface">
+            <section class="information-full-screen__content">
+              <p class="information-drawer__eyebrow">Residence detail</p>
+              <p class="information-full-screen__lead">${escapeHtml(dorm.description || dorm.summary || "")}</p>
+
+              ${renderFacts(dorm)}
+
+              <section class="information-full-screen__temporary">
+                <h2>Living snapshot</h2>
+                <p>
+                  This full-screen detail mode is reserved for richer residence storytelling. It can later hold room examples,
+                  move-in notes, daily routine guidance, transport context, and student-facing survival tips for this residence.
+                </p>
+              </section>
+
+              ${renderSections(dorm)}
+              ${renderProsCons(dorm)}
+              ${renderActions(dorm, {
+                mode: "primary",
+                showCompare: true,
+                detailHref: `information.html?dorm=${escapeHtml(dorm.id)}`
+              })}
+            </section>
+
+            <aside class="information-full-screen__overflow-detail" aria-label="Dorm card detail placeholder">
+              ${"101 ".repeat(360)}
+            </aside>
+          </div>
+        </div>
+      `;
+    }
+
+    bindFullModeActions(dorm);
+    bindFullRevealControls();
+  }
+
   function openCompareDrawer(dorm) {
     if (!compareDrawer || !compareDrawerContent || !dorm) return;
     if (dorm.id === activePrimaryDormId) return;
@@ -397,6 +619,7 @@
     compareDrawerContent.innerHTML = renderDrawerBody(dorm, { mode: "compare", showCompare: false });
     compareDrawer.hidden = false;
     compareDrawer.scrollTop = 0;
+    document.body.classList.add("information-compare-open");
 
     if (drawer) {
       drawer.classList.add("is-split");
@@ -414,6 +637,7 @@
 
     compareDrawer.classList.remove("is-open");
     compareDrawer.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("information-compare-open");
 
     if (drawer) {
       drawer.classList.remove("is-split");
@@ -491,6 +715,11 @@
 
   if (!dorm) {
     renderInvalidDorm();
+    return;
+  }
+
+  if (isFullMode) {
+    renderFullDorm(dorm);
     return;
   }
 
