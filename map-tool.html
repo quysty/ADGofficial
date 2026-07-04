@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>地图开发者版本 | ANU Dorm Guide</title>
+  <title>地图工具 | ANU Dorm Guide</title>
   <link rel="stylesheet" href="style.css?v=boundary-areas-v4" />
 
   <script type="importmap">
@@ -15,14 +15,14 @@
     }
   </script>
 </head>
-<body data-page="explore">
+<body data-page="map-tool">
   <main class="subpage-main">
     <section class="subpage-hero">
       <div class="container">
-        <p class="eyebrow">MAP DEVELOPER VERSION</p>
-        <h1>地图开发者版本</h1>
+        <p class="eyebrow">地图工具</p>
+        <h1>地图工具</h1>
         <p class="subtitle">
-          从 hero 逻辑页中抽出的同一套地图交互入口，用于单独调试地图、标签和入口导航。
+          开发坐标拾取页。
         </p>
       </div>
     </section>
@@ -49,45 +49,30 @@
 
               <div id="sceneVeil" class="explore-scene-veil"></div>
               <div id="map3dContainer" class="explore-map-canvas"></div>
-              <div class="explore-map-legend" aria-label="Map colour legend">
-                <div><span style="--legend-color: #e2e0db;"></span>Buildings</div>
-                <div><span style="--legend-color: #dcedd2;"></span>Residences</div>
-                <div><span style="--legend-color: #dbeccf;"></span>Green space</div>
-                <div><span style="--legend-color: #cfeaf9;"></span>Water</div>
-                <div><span style="--legend-color: #c7ccd4;"></span>Roads</div>
-              </div>
             </div>
           </div>
 
           <aside id="exploreSideWrap" class="explore-side-wrap">
             <section id="overviewPanel" class="scene-panel scene-panel-overview is-active">
-              <p class="eyebrow">OVERVIEW</p>
-              <h2>Canberra</h2>
-
-              <p>
-                Canberra is Australia's capital city, set inland between Sydney and the Snowy Mountains. Its planned layout gives the city a calm rhythm of lakes, civic axes, green corridors, and compact education precincts.
-              </p>
-
-              <p class="scene-panel-note">
-                ANU sits close to the city centre, so campus life connects quickly to government, galleries, shops, bus routes, and open parkland around Lake Burley Griffin.
-              </p>
+              <p class="eyebrow">地图工具</p>
+              <h2>点位坐标</h2>
 
               <p id="mapStatus" class="scene-panel-status">
-                Loading building scene...
+                地图工具加载中...
               </p>
             </section>
 
             <section id="detailPanel" class="scene-panel scene-panel-detail" aria-hidden="true">
               <div class="scene-detail-head">
-                <p class="scene-detail-kicker">DORM DETAIL</p>
-                <h3 id="detailTitle">Dorm detail</h3>
-                <p id="detailCode" class="scene-detail-code">—</p>
+                <p class="scene-detail-kicker">地图工具</p>
+                <h3 id="detailTitle">点位详情</h3>
+                <p id="detailCode" class="scene-detail-code">-</p>
               </div>
 
               <div id="detailScroll" class="scene-detail-scroll"></div>
 
               <button id="btnBackOverview" class="scene-detail-back" type="button">
-                Return to Explore
+                返回地图工具
               </button>
             </section>
           </aside>

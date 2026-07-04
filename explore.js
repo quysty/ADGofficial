@@ -43,6 +43,10 @@ const labelLayer = document.createElement("div");
 labelLayer.className = "explore-label-layer";
 mapWrap.querySelector(".explore-map-shell").appendChild(labelLayer);
 
+const entranceIndexNotice = document.createElement("div");
+entranceIndexNotice.className = "entrance-index-notice";
+document.body.appendChild(entranceIndexNotice);
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#f3f4f1");
 
@@ -89,11 +93,29 @@ const environment3D = new THREE.Group();
 const environment2D = new THREE.Group();
 const world3D = new THREE.Group();
 const world2D = new THREE.Group();
+const selectedBuildingBeam = new THREE.Group();
+const entranceToolMarker = new THREE.Group();
+const mapToolMarkerGroup = new THREE.Group();
+const entranceNavigationGroup = new THREE.Group();
+const entranceRouteGroup = new THREE.Group();
+const boundaryToolGroup = new THREE.Group();
+const boundaryToolShapeGroup = new THREE.Group();
+const terrainReliefGroup = new THREE.Group();
 
 scene.add(environment3D);
 scene.add(environment2D);
+scene.add(terrainReliefGroup);
 scene.add(world3D);
 scene.add(world2D);
+scene.add(selectedBuildingBeam);
+scene.add(entranceToolMarker);
+scene.add(mapToolMarkerGroup);
+scene.add(entranceNavigationGroup);
+scene.add(entranceRouteGroup);
+scene.add(boundaryToolShapeGroup);
+scene.add(boundaryToolGroup);
+selectedBuildingBeam.visible = false;
+entranceToolMarker.visible = false;
 
 /* 圆形地面：只改场景里的地面，不改地图框 */
 const groundGroup = new THREE.Group();
@@ -101,6 +123,8 @@ scene.add(groundGroup);
 
 let groundDisk = null;
 let groundRing = null;
+let groundOuterDim = null;
+let groundFocusBoundary = null;
 const treeScenePoints = [];
 
 let currentMode = "3d";
@@ -109,6 +133,7 @@ let isTransitioning = false;
 let showNormalLabels = false;
 let cameraTween = null;
 let selectedBuilding = null;
+let selectedBeamTarget = null;
 let lastBrowseViewState = null;
 
 let labelsDirty = true;
@@ -126,13 +151,45 @@ const environmentStats = {
   water: 0,
   trees: 0
 };
+const BUILDING_HEIGHT_SCALE_OVERRIDES = {
+  932: 0.5,
+  963: 0.5,
+  1089: 0.5,
+  1176: 0.5,
+  1238: 1 / 3
+};
+const BUILDING_HEIGHT_MATCH_OVERRIDES = {
+  777: 821,
+  928: 821
+};
 
 let BUILDING_TYPES = {};
 let FUNCTIONAL_BUILDINGS = {};
 let DETAIL_CONTENT = {};
+let DORM_ENTRANCES = {};
+let CAMPUS_BOUNDARIES = {};
+let campusBoundaryScenePoints = [];
 const DORMS = Array.isArray(window.DORM_DATA) ? window.DORM_DATA : [];
+const raycaster = new THREE.Raycaster();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 const pageParams = new URLSearchParams(window.location.search);
+const isBaseMap = pageParams.get("map") === "base";
+const isLabMap = !isBaseMap;
+const topoDataRoot = isBaseMap ? "topo" : "topo-lab";
+const CONFIG_CACHE_VERSION = "labels-clean-v2";
+if (pageParams.get("labels") === "off") {
+  document.body.classList.add("is-map-labels-hidden");
+}
+
+function configPath(fileName) {
+  return `./config/${fileName}?v=${CONFIG_CACHE_VERSION}`;
+}
+
+function topoPath(fileName) {
+  return `./${topoDataRoot}/${fileName}`;
+}
+
 const guidedPreviewState = {
   active: pageParams.get("mode") === "guided",
   from: pageParams.get("from") || "",
@@ -141,9 +198,73 @@ const guidedPreviewState = {
   entryDormId: null
 };
 const isHomePathEntry = !guidedPreviewState.active && guidedPreviewState.from === "homePath";
+const isMapToolPage = document.body.dataset.page === "map-tool" || pageParams.get("tool") === "point";
+const entranceToolParam = pageParams.get("entrance") || "";
+const boundaryToolParam = pageParams.get("boundary") || "";
+const MAP_TOOL_MAX_POINTS = 10;
+const MAP_BOUNDARY_MAX_AREAS = 3;
+const MAP_BOUNDARY_AREA_COLORS = ["#2f8cff", "#f59e0b", "#10b981"];
+
+function createMapBoundaryArea(index) {
+  return {
+    id: `area_${index + 1}`,
+    index: index + 1,
+    label: `面积 ${index + 1}`,
+    points: [],
+    closed: false
+  };
+}
+
+const mapToolState = {
+  active: isMapToolPage,
+  mode: "entrance",
+  bounds: null,
+  panel: null,
+  picks: [],
+  pointerStart: null,
+  boundaryPointerStart: null,
+  previousMapViewMode: null,
+  lastPickedAt: 0
+};
+const entranceToolState = {
+  active: Boolean(entranceToolParam),
+  dormId: isLabMap || entranceToolParam.includes("_")
+    ? entranceToolParam
+    : `dorm_${entranceToolParam}`,
+  bounds: null,
+  panel: null,
+  roadSegments: [],
+  lastPick: null,
+  pointerStart: null
+};
+const boundaryToolState = {
+  active: Boolean(boundaryToolParam),
+  id: boundaryToolParam || "anu",
+  bounds: null,
+  panel: null,
+  points: [],
+  areas: Array.from({ length: MAP_BOUNDARY_MAX_AREAS }, (_, index) => createMapBoundaryArea(index)),
+  activeAreaIndex: 0,
+  markers: [],
+  line: null,
+  fill: null,
+  closed: false,
+  pointerStart: null
+};
+const entranceNavigationState = {
+  active: !isMapToolPage && !guidedPreviewState.active && !Boolean(entranceToolParam) && !Boolean(boundaryToolParam),
+  bounds: null,
+  roadSegments: [],
+  baseGraph: null,
+  markers: [],
+  hitTargets: [],
+  selectedStartId: null,
+  routeEndpointIds: new Set(),
+  pointerStart: null
+};
 
 const cityOverviewState = {
-  active: !guidedPreviewState.active,
+  active: !guidedPreviewState.active && !boundaryToolState.active,
   dismissed: false,
   defaultDistance: 0,
   wheelZoomFade: 0
@@ -161,6 +282,2216 @@ if (isHomePathEntry) {
     document.body.classList.remove("is-home-path-entry");
   }, 680);
 }
+
+if (entranceToolState.active) {
+  document.body.classList.add("is-entrance-tool");
+}
+
+if (boundaryToolState.active) {
+  document.body.classList.add("is-boundary-tool");
+}
+
+if (mapToolState.active) {
+  document.body.classList.add("is-map-tool");
+}
+
+/* =========================================================
+   SELECTED BUILDING BEAM
+   ========================================================= */
+
+function createBeamMaterial(color, opacity) {
+  return new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide
+  });
+}
+
+function initSelectedBuildingBeam() {
+  const outerBeam = new THREE.Mesh(
+    new THREE.CylinderGeometry(1, 1, 1, 48, 1, true),
+    createBeamMaterial("#78cfff", 0.22)
+  );
+  outerBeam.name = "selected-building-beam-outer";
+
+  const innerBeam = new THREE.Mesh(
+    new THREE.CylinderGeometry(1, 1, 1, 48, 1, true),
+    createBeamMaterial("#ffffff", 0.16)
+  );
+  innerBeam.name = "selected-building-beam-inner";
+
+  const baseRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1, 0.04, 14, 96),
+    createBeamMaterial("#8fdcff", 0.58)
+  );
+  baseRing.name = "selected-building-beam-ring";
+  baseRing.rotation.x = Math.PI / 2;
+
+  selectedBuildingBeam.add(outerBeam, innerBeam, baseRing);
+}
+
+function placeSelectedBuildingBeam(building) {
+  selectedBuildingBeam.visible = false;
+  selectedBeamTarget = null;
+  return;
+
+  if (!isHomePathEntry || currentMode !== "3d" || !building) {
+    selectedBuildingBeam.visible = false;
+    selectedBeamTarget = null;
+    return;
+  }
+
+  const radius = Math.max(building.focusSize.x, building.focusSize.z, 28) * 0.08;
+  const beamHeight = Math.max(building.focusSize.y * 7.2, 320);
+  const baseY = 1.2;
+
+  selectedBuildingBeam.position.set(building.focusCenter.x, baseY, building.focusCenter.z);
+  selectedBuildingBeam.visible = true;
+  selectedBeamTarget = building;
+
+  const outerBeam = selectedBuildingBeam.getObjectByName("selected-building-beam-outer");
+  const innerBeam = selectedBuildingBeam.getObjectByName("selected-building-beam-inner");
+  const baseRing = selectedBuildingBeam.getObjectByName("selected-building-beam-ring");
+
+  if (outerBeam) {
+    outerBeam.position.y = beamHeight / 2;
+    outerBeam.scale.set(radius, beamHeight, radius);
+  }
+
+  if (innerBeam) {
+    innerBeam.position.y = beamHeight / 2;
+    innerBeam.scale.set(radius * 0.34, beamHeight * 1.04, radius * 0.34);
+  }
+
+  if (baseRing) {
+    baseRing.position.y = 0.18;
+    baseRing.scale.set(radius * 5.2, radius * 5.2, radius * 5.2);
+  }
+}
+
+function updateSelectedBuildingBeam(now = 0) {
+  if (!selectedBuildingBeam.visible || !selectedBeamTarget) return;
+
+  const pulse = 0.5 + Math.sin(now * 0.004) * 0.5;
+  const outerBeam = selectedBuildingBeam.getObjectByName("selected-building-beam-outer");
+  const innerBeam = selectedBuildingBeam.getObjectByName("selected-building-beam-inner");
+  const baseRing = selectedBuildingBeam.getObjectByName("selected-building-beam-ring");
+
+  if (outerBeam) {
+    outerBeam.material.opacity = 0.22 + pulse * 0.12;
+  }
+
+  if (innerBeam) {
+    innerBeam.material.opacity = 0.18 + pulse * 0.12;
+  }
+
+  if (baseRing) {
+    baseRing.material.opacity = 0.22 + pulse * 0.16;
+    const ringPulse = 1 + pulse * 0.05;
+    baseRing.scale.x = Math.max(selectedBeamTarget.focusSize.x, selectedBeamTarget.focusSize.z, 28) * 0.42 * ringPulse;
+    baseRing.scale.y = baseRing.scale.x;
+  }
+}
+
+initSelectedBuildingBeam();
+
+/* =========================================================
+   DORM ENTRANCE PICKER TOOL
+   ========================================================= */
+
+function formatEntranceNumber(value) {
+  return Number(value).toFixed(3);
+}
+
+function sourceToScenePoint(x, y) {
+  const bounds = mapToolState.bounds || entranceToolState.bounds || entranceNavigationState.bounds;
+  if (!bounds) return null;
+  const sourceX = Number(x);
+  const sourceY = Number(y);
+  if (!Number.isFinite(sourceX) || !Number.isFinite(sourceY)) return null;
+
+  const local = toSceneXZ(sourceX, sourceY, bounds.centerX, bounds.centerY, 1);
+  return new THREE.Vector3(local.x, 0, local.z);
+}
+
+function sceneToSourcePoint(point) {
+  const bounds = mapToolState.bounds || entranceToolState.bounds || entranceNavigationState.bounds;
+  if (!bounds || !point) return null;
+
+  return {
+    x: point.x + bounds.centerX,
+    y: bounds.centerY - point.z
+  };
+}
+
+function boundarySceneToSourcePoint(point) {
+  const bounds = boundaryToolState.bounds;
+  if (!bounds || !point) return null;
+
+  return {
+    x: point.x + bounds.centerX,
+    y: bounds.centerY - point.z
+  };
+}
+
+function getClosestPointOnSegment(point, start, end) {
+  const segment = end.clone().sub(start);
+  const lengthSq = segment.lengthSq();
+
+  if (lengthSq <= 0) {
+    return {
+      point: start.clone(),
+      t: 0,
+      distance: point.distanceTo(start)
+    };
+  }
+
+  const t = THREE.MathUtils.clamp(point.clone().sub(start).dot(segment) / lengthSq, 0, 1);
+  const closest = start.clone().add(segment.multiplyScalar(t));
+
+  return {
+    point: closest,
+    t,
+    distance: point.distanceTo(closest)
+  };
+}
+
+function buildEntranceRoadSegments(roadsGeo, centerX, centerY) {
+  const segments = [];
+
+  entranceToolState.roadSegments = segments;
+  entranceNavigationState.roadSegments = segments;
+  entranceNavigationState.baseGraph = null;
+
+  if (!roadsGeo?.features?.length) return;
+
+  for (const feature of roadsGeo.features) {
+    const roadType = feature.properties?.type || "Unknown";
+    const lineSets = getLineSets(feature.geometry);
+
+    for (const coords of lineSets) {
+      if (!Array.isArray(coords) || coords.length < 2) continue;
+
+      const points = coords
+        .map((coord) => {
+          const x = Number(coord[0]);
+          const y = Number(coord[1]);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+          const local = toSceneXZ(x, y, centerX, centerY, 1);
+          return {
+            source: { x, y },
+            scene: new THREE.Vector3(local.x, 0, local.z)
+          };
+        })
+        .filter(Boolean);
+
+      for (let index = 1; index < points.length; index += 1) {
+        segments.push({
+          type: roadType,
+          start: points[index - 1],
+          end: points[index]
+        });
+      }
+    }
+  }
+
+  entranceNavigationState.baseGraph = buildEntranceRouteGraph(segments);
+}
+
+function findNearestRoadSnap(scenePoint) {
+  const roadSegments = entranceToolState.roadSegments.length
+    ? entranceToolState.roadSegments
+    : entranceNavigationState.roadSegments;
+
+  if (!scenePoint || !roadSegments.length) return null;
+
+  let best = null;
+
+  for (const segment of roadSegments) {
+    const closest = getClosestPointOnSegment(scenePoint, segment.start.scene, segment.end.scene);
+
+    if (!best || closest.distance < best.distance) {
+      const sourceX = THREE.MathUtils.lerp(segment.start.source.x, segment.end.source.x, closest.t);
+      const sourceY = THREE.MathUtils.lerp(segment.start.source.y, segment.end.source.y, closest.t);
+
+      best = {
+        type: segment.type,
+        distance: closest.distance,
+        scenePoint: closest.point,
+        sourcePoint: {
+          x: sourceX,
+          y: sourceY
+        }
+      };
+    }
+  }
+
+  return best;
+}
+
+function createEntranceToolMarker() {
+  entranceToolMarker.clear();
+
+  const markerMaterial = new THREE.MeshBasicMaterial({
+    color: "#f8fbff",
+    transparent: true,
+    opacity: 0.94,
+    depthWrite: false
+  });
+  const marker = new THREE.Mesh(new THREE.SphereGeometry(5.2, 16, 16), markerMaterial);
+  marker.name = "entrance-tool-marker-dot";
+  marker.position.y = 5.2;
+
+  const ringMaterial = new THREE.MeshBasicMaterial({
+    color: "#4ba8ff",
+    transparent: true,
+    opacity: 0.75,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(10, 0.42, 12, 72), ringMaterial);
+  ring.name = "entrance-tool-marker-ring";
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = 0.62;
+
+  const snapMaterial = new THREE.LineBasicMaterial({
+    color: "#f9c74f",
+    transparent: true,
+    opacity: 0.92
+  });
+  const snapLine = new THREE.Line(new THREE.BufferGeometry(), snapMaterial);
+  snapLine.name = "entrance-tool-snap-line";
+
+  entranceToolMarker.add(marker, ring, snapLine);
+}
+
+function updateEntranceToolMarker(scenePoint, snap) {
+  if (!scenePoint) {
+    entranceToolMarker.visible = false;
+    return;
+  }
+
+  entranceToolMarker.position.set(scenePoint.x, 0, scenePoint.z);
+  entranceToolMarker.visible = true;
+
+  const snapLine = entranceToolMarker.getObjectByName("entrance-tool-snap-line");
+  if (snapLine) {
+    snapLine.geometry.dispose();
+    snapLine.geometry = snap?.scenePoint
+      ? new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 1.2, 0),
+        new THREE.Vector3(snap.scenePoint.x - scenePoint.x, 1.2, snap.scenePoint.z - scenePoint.z)
+      ])
+      : new THREE.BufferGeometry();
+  }
+}
+
+function createEntranceToolPanel() {
+  if (!entranceToolState.active || entranceToolState.panel) return;
+
+  const panel = document.createElement("aside");
+  panel.className = "entrance-tool-panel";
+  panel.innerHTML = `
+    <p class="entrance-tool-panel__kicker">Entrance picker</p>
+    <h2>${escapeHtml(entranceToolState.dormId)}</h2>
+    <p class="entrance-tool-panel__hint">Click the exact dorm entrance on the map. Dragging the camera is ignored. JSON copies automatically after each pick.</p>
+    <pre class="entrance-tool-panel__output">No entrance selected yet.</pre>
+    <p class="entrance-tool-panel__status">Pick a point to auto-copy JSON.</p>
+  `;
+
+  document.body.appendChild(panel);
+  entranceToolState.panel = panel;
+
+  [
+    "pointerdown",
+    "pointermove",
+    "pointerup",
+    "mousedown",
+    "mousemove",
+    "mouseup",
+    "touchstart",
+    "touchmove",
+    "touchend",
+    "click",
+    "dblclick",
+    "wheel"
+  ].forEach((eventName) => {
+    panel.addEventListener(eventName, (event) => {
+      event.stopPropagation();
+    });
+  });
+
+}
+
+function updateEntranceToolPanel(pick) {
+  const output = entranceToolState.panel?.querySelector(".entrance-tool-panel__output");
+  if (!output || !pick) return;
+
+  output.textContent = JSON.stringify(pick, null, 2);
+}
+
+function updateEntranceToolCopyStatus(message, copied = false) {
+  const panel = entranceToolState.panel;
+  const status = panel?.querySelector(".entrance-tool-panel__status");
+  if (!panel || !status) return;
+
+  status.textContent = message;
+  panel.classList.toggle("is-copied", copied);
+}
+
+async function copyEntrancePickToClipboard(pick) {
+  if (!pick) return;
+
+  try {
+    await copyTextToClipboard(JSON.stringify(pick, null, 2));
+    updateEntranceToolCopyStatus("Copied JSON automatically.", true);
+  } catch (error) {
+    console.warn("Clipboard copy failed:", error);
+    updateEntranceToolCopyStatus("Auto-copy was blocked. Select the JSON text above.", false);
+  }
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+function pickEntranceAtClientPoint(clientX, clientY) {
+  if (!entranceToolState.active || !entranceToolState.bounds) return null;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1)
+  );
+  let scenePoint = null;
+  let hitScenePoint = null;
+
+  raycaster.setFromCamera(pointer, activeCamera);
+
+  const buildingMeshes = buildingObjects
+    .map((building) => (currentMode === "2d" ? building.mesh2D : building.mesh3D))
+    .filter(Boolean);
+  const buildingHits = raycaster.intersectObjects(buildingMeshes, false);
+
+  if (buildingHits.length) {
+    hitScenePoint = buildingHits[0].point.clone();
+    scenePoint = new THREE.Vector3(buildingHits[0].point.x, 0, buildingHits[0].point.z);
+  } else {
+    scenePoint = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(groundPlane, scenePoint)) return null;
+    hitScenePoint = scenePoint.clone();
+  }
+
+  const sourcePoint = sceneToSourcePoint(scenePoint);
+  const snap = findNearestRoadSnap(scenePoint);
+
+  if (!sourcePoint || !snap) return null;
+
+  return {
+    [entranceToolState.dormId]: {
+      entrance: [
+        Number(formatEntranceNumber(sourcePoint.x)),
+        Number(formatEntranceNumber(sourcePoint.y))
+      ],
+      snap: [
+        Number(formatEntranceNumber(snap.sourcePoint.x)),
+        Number(formatEntranceNumber(snap.sourcePoint.y))
+      ],
+      snapRoadType: snap.type,
+      snapDistanceMeters: Number(formatEntranceNumber(snap.distance))
+    },
+    _scenePoint: scenePoint,
+    _snap: snap
+  };
+}
+
+function bindEntranceToolEvents() {
+  if (!entranceToolState.active) return;
+
+  renderer.domElement.addEventListener("pointerdown", (event) => {
+    entranceToolState.pointerStart = {
+      x: event.clientX,
+      y: event.clientY
+    };
+  });
+
+  renderer.domElement.addEventListener("pointerup", (event) => {
+    const start = entranceToolState.pointerStart;
+    entranceToolState.pointerStart = null;
+    if (!start) return;
+
+    const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (moved > 6) return;
+
+    const pick = pickEntranceAtClientPoint(event.clientX, event.clientY);
+    if (!pick) return;
+
+    const cleanPick = {
+      [entranceToolState.dormId]: pick[entranceToolState.dormId]
+    };
+
+    entranceToolState.lastPick = cleanPick;
+    updateEntranceToolMarker(pick._scenePoint, pick._snap);
+    updateEntranceToolPanel(cleanPick);
+    copyEntrancePickToClipboard(cleanPick);
+  });
+}
+
+/* =========================================================
+   MAP POINT TOOL
+   ========================================================= */
+
+function createMapToolPanel() {
+  if (!mapToolState.active || mapToolState.panel) return;
+
+  const panel = document.createElement("aside");
+  let boundaryRowsHtml = "";
+  for (let index = 0; index < MAP_BOUNDARY_MAX_AREAS; index += 1) {
+    boundaryRowsHtml += '<div class="map-tool-boundary-row" data-boundary-row="' + index + '">' +
+      '<button class="map-tool-boundary-select" type="button" data-boundary-select="' + index + '">面积 ' + (index + 1) + '</button>' +
+      '<button class="map-tool-boundary-copy" type="button" data-boundary-copy="' + index + '" disabled>复制</button>' +
+      '<button class="map-tool-boundary-delete" type="button" data-boundary-delete="' + index + '" disabled>删除</button>' +
+    '</div>';
+  }
+
+  panel.className = "entrance-tool-panel map-tool-panel";
+  panel.innerHTML = `
+    <div class="map-tool-panel__head">
+      <p class="entrance-tool-panel__kicker map-tool-panel__title">入口工具</p>
+      <button class="map-tool-panel__mode-toggle" type="button">切到圈地</button>
+    </div>
+    <p class="entrance-tool-panel__hint map-tool-panel__hint">点击地图记录坐标；拖动地图不会记录。蓝色入口标记仅用于参考，不触发连线。</p>
+    <div class="map-tool-boundary-controls" hidden>
+      <div class="map-tool-boundary-areas" aria-label="圈地面积管理">
+        ${boundaryRowsHtml}
+      </div>
+      <button class="map-tool-panel__button map-tool-boundary-copy-all" type="button" disabled>一起复制</button>
+    </div>
+    <pre class="entrance-tool-panel__output map-tool-panel__output">暂无点位。</pre>
+    <div class="map-tool-panel__actions">
+      <button class="map-tool-panel__button map-tool-panel__copy" type="button" disabled>复制 JSON</button>
+      <button class="map-tool-panel__button map-tool-panel__delete" type="button" disabled>删除上一个</button>
+      <button class="map-tool-panel__button map-tool-panel__clear" type="button" disabled>清空</button>
+    </div>
+    <p class="entrance-tool-panel__status">0 个点位。</p>
+  `;
+
+  document.body.appendChild(panel);
+  mapToolState.panel = panel;
+
+  [
+    "pointerdown",
+    "pointermove",
+    "pointerup",
+    "mousedown",
+    "mousemove",
+    "mouseup",
+    "touchstart",
+    "touchmove",
+    "touchend",
+    "click",
+    "dblclick",
+    "wheel"
+  ].forEach((eventName) => {
+    panel.addEventListener(eventName, (event) => {
+      event.stopPropagation();
+    });
+  });
+
+  panel.querySelector(".map-tool-panel__mode-toggle")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMapToolMode(mapToolState.mode === "boundary" ? "entrance" : "boundary");
+  });
+
+  panel.querySelector(".map-tool-panel__copy")?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await copyMapToolPointsToClipboard();
+  });
+
+  panel.querySelector(".map-tool-panel__delete")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    deleteLastMapToolPoint();
+  });
+
+  panel.querySelector(".map-tool-panel__clear")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clearMapToolPoints();
+  });
+
+  panel.querySelectorAll("[data-boundary-select]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setActiveMapBoundaryArea(Number(button.dataset.boundarySelect));
+    });
+  });
+
+  panel.querySelectorAll("[data-boundary-copy]").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      await copyMapBoundaryAreaToClipboard(Number(button.dataset.boundaryCopy));
+    });
+  });
+
+  panel.querySelectorAll("[data-boundary-delete]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      deleteMapBoundaryArea(Number(button.dataset.boundaryDelete));
+    });
+  });
+
+  panel.querySelector(".map-tool-boundary-copy-all")?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await copyMapBoundaryAllToClipboard();
+  });
+}
+
+function getMapToolOutput() {
+  return {
+    tool: "entrance",
+    totalPoints: mapToolState.picks.length,
+    maxPoints: MAP_TOOL_MAX_POINTS,
+    points: mapToolState.picks
+  };
+}
+
+function getMapBoundaryAreaColor(areaIndex) {
+  return MAP_BOUNDARY_AREA_COLORS[areaIndex % MAP_BOUNDARY_AREA_COLORS.length];
+}
+
+function getMapBoundaryActiveArea() {
+  return boundaryToolState.areas[boundaryToolState.activeAreaIndex] || boundaryToolState.areas[0];
+}
+
+function getMapBoundaryAreasWithPoints() {
+  return boundaryToolState.areas.filter((area) => area.points.length > 0);
+}
+
+function getMapBoundaryTotalPoints() {
+  return boundaryToolState.areas.reduce((total, area) => total + area.points.length, 0);
+}
+
+function getMapBoundaryAreaOutput(area) {
+  const points = area.points.map((point, index) => {
+    const source = boundarySceneToSourcePoint(point);
+
+    return {
+      index: index + 1,
+      label: `边界点 ${index + 1}`,
+      source: source
+        ? [
+          Number(formatEntranceNumber(source.x)),
+          Number(formatEntranceNumber(source.y))
+        ]
+        : null,
+      scene: [
+        Number(formatEntranceNumber(point.x)),
+        Number(formatEntranceNumber(point.y)),
+        Number(formatEntranceNumber(point.z))
+      ]
+    };
+  });
+
+  return {
+    id: area.id,
+    index: area.index,
+    label: area.label,
+    totalPoints: points.length,
+    closed: area.closed,
+    points
+  };
+}
+
+function getMapBoundaryOutput() {
+  const areas = boundaryToolState.areas.map(getMapBoundaryAreaOutput);
+  const totalPoints = areas.reduce((total, area) => total + area.totalPoints, 0);
+
+  return {
+    tool: "boundary",
+    mode: "top-down-2d",
+    maxAreas: MAP_BOUNDARY_MAX_AREAS,
+    activeArea: getMapBoundaryActiveArea().index,
+    totalAreas: areas.filter((area) => area.totalPoints > 0).length,
+    totalClosedAreas: areas.filter((area) => area.closed).length,
+    totalPoints,
+    areas
+  };
+}
+
+function getCurrentMapToolOutput() {
+  return mapToolState.mode === "boundary"
+    ? getMapBoundaryOutput()
+    : getMapToolOutput();
+}
+
+function updateMapToolPanel() {
+  const isBoundaryMode = mapToolState.mode === "boundary";
+  const title = mapToolState.panel?.querySelector(".map-tool-panel__title");
+  const toggleButton = mapToolState.panel?.querySelector(".map-tool-panel__mode-toggle");
+  const hint = mapToolState.panel?.querySelector(".map-tool-panel__hint");
+  const output = mapToolState.panel?.querySelector(".map-tool-panel__output");
+  const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
+  const copyButton = mapToolState.panel?.querySelector(".map-tool-panel__copy");
+  const deleteButton = mapToolState.panel?.querySelector(".map-tool-panel__delete");
+  const clearButton = mapToolState.panel?.querySelector(".map-tool-panel__clear");
+  const boundaryControls = mapToolState.panel?.querySelector(".map-tool-boundary-controls");
+  const copyAllButton = mapToolState.panel?.querySelector(".map-tool-boundary-copy-all");
+  const activeArea = getMapBoundaryActiveArea();
+  const boundaryTotalPoints = getMapBoundaryTotalPoints();
+  const itemCount = isBoundaryMode ? activeArea.points.length : mapToolState.picks.length;
+
+  if (title) title.textContent = isBoundaryMode ? "圈地工具" : "入口工具";
+  if (toggleButton) toggleButton.textContent = isBoundaryMode ? "切回入口" : "切到圈地";
+  if (hint) {
+    hint.textContent = isBoundaryMode
+      ? "俯视 2D 圈地。右键添加当前面积的边界点；右键靠近第 1 点闭合。最多保留 3 个面积。"
+      : "点击地图记录坐标；拖动地图不会记录。蓝色入口标记仅用于参考，不触发连线。";
+  }
+
+  if (boundaryControls) {
+    boundaryControls.hidden = !isBoundaryMode;
+  }
+
+  if (output) {
+    if (isBoundaryMode) {
+      output.textContent = boundaryTotalPoints
+        ? JSON.stringify(getMapBoundaryOutput(), null, 2)
+        : "暂无圈地面积。";
+    } else {
+      output.textContent = mapToolState.picks.length
+        ? JSON.stringify(getMapToolOutput(), null, 2)
+        : "暂无点位。";
+    }
+  }
+
+  if (status) {
+    if (isBoundaryMode) {
+      status.textContent = activeArea.closed
+        ? `${activeArea.label} 已闭合，${activeArea.points.length} 个边界点。`
+        : `当前：${activeArea.label}，${activeArea.points.length} 个边界点。`;
+    } else if (!mapToolState.picks.length) {
+      status.textContent = `0 个点位，最多 ${MAP_TOOL_MAX_POINTS} 个。`;
+    } else if (mapToolState.picks.length >= MAP_TOOL_MAX_POINTS) {
+      status.textContent = `已记录 ${MAP_TOOL_MAX_POINTS} 个点位，已达到上限。`;
+    } else {
+      status.textContent = `已记录 ${mapToolState.picks.length} 个点位，最后一个：点位 ${mapToolState.picks.length}。`;
+    }
+  }
+
+  if (copyButton) {
+    copyButton.disabled = itemCount === 0;
+    copyButton.textContent = isBoundaryMode ? "复制当前" : "复制 JSON";
+  }
+
+  if (deleteButton) {
+    deleteButton.disabled = itemCount === 0;
+    deleteButton.textContent = isBoundaryMode ? "删除上一点" : "删除上一个";
+  }
+
+  if (clearButton) {
+    clearButton.disabled = itemCount === 0;
+    clearButton.textContent = isBoundaryMode ? "清空当前" : "清空";
+  }
+
+  if (copyAllButton) {
+    copyAllButton.disabled = boundaryTotalPoints === 0;
+  }
+
+  boundaryToolState.areas.forEach((area, index) => {
+    const row = mapToolState.panel
+      ? mapToolState.panel.querySelector(`[data-boundary-row="${index}"]`)
+      : null;
+    const selectButton = mapToolState.panel
+      ? mapToolState.panel.querySelector(`[data-boundary-select="${index}"]`)
+      : null;
+    const copyAreaButton = mapToolState.panel
+      ? mapToolState.panel.querySelector(`[data-boundary-copy="${index}"]`)
+      : null;
+    const deleteAreaButton = mapToolState.panel
+      ? mapToolState.panel.querySelector(`[data-boundary-delete="${index}"]`)
+      : null;
+    const hasPoints = area.points.length > 0;
+
+    if (row) {
+      row.classList.toggle("is-active", index === boundaryToolState.activeAreaIndex);
+      row.classList.toggle("is-closed", area.closed);
+      row.style.setProperty("--boundary-area-color", getMapBoundaryAreaColor(index));
+    }
+
+    if (selectButton) {
+      selectButton.textContent = area.closed
+        ? `${area.label} 已闭合`
+        : `${area.label} (${area.points.length})`;
+    }
+    if (copyAreaButton) copyAreaButton.disabled = !hasPoints;
+    if (deleteAreaButton) deleteAreaButton.disabled = !hasPoints;
+  });
+}
+
+async function copyMapToolOutputToClipboard(output, successText) {
+  if (!output || !output.totalPoints) return;
+
+  const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
+
+  try {
+    await copyTextToClipboard(JSON.stringify(output, null, 2));
+    if (status) status.textContent = successText || "已复制 JSON。";
+  } catch (error) {
+    console.warn("Map tool clipboard copy failed:", error);
+    if (status) status.textContent = "复制被浏览器拦截，请手动选中上方 JSON。";
+  }
+}
+
+async function copyMapToolPointsToClipboard() {
+  if (mapToolState.mode === "boundary") {
+    await copyMapBoundaryAreaToClipboard(boundaryToolState.activeAreaIndex);
+    return;
+  }
+
+  await copyMapToolOutputToClipboard(getCurrentMapToolOutput(), "已复制 JSON。");
+}
+
+async function copyMapBoundaryAreaToClipboard(areaIndex) {
+  const area = boundaryToolState.areas[areaIndex];
+  if (!area || !area.points.length) return;
+
+  await copyMapToolOutputToClipboard(
+    {
+      tool: "boundary-area",
+      mode: "top-down-2d",
+      totalPoints: area.points.length,
+      area: getMapBoundaryAreaOutput(area)
+    },
+    `已复制${area.label}。`
+  );
+}
+
+async function copyMapBoundaryAllToClipboard() {
+  const output = getMapBoundaryOutput();
+  if (!output.totalPoints) return;
+
+  await copyMapToolOutputToClipboard(output, "已一起复制所有面积。");
+}
+
+function disposeMapToolMarkerObject(object) {
+  object.traverse((child) => {
+    if (child.geometry) child.geometry.dispose();
+
+    const materials = Array.isArray(child.material)
+      ? child.material
+      : child.material
+        ? [child.material]
+        : [];
+
+    for (const material of materials) {
+      if (material.map) material.map.dispose();
+      material.dispose();
+    }
+  });
+}
+
+function clearMapToolMarkers() {
+  for (const child of [...mapToolMarkerGroup.children]) {
+    mapToolMarkerGroup.remove(child);
+    disposeMapToolMarkerObject(child);
+  }
+}
+
+function createMapToolLabelSprite(index) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  const label = String(index);
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  ctx.arc(64, 64, 45, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = "#f97316";
+  ctx.stroke();
+  ctx.fillStyle = "#111827";
+  ctx.font = "800 52px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, 64, 66);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false
+    })
+  );
+  sprite.name = "map-tool-point-label";
+  sprite.position.y = 22;
+  sprite.scale.set(24, 24, 1);
+  sprite.renderOrder = 90;
+  return sprite;
+}
+
+function createMapToolPointMarker(pick, index) {
+  if (!pick?.groundScene) return null;
+
+  const marker = new THREE.Group();
+  marker.name = `map-tool-point-${index}`;
+  marker.position.set(Number(pick.groundScene[0]), 0, Number(pick.groundScene[2]));
+
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(4.8, 18, 18),
+    new THREE.MeshBasicMaterial({
+      color: "#f97316",
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false
+    })
+  );
+  dot.name = "map-tool-point-dot";
+  dot.position.y = 5.2;
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(9.2, 0.8, 12, 56),
+    new THREE.MeshBasicMaterial({
+      color: "#fb923c",
+      transparent: true,
+      opacity: 0.78,
+      depthWrite: false
+    })
+  );
+  ring.name = "map-tool-point-ring";
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.85;
+
+  marker.add(dot, ring, createMapToolLabelSprite(index));
+  mapToolMarkerGroup.add(marker);
+  return marker;
+}
+
+function redrawMapToolMarkers() {
+  clearMapToolMarkers();
+  mapToolState.picks.forEach((pick, index) => {
+    createMapToolPointMarker(pick, index + 1);
+  });
+}
+
+function setActiveMapBoundaryArea(areaIndex) {
+  const nextIndex = Number(areaIndex);
+  if (!Number.isInteger(nextIndex) || !boundaryToolState.areas[nextIndex]) return;
+
+  boundaryToolState.activeAreaIndex = nextIndex;
+  mapToolState.boundaryPointerStart = null;
+  redrawMapBoundaryTool();
+}
+
+function resetMapBoundaryArea(areaIndex) {
+  const area = boundaryToolState.areas[areaIndex];
+  if (!area) return;
+
+  area.points = [];
+  area.closed = false;
+}
+
+function deleteMapBoundaryArea(areaIndex) {
+  const area = boundaryToolState.areas[areaIndex];
+  if (!area || !area.points.length) return;
+
+  resetMapBoundaryArea(areaIndex);
+  boundaryToolState.activeAreaIndex = areaIndex;
+  redrawMapBoundaryTool();
+}
+
+function getNextEmptyMapBoundaryAreaIndex() {
+  return boundaryToolState.areas.findIndex((area) => !area.points.length);
+}
+
+function redrawMapBoundaryTool() {
+  clearBoundaryToolVisuals();
+
+  boundaryToolState.areas.forEach((area, areaIndex) => {
+    area.points.forEach((point, pointIndex) => {
+      createBoundaryMarker(point, pointIndex, areaIndex);
+    });
+    createBoundaryLine(area.points, area.closed, areaIndex);
+    createBoundaryFill(area.points, {
+      closed: area.closed,
+      areaIndex
+    });
+    createBoundaryAreaLabel(area, areaIndex);
+  });
+
+  updateMapToolPanel();
+}
+
+function syncMapToolMode() {
+  const isBoundaryMode = mapToolState.mode === "boundary";
+  document.body.classList.toggle("is-map-boundary-mode", isBoundaryMode);
+  mapToolMarkerGroup.visible = !isBoundaryMode;
+  boundaryToolGroup.visible = isBoundaryMode;
+  boundaryToolShapeGroup.visible = isBoundaryMode;
+
+  if (isBoundaryMode) {
+    if (currentMode !== "2d") {
+      apply2DView();
+    }
+    updateEntranceToolMarker(null, null);
+    redrawMapBoundaryTool();
+  } else {
+    redrawMapToolMarkers();
+  }
+
+  updateMapToolPanel();
+}
+
+function setMapToolMode(mode) {
+  const nextMode = mode === "boundary" ? "boundary" : "entrance";
+  if (mapToolState.mode === nextMode) return;
+
+  mapToolState.mode = nextMode;
+  mapToolState.pointerStart = null;
+  mapToolState.boundaryPointerStart = null;
+  if (nextMode === "boundary") {
+    mapToolState.previousMapViewMode = currentMode;
+  } else if (mapToolState.previousMapViewMode === "3d") {
+    apply3DView();
+    mapToolState.previousMapViewMode = null;
+  }
+  syncMapToolMode();
+}
+
+function refreshMapToolMarker() {
+  const lastPick = mapToolState.picks[mapToolState.picks.length - 1];
+
+  if (!lastPick?.groundScene) {
+    updateEntranceToolMarker(null, null);
+    return;
+  }
+
+  const scenePoint = new THREE.Vector3(
+    Number(lastPick.groundScene[0]),
+    0,
+    Number(lastPick.groundScene[2])
+  );
+  const snapScenePoint = Array.isArray(lastPick.snap)
+    ? sourceToScenePoint(lastPick.snap[0], lastPick.snap[1])
+    : null;
+
+  updateEntranceToolMarker(
+    scenePoint,
+    snapScenePoint ? { scenePoint: snapScenePoint } : null
+  );
+}
+
+function deleteLastMapToolPoint() {
+  if (mapToolState.mode === "boundary") {
+    const activeArea = getMapBoundaryActiveArea();
+    if (!activeArea.points.length) return;
+
+    activeArea.closed = false;
+    activeArea.points.pop();
+    redrawMapBoundaryTool();
+    return;
+  }
+
+  if (!mapToolState.picks.length) return;
+
+  mapToolState.picks.pop();
+  redrawMapToolMarkers();
+  refreshMapToolMarker();
+  updateMapToolPanel();
+}
+
+function clearMapToolPoints() {
+  if (mapToolState.mode === "boundary") {
+    const activeArea = getMapBoundaryActiveArea();
+    if (!activeArea.points.length) return;
+
+    resetMapBoundaryArea(boundaryToolState.activeAreaIndex);
+    redrawMapBoundaryTool();
+    return;
+  }
+
+  if (!mapToolState.picks.length) return;
+
+  mapToolState.picks = [];
+  redrawMapToolMarkers();
+  refreshMapToolMarker();
+  updateMapToolPanel();
+}
+
+function pickMapToolPointAtClientPoint(clientX, clientY) {
+  if (!mapToolState.active || !mapToolState.bounds) return null;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1)
+  );
+  let scenePoint = null;
+  let hitScenePoint = null;
+
+  raycaster.setFromCamera(pointer, activeCamera);
+
+  const buildingMeshes = buildingObjects
+    .map((building) => (currentMode === "2d" ? building.mesh2D : building.mesh3D))
+    .filter(Boolean);
+  const buildingHits = raycaster.intersectObjects(buildingMeshes, false);
+
+  if (buildingHits.length) {
+    hitScenePoint = buildingHits[0].point.clone();
+    scenePoint = new THREE.Vector3(buildingHits[0].point.x, 0, buildingHits[0].point.z);
+  } else {
+    scenePoint = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(groundPlane, scenePoint)) return null;
+    hitScenePoint = scenePoint.clone();
+  }
+
+  const sourcePoint = sceneToSourcePoint(scenePoint);
+  if (!sourcePoint) return null;
+
+  const snap = findNearestRoadSnap(scenePoint);
+  const nextIndex = mapToolState.picks.length + 1;
+
+  return {
+    id: `point_${String(nextIndex).padStart(2, "0")}`,
+    index: nextIndex,
+    label: `点位 ${nextIndex}`,
+    source: [
+      Number(formatEntranceNumber(sourcePoint.x)),
+      Number(formatEntranceNumber(sourcePoint.y))
+    ],
+    scene: [
+      Number(formatEntranceNumber(hitScenePoint.x)),
+      Number(formatEntranceNumber(hitScenePoint.y)),
+      Number(formatEntranceNumber(hitScenePoint.z))
+    ],
+    groundScene: [
+      Number(formatEntranceNumber(scenePoint.x)),
+      Number(formatEntranceNumber(scenePoint.y)),
+      Number(formatEntranceNumber(scenePoint.z))
+    ],
+    snap: snap
+      ? [
+        Number(formatEntranceNumber(snap.sourcePoint.x)),
+        Number(formatEntranceNumber(snap.sourcePoint.y))
+      ]
+      : null,
+    snapRoadType: snap?.type || null,
+    snapDistanceMeters: snap ? Number(formatEntranceNumber(snap.distance)) : null,
+    _scenePoint: scenePoint,
+    _snap: snap
+  };
+}
+
+function pickMapBoundaryPointAtClientPoint(clientX, clientY) {
+  if (!mapToolState.active || !boundaryToolState.bounds) return null;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1)
+  );
+
+  raycaster.setFromCamera(pointer, activeCamera);
+  const point = new THREE.Vector3();
+  if (!raycaster.ray.intersectPlane(groundPlane, point)) return null;
+
+  return new THREE.Vector3(point.x, 0, point.z);
+}
+
+function addMapBoundaryPoint(point, event) {
+  const activeArea = getMapBoundaryActiveArea();
+  if (!activeArea || !point) return;
+
+  if (activeArea.closed) {
+    const nextIndex = getNextEmptyMapBoundaryAreaIndex();
+    const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
+    if (nextIndex >= 0) {
+      boundaryToolState.activeAreaIndex = nextIndex;
+      redrawMapBoundaryTool();
+      if (status) status.textContent = `${activeArea.label} 已闭合，已切到面积 ${nextIndex + 1}。`;
+    } else if (status) {
+      status.textContent = "3 个面积都已有数据，请先删除某个面积再继续圈地。";
+    }
+    return;
+  }
+
+  const firstPoint = activeArea.points[0];
+  const canClose = activeArea.points.length >= 3 && firstPoint;
+  const closeDistance = canClose
+    ? getBoundaryPointScreenDistance(firstPoint, event.clientX, event.clientY)
+    : Infinity;
+
+  if (closeDistance <= 18) {
+    activeArea.closed = true;
+    const nextIndex = getNextEmptyMapBoundaryAreaIndex();
+    if (nextIndex >= 0) {
+      boundaryToolState.activeAreaIndex = nextIndex;
+    }
+    redrawMapBoundaryTool();
+    return;
+  }
+
+  activeArea.points.push(point);
+  redrawMapBoundaryTool();
+}
+
+function bindMapToolEvents() {
+  if (!mapToolState.active) return;
+
+  function isMapToolPointerOnMap(event) {
+    if (event.target?.closest?.(".map-tool-panel, .explore-map-toolbar, .explore-map-legend, #site-nav-root")) {
+      return false;
+    }
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    return (
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    );
+  }
+
+  function shouldHandleEntrancePointerEvent(event) {
+    return mapToolState.mode === "entrance" && event.button !== 2 && isMapToolPointerOnMap(event);
+  }
+
+  function shouldHandleBoundaryPointerEvent(event) {
+    return mapToolState.mode === "boundary" && event.button === 2 && isMapToolPointerOnMap(event);
+  }
+
+  function addMapToolPointFromClientPoint(clientX, clientY) {
+    if (mapToolState.mode !== "entrance") return false;
+
+    const entranceHit = findEntranceNavigationHitData(clientX, clientY);
+    if (entranceHit?.entranceId) {
+      showEntranceIndexNotice(entranceHit.entranceId);
+      return false;
+    }
+
+    if (mapToolState.picks.length >= MAP_TOOL_MAX_POINTS) {
+      const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
+      if (status) status.textContent = `最多只能记录 ${MAP_TOOL_MAX_POINTS} 个点位，请先删除或清空。`;
+      return false;
+    }
+
+    const pick = pickMapToolPointAtClientPoint(clientX, clientY);
+    if (!pick) {
+      const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
+      if (status) status.textContent = "这次点击没有取到地图点，请点击可见建筑、道路或地面。";
+      return false;
+    }
+
+    mapToolState.picks.push({
+      id: pick.id,
+      index: pick.index,
+      label: pick.label,
+      source: pick.source,
+      scene: pick.scene,
+      groundScene: pick.groundScene,
+      snap: pick.snap,
+      snapRoadType: pick.snapRoadType,
+      snapDistanceMeters: pick.snapDistanceMeters
+    });
+
+    mapToolState.lastPickedAt = performance.now();
+    redrawMapToolMarkers();
+    updateEntranceToolMarker(pick._scenePoint, pick._snap);
+    updateMapToolPanel();
+    return true;
+  }
+
+  document.addEventListener("contextmenu", (event) => {
+    if (mapToolState.mode !== "boundary" || !isMapToolPointerOnMap(event)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+
+  document.addEventListener("pointerdown", (event) => {
+    if (shouldHandleBoundaryPointerEvent(event)) {
+      mapToolState.boundaryPointerStart = {
+        x: event.clientX,
+        y: event.clientY
+      };
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    if (shouldHandleEntrancePointerEvent(event)) {
+      mapToolState.pointerStart = {
+        x: event.clientX,
+        y: event.clientY
+      };
+    }
+  }, true);
+
+  document.addEventListener("pointerup", (event) => {
+    if (shouldHandleBoundaryPointerEvent(event)) {
+      const start = mapToolState.boundaryPointerStart;
+      mapToolState.boundaryPointerStart = null;
+      event.preventDefault();
+      event.stopPropagation();
+      if (!start) return;
+
+      const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+      if (moved > 8) return;
+
+      const point = pickMapBoundaryPointAtClientPoint(event.clientX, event.clientY);
+      addMapBoundaryPoint(point, event);
+      return;
+    }
+
+    if (!shouldHandleEntrancePointerEvent(event)) return;
+
+    const start = mapToolState.pointerStart;
+    mapToolState.pointerStart = null;
+    if (!start) return;
+
+    const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (moved > 6) return;
+
+    addMapToolPointFromClientPoint(event.clientX, event.clientY);
+  }, true);
+
+  document.addEventListener("click", (event) => {
+    if (!shouldHandleEntrancePointerEvent(event)) return;
+    if (performance.now() - mapToolState.lastPickedAt < 250) return;
+    addMapToolPointFromClientPoint(event.clientX, event.clientY);
+  }, true);
+}
+
+/* =========================================================
+   DORM ENTRANCE ROUTING
+   ========================================================= */
+
+function getRoadNodeKey(source) {
+  return `${formatEntranceNumber(source.x)},${formatEntranceNumber(source.y)}`;
+}
+
+function ensureRoadGraphNode(graph, point) {
+  const key = getRoadNodeKey(point.source);
+
+  if (!graph.has(key)) {
+    graph.set(key, {
+      key,
+      source: point.source,
+      scene: point.scene.clone(),
+      edges: []
+    });
+  }
+
+  return key;
+}
+
+function connectRoadGraphNodes(graph, fromKey, toKey, weight) {
+  const from = graph.get(fromKey);
+  const to = graph.get(toKey);
+
+  if (!from || !to || !Number.isFinite(weight) || weight <= 0) return;
+
+  from.edges.push({ to: toKey, weight });
+  to.edges.push({ to: fromKey, weight });
+}
+
+function buildEntranceRouteGraph(segments) {
+  const graph = new Map();
+
+  for (const segment of segments) {
+    const startKey = ensureRoadGraphNode(graph, segment.start);
+    const endKey = ensureRoadGraphNode(graph, segment.end);
+    const distance = segment.start.scene.distanceTo(segment.end.scene);
+    connectRoadGraphNodes(graph, startKey, endKey, distance);
+  }
+
+  return graph;
+}
+
+function cloneEntranceRouteGraph(baseGraph) {
+  const graph = new Map();
+
+  for (const [key, node] of baseGraph || []) {
+    graph.set(key, {
+      key,
+      source: node.source,
+      scene: node.scene.clone(),
+      edges: node.edges.map((edge) => ({ ...edge }))
+    });
+  }
+
+  return graph;
+}
+
+function findNearestNavigationSegment(scenePoint) {
+  if (!scenePoint || !entranceNavigationState.roadSegments.length) return null;
+
+  let best = null;
+
+  for (const segment of entranceNavigationState.roadSegments) {
+    const closest = getClosestPointOnSegment(scenePoint, segment.start.scene, segment.end.scene);
+
+    if (!best || closest.distance < best.distance) {
+      best = {
+        segment,
+        distance: closest.distance
+      };
+    }
+  }
+
+  return best;
+}
+
+function addVirtualEntranceNode(graph, entranceId, entranceData) {
+  const entranceScene = sourceToScenePoint(
+    entranceData.entrance?.[0],
+    entranceData.entrance?.[1]
+  );
+  const snapScene = sourceToScenePoint(
+    entranceData.snap?.[0],
+    entranceData.snap?.[1]
+  );
+
+  if (!entranceScene || !snapScene) return null;
+
+  const nearest = findNearestNavigationSegment(snapScene);
+  if (!nearest) return null;
+
+  const key = `entrance:${entranceId}`;
+  graph.set(key, {
+    key,
+    source: {
+      x: Number(entranceData.snap[0]),
+      y: Number(entranceData.snap[1])
+    },
+    scene: snapScene.clone(),
+    edges: []
+  });
+
+  const startKey = getRoadNodeKey(nearest.segment.start.source);
+  const endKey = getRoadNodeKey(nearest.segment.end.source);
+  connectRoadGraphNodes(graph, key, startKey, snapScene.distanceTo(nearest.segment.start.scene));
+  connectRoadGraphNodes(graph, key, endKey, snapScene.distanceTo(nearest.segment.end.scene));
+
+  return {
+    key,
+    entranceScene,
+    snapScene
+  };
+}
+
+class MinHeap {
+  constructor() {
+    this.items = [];
+  }
+
+  push(item) {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop() {
+    if (!this.items.length) return null;
+    const top = this.items[0];
+    const last = this.items.pop();
+
+    if (this.items.length && last) {
+      this.items[0] = last;
+      this.bubbleDown(0);
+    }
+
+    return top;
+  }
+
+  bubbleUp(index) {
+    let current = index;
+
+    while (current > 0) {
+      const parent = Math.floor((current - 1) / 2);
+      if (this.items[parent].distance <= this.items[current].distance) break;
+      [this.items[parent], this.items[current]] = [this.items[current], this.items[parent]];
+      current = parent;
+    }
+  }
+
+  bubbleDown(index) {
+    let current = index;
+
+    while (true) {
+      const left = current * 2 + 1;
+      const right = left + 1;
+      let smallest = current;
+
+      if (
+        left < this.items.length &&
+        this.items[left].distance < this.items[smallest].distance
+      ) {
+        smallest = left;
+      }
+
+      if (
+        right < this.items.length &&
+        this.items[right].distance < this.items[smallest].distance
+      ) {
+        smallest = right;
+      }
+
+      if (smallest === current) break;
+      [this.items[current], this.items[smallest]] = [this.items[smallest], this.items[current]];
+      current = smallest;
+    }
+  }
+
+  get size() {
+    return this.items.length;
+  }
+}
+
+function runDijkstra(graph, startKey, endKey) {
+  const distances = new Map([[startKey, 0]]);
+  const previous = new Map();
+  const heap = new MinHeap();
+  heap.push({ key: startKey, distance: 0 });
+
+  while (heap.size) {
+    const current = heap.pop();
+    if (!current) break;
+
+    if (current.distance > (distances.get(current.key) ?? Infinity)) continue;
+    if (current.key === endKey) break;
+
+    const node = graph.get(current.key);
+    if (!node) continue;
+
+    for (const edge of node.edges) {
+      const nextDistance = current.distance + edge.weight;
+      if (nextDistance >= (distances.get(edge.to) ?? Infinity)) continue;
+
+      distances.set(edge.to, nextDistance);
+      previous.set(edge.to, current.key);
+      heap.push({ key: edge.to, distance: nextDistance });
+    }
+  }
+
+  if (!distances.has(endKey)) return null;
+
+  const path = [];
+  let currentKey = endKey;
+
+  while (currentKey) {
+    path.push(currentKey);
+    if (currentKey === startKey) break;
+    currentKey = previous.get(currentKey);
+  }
+
+  if (path[path.length - 1] !== startKey) return null;
+
+  return {
+    distance: distances.get(endKey),
+    nodeKeys: path.reverse()
+  };
+}
+
+function disposeObject3D(object) {
+  object.traverse((child) => {
+    if (child.geometry) child.geometry.dispose();
+    if (Array.isArray(child.material)) {
+      child.material.forEach((material) => {
+        if (material.map) material.map.dispose();
+        material.dispose();
+      });
+    } else if (child.material) {
+      if (child.material.map) child.material.map.dispose();
+      child.material.dispose();
+    }
+  });
+}
+
+function clearEntranceRoute() {
+  for (const child of [...entranceRouteGroup.children]) {
+    entranceRouteGroup.remove(child);
+    disposeObject3D(child);
+  }
+}
+
+function createRouteCylinder(start, end, material) {
+  const direction = end.clone().sub(start);
+  const length = direction.length();
+  if (length < 0.2) return null;
+
+  const geometry = new THREE.CylinderGeometry(1.7, 1.7, length, 10, 1);
+  const cylinder = new THREE.Mesh(geometry, material);
+  const midpoint = start.clone().add(end).multiplyScalar(0.5);
+
+  cylinder.position.copy(midpoint);
+  cylinder.quaternion.setFromUnitVectors(
+    new THREE.Vector3(0, 1, 0),
+    direction.normalize()
+  );
+  cylinder.renderOrder = 60;
+
+  return cylinder;
+}
+
+function drawEntranceRoute(route) {
+  clearEntranceRoute();
+
+  const material = new THREE.MeshBasicMaterial({
+    color: "#ef4444",
+    transparent: true,
+    opacity: 0.94,
+    depthWrite: false,
+    depthTest: false
+  });
+
+  const points = [
+    route.start.entranceScene,
+    ...route.path.nodeKeys.map((key) => route.graph.get(key)?.scene).filter(Boolean),
+    route.end.entranceScene
+  ].map((point) => new THREE.Vector3(point.x, 3.2, point.z));
+
+  for (let index = 1; index < points.length; index += 1) {
+    const segment = createRouteCylinder(points[index - 1], points[index], material);
+    if (segment) entranceRouteGroup.add(segment);
+  }
+}
+
+function getDormEntranceName(entranceId) {
+  const dormId = entranceId.replace(/^dorm_/, "");
+  const dorm = DORMS.find((item) => item.buildingId === entranceId || item.id === dormId);
+  return dorm?.shortName || dorm?.name || entranceId.replace(/^dorm_/, "");
+}
+
+function getEntranceNumber(entranceId) {
+  const index = Object.keys(DORM_ENTRANCES).indexOf(entranceId);
+  return index >= 0 ? index + 1 : null;
+}
+
+function showEntranceIndexNotice(entranceId) {
+  const entranceNumber = getEntranceNumber(entranceId);
+  if (!entranceNumber) return;
+
+  window.clearTimeout(showEntranceIndexNotice._timer);
+  entranceIndexNotice.textContent = `入口 ${entranceNumber} · ${getDormEntranceName(entranceId)}`;
+  entranceIndexNotice.classList.add("is-visible");
+  showEntranceIndexNotice._timer = window.setTimeout(() => {
+    entranceIndexNotice.classList.remove("is-visible");
+  }, 2600);
+}
+
+function getEntranceRouteDistanceText(route) {
+  const approachDistance =
+    route.start.entranceScene.distanceTo(route.start.snapScene) +
+    route.end.entranceScene.distanceTo(route.end.snapScene);
+  const distance = route.path.distance + approachDistance;
+  return `${Math.round(distance)} m`;
+}
+
+function findShortestEntranceRoute(startId, endId) {
+  if (!entranceNavigationState.baseGraph) return null;
+
+  const startData = DORM_ENTRANCES[startId];
+  const endData = DORM_ENTRANCES[endId];
+  if (!startData || !endData) return null;
+
+  const graph = cloneEntranceRouteGraph(entranceNavigationState.baseGraph);
+  const start = addVirtualEntranceNode(graph, startId, startData);
+  const end = addVirtualEntranceNode(graph, endId, endData);
+  if (!start || !end) return null;
+
+  const path = runDijkstra(graph, start.key, end.key);
+  if (!path) return null;
+
+  return {
+    graph,
+    startId,
+    endId,
+    start,
+    end,
+    path
+  };
+}
+
+function refreshEntranceMarkerStyles() {
+  for (const marker of entranceNavigationState.markers) {
+    const isStart = marker.userData.entranceId === entranceNavigationState.selectedStartId;
+    const isRouteEndpoint = entranceNavigationState.routeEndpointIds?.has(
+      marker.userData.entranceId
+    );
+    const dot = marker.getObjectByName("entrance-nav-dot");
+    const ring = marker.getObjectByName("entrance-nav-ring");
+
+    if (dot?.material) {
+      dot.material.color.set(isStart || isRouteEndpoint ? "#ef4444" : "#2563eb");
+      dot.material.opacity = isStart || isRouteEndpoint ? 0.98 : 0.9;
+    }
+
+    if (ring?.material) {
+      ring.material.color.set(isStart || isRouteEndpoint ? "#ef4444" : "#2f8cff");
+      ring.material.opacity = isStart || isRouteEndpoint ? 0.86 : 0.72;
+    }
+  }
+}
+
+function selectEntranceForRoute(entranceId) {
+  showEntranceIndexNotice(entranceId);
+
+  if (!entranceNavigationState.selectedStartId) {
+    entranceNavigationState.selectedStartId = entranceId;
+    entranceNavigationState.routeEndpointIds = new Set([entranceId]);
+    clearEntranceRoute();
+    refreshEntranceMarkerStyles();
+    mapStatus.textContent = `${getDormEntranceName(entranceId)} entrance selected. Click another entrance to draw the shortest road route.`;
+    return;
+  }
+
+  if (entranceNavigationState.selectedStartId === entranceId) {
+    entranceNavigationState.routeEndpointIds = new Set([entranceId]);
+    refreshEntranceMarkerStyles();
+    return;
+  }
+
+  const startId = entranceNavigationState.selectedStartId;
+  const route = findShortestEntranceRoute(startId, entranceId);
+
+  if (!route) {
+    mapStatus.textContent = `No road route found between ${getDormEntranceName(startId)} and ${getDormEntranceName(entranceId)}.`;
+    return;
+  }
+
+  drawEntranceRoute(route);
+  entranceNavigationState.selectedStartId = entranceId;
+  entranceNavigationState.routeEndpointIds = new Set([startId, entranceId]);
+  refreshEntranceMarkerStyles();
+  mapStatus.textContent = `${getDormEntranceName(startId)} to ${getDormEntranceName(entranceId)} shortest route: ${getEntranceRouteDistanceText(route)}.`;
+}
+
+function createEntranceNavigationMarker(entranceId, entranceData, options = {}) {
+  const entranceScene = sourceToScenePoint(
+    entranceData.entrance?.[0],
+    entranceData.entrance?.[1]
+  );
+  if (!entranceScene) return null;
+
+  const isInteractive = options.interactive !== false;
+  const hasHitTarget = options.hitTarget !== false;
+  const entranceNumber = Number(options.entranceNumber) || getEntranceNumber(entranceId);
+  const marker = new THREE.Group();
+  marker.userData.entranceId = entranceId;
+  marker.userData.entranceNumber = entranceNumber;
+  marker.position.set(entranceScene.x, 0, entranceScene.z);
+
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(4.4, 18, 18),
+    new THREE.MeshBasicMaterial({
+      color: "#2563eb",
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false
+    })
+  );
+  dot.name = "entrance-nav-dot";
+  dot.position.y = 5.4;
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(8.5, 0.8, 12, 52),
+    new THREE.MeshBasicMaterial({
+      color: "#2f8cff",
+      transparent: true,
+      opacity: 0.72,
+      depthWrite: false
+    })
+  );
+  ring.name = "entrance-nav-ring";
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.85;
+
+  marker.add(dot, ring);
+
+  if (hasHitTarget) {
+    const hitTarget = new THREE.Mesh(
+      new THREE.SphereGeometry(12, 14, 14),
+      new THREE.MeshBasicMaterial({
+        color: "#ffffff",
+        transparent: true,
+        opacity: 0.001,
+        depthWrite: false
+      })
+    );
+    hitTarget.position.y = 5.4;
+    hitTarget.userData.isEntranceNavigationHitTarget = true;
+    hitTarget.userData.entranceId = entranceId;
+    hitTarget.userData.entranceNumber = entranceNumber;
+    hitTarget.userData.isEntranceNavigationInteractive = isInteractive;
+
+    marker.add(hitTarget);
+    entranceNavigationState.hitTargets.push(hitTarget);
+  }
+
+  entranceNavigationState.markers.push(marker);
+  entranceNavigationGroup.add(marker);
+
+  return marker;
+}
+
+function setupEntranceNavigationLayer() {
+  const shouldShowEntranceMarkers = entranceNavigationState.active || mapToolState.active;
+  const hasMarkerBounds = entranceNavigationState.bounds || mapToolState.bounds;
+
+  if (!shouldShowEntranceMarkers || !hasMarkerBounds) return;
+
+  entranceNavigationState.markers = [];
+  entranceNavigationState.hitTargets = [];
+  entranceNavigationState.selectedStartId = null;
+  entranceNavigationState.routeEndpointIds = new Set();
+  entranceNavigationGroup.clear();
+  clearEntranceRoute();
+
+  Object.entries(DORM_ENTRANCES).forEach(([entranceId, entranceData], index) => {
+    createEntranceNavigationMarker(entranceId, entranceData, {
+      entranceNumber: index + 1,
+      interactive: entranceNavigationState.active,
+      hitTarget: entranceNavigationState.active || mapToolState.active
+    });
+  });
+}
+
+function findEntranceNavigationHitData(clientX, clientY) {
+  if (!(entranceNavigationState.active || mapToolState.active) || !entranceNavigationState.hitTargets.length) {
+    return null;
+  }
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1)
+  );
+
+  raycaster.setFromCamera(pointer, activeCamera);
+  const hits = raycaster.intersectObjects(entranceNavigationState.hitTargets, false);
+  const hit = hits[0]?.object;
+  if (!hit?.userData?.entranceId) return null;
+
+  return {
+    entranceId: hit.userData.entranceId,
+    entranceNumber: hit.userData.entranceNumber || getEntranceNumber(hit.userData.entranceId),
+    interactive: hit.userData.isEntranceNavigationInteractive !== false
+  };
+}
+
+function findEntranceNavigationHit(clientX, clientY) {
+  return findEntranceNavigationHitData(clientX, clientY)?.entranceId || null;
+}
+
+function bindEntranceNavigationEvents() {
+  if (!entranceNavigationState.active) return;
+
+  renderer.domElement.addEventListener("pointerdown", (event) => {
+    entranceNavigationState.pointerStart = {
+      x: event.clientX,
+      y: event.clientY
+    };
+  });
+
+  renderer.domElement.addEventListener("pointerup", (event) => {
+    const start = entranceNavigationState.pointerStart;
+    entranceNavigationState.pointerStart = null;
+    if (!start) return;
+
+    const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (moved > 6) return;
+
+    const entranceId = findEntranceNavigationHit(event.clientX, event.clientY);
+    if (!entranceId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    selectEntranceForRoute(entranceId);
+  });
+}
+
+/* =========================================================
+   CAMPUS BOUNDARY PICKER TOOL
+   ========================================================= */
+
+function createBoundaryToolPanel() {
+  if (!boundaryToolState.active || boundaryToolState.panel) return;
+
+  const panel = document.createElement("aside");
+  panel.className = "entrance-tool-panel boundary-tool-panel";
+  panel.innerHTML = `
+    <p class="entrance-tool-panel__kicker">Boundary picker</p>
+    <h2>${escapeHtml(boundaryToolState.id)} boundary</h2>
+    <p class="entrance-tool-panel__hint">Right-click to add small boundary points. Left drag and wheel still move the map. Right-click near point 1 to close the shape.</p>
+    <pre class="entrance-tool-panel__output boundary-tool-panel__output">No boundary points yet.</pre>
+    <button class="boundary-tool-panel__undo" type="button" disabled>Undo last point</button>
+    <p class="entrance-tool-panel__status">0 points saved in this browser.</p>
+  `;
+
+  document.body.appendChild(panel);
+  boundaryToolState.panel = panel;
+  panel.addEventListener("pointerdown", (event) => event.stopPropagation());
+  panel.addEventListener("pointerup", (event) => event.stopPropagation());
+  panel.addEventListener("contextmenu", (event) => event.stopPropagation());
+  panel.querySelector(".boundary-tool-panel__undo")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    undoBoundaryPoint();
+  });
+}
+
+function getBoundaryOutputText() {
+  if (!boundaryToolState.points.length) return "No boundary points yet.";
+
+  const rows = boundaryToolState.points.map((point, index) => {
+    const source = boundarySceneToSourcePoint(point);
+    if (!source) return `${index + 1}: unavailable`;
+    return `${index + 1}: ${formatEntranceNumber(source.x)}, ${formatEntranceNumber(source.y)}`;
+  });
+
+  if (boundaryToolState.closed) {
+    rows.push("closed: yes");
+  }
+
+  return rows.join("\n");
+}
+
+function updateBoundaryToolPanel() {
+  const output = boundaryToolState.panel?.querySelector(".boundary-tool-panel__output");
+  const status = boundaryToolState.panel?.querySelector(".entrance-tool-panel__status");
+  const undoButton = boundaryToolState.panel?.querySelector(".boundary-tool-panel__undo");
+  const text = getBoundaryOutputText();
+
+  if (output) output.textContent = text;
+  if (undoButton) undoButton.disabled = boundaryToolState.points.length === 0;
+  if (status) {
+    status.textContent = boundaryToolState.closed
+      ? `${boundaryToolState.points.length} points, shape closed.`
+      : `${boundaryToolState.points.length} points saved in this browser.`;
+  }
+
+  try {
+    window.localStorage.setItem(`boundary:${boundaryToolState.id}`, text);
+  } catch (error) {
+    console.warn("Boundary draft could not be stored:", error);
+  }
+}
+
+function undoBoundaryPoint() {
+  if (!boundaryToolState.points.length) return;
+
+  boundaryToolState.closed = false;
+  boundaryToolState.points.pop();
+  redrawBoundaryTool();
+}
+
+function pickBoundaryPointAtClientPoint(clientX, clientY) {
+  if (!boundaryToolState.active || !boundaryToolState.bounds) return null;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1)
+  );
+
+  raycaster.setFromCamera(pointer, activeCamera);
+  const point = new THREE.Vector3();
+  if (!raycaster.ray.intersectPlane(groundPlane, point)) return null;
+
+  return new THREE.Vector3(point.x, 0, point.z);
+}
+
+function getBoundaryPointScreenDistance(point, clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  const projected = point.clone().project(activeCamera);
+  const x = rect.left + (projected.x * 0.5 + 0.5) * rect.width;
+  const y = rect.top + (-projected.y * 0.5 + 0.5) * rect.height;
+  return Math.hypot(x - clientX, y - clientY);
+}
+
+function clearBoundaryToolVisuals() {
+  for (const child of [...boundaryToolGroup.children]) {
+    boundaryToolGroup.remove(child);
+    disposeObject3D(child);
+  }
+
+  for (const child of [...boundaryToolShapeGroup.children]) {
+    boundaryToolShapeGroup.remove(child);
+    disposeObject3D(child);
+  }
+
+  boundaryToolState.markers = [];
+  boundaryToolState.line = null;
+  boundaryToolState.fill = null;
+}
+
+function createBoundaryMarker(point, index, areaIndex = 0) {
+  const isActiveArea = areaIndex === boundaryToolState.activeAreaIndex;
+  const marker = new THREE.Mesh(
+    new THREE.SphereGeometry(isActiveArea ? 2.15 : 1.7, 12, 12),
+    new THREE.MeshBasicMaterial({
+      color: index === 0 ? "#ef4444" : getMapBoundaryAreaColor(areaIndex),
+      transparent: true,
+      opacity: isActiveArea ? 0.96 : 0.82,
+      depthWrite: false,
+      depthTest: false
+    })
+  );
+
+  marker.position.set(point.x, 4.8, point.z);
+  marker.renderOrder = 40;
+  boundaryToolGroup.add(marker);
+  boundaryToolState.markers.push(marker);
+}
+
+function createBoundaryLine(points, closed, areaIndex = 0) {
+  if (points.length < 2) return;
+
+  const linePoints = points.map((point) => new THREE.Vector3(point.x, 4.2, point.z));
+  if (closed) {
+    linePoints.push(new THREE.Vector3(points[0].x, 4.2, points[0].z));
+  }
+
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(linePoints),
+    new THREE.LineBasicMaterial({
+      color: closed ? getMapBoundaryAreaColor(areaIndex) : "#2563eb",
+      transparent: true,
+      opacity: areaIndex === boundaryToolState.activeAreaIndex ? 0.94 : 0.68,
+      depthWrite: false,
+      depthTest: false
+    })
+  );
+  line.renderOrder = 39;
+  boundaryToolShapeGroup.add(line);
+  boundaryToolState.line = line;
+}
+
+function createBoundaryFill(points, options = {}) {
+  const closed = typeof options.closed === "boolean" ? options.closed : boundaryToolState.closed;
+  const areaIndex = Number.isInteger(options.areaIndex) ? options.areaIndex : 0;
+
+  if (points.length < 3 || !closed) return;
+
+  const shape = new THREE.Shape(
+    points.map((point) => new THREE.Vector2(point.x, -point.z))
+  );
+  const fill = new THREE.Mesh(
+    new THREE.ShapeGeometry(shape),
+    new THREE.MeshBasicMaterial({
+      color: getMapBoundaryAreaColor(areaIndex),
+      transparent: true,
+      opacity: areaIndex === boundaryToolState.activeAreaIndex ? 0.2 : 0.13,
+      depthWrite: false,
+      depthTest: false,
+      side: THREE.DoubleSide
+    })
+  );
+
+  fill.rotation.x = -Math.PI / 2;
+  fill.position.y = 3.4;
+  fill.renderOrder = 38;
+  boundaryToolShapeGroup.add(fill);
+  boundaryToolState.fill = fill;
+}
+
+function getBoundaryAreaCenter(points) {
+  if (!points.length) return null;
+
+  let crossSum = 0;
+  let centerX = 0;
+  let centerZ = 0;
+
+  for (let index = 0; index < points.length; index += 1) {
+    const current = points[index];
+    const next = points[(index + 1) % points.length];
+    const cross = current.x * next.z - next.x * current.z;
+    crossSum += cross;
+    centerX += (current.x + next.x) * cross;
+    centerZ += (current.z + next.z) * cross;
+  }
+
+  if (Math.abs(crossSum) > 0.001) {
+    return new THREE.Vector3(centerX / (3 * crossSum), 0, centerZ / (3 * crossSum));
+  }
+
+  const average = points.reduce(
+    (total, point) => {
+      total.x += point.x;
+      total.z += point.z;
+      return total;
+    },
+    { x: 0, z: 0 }
+  );
+
+  return new THREE.Vector3(average.x / points.length, 0, average.z / points.length);
+}
+
+function createBoundaryAreaLabelSprite(area, areaIndex) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 96;
+  const ctx = canvas.getContext("2d");
+  const color = getMapBoundaryAreaColor(areaIndex);
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  ctx.moveTo(42, 18);
+  ctx.lineTo(214, 18);
+  ctx.quadraticCurveTo(242, 18, 242, 46);
+  ctx.lineTo(242, 50);
+  ctx.quadraticCurveTo(242, 78, 214, 78);
+  ctx.lineTo(42, 78);
+  ctx.quadraticCurveTo(14, 78, 14, 50);
+  ctx.lineTo(14, 46);
+  ctx.quadraticCurveTo(14, 18, 42, 18);
+  ctx.closePath();
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.fill();
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.fillStyle = "#111827";
+  ctx.font = "800 31px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(area.label, 128, 49);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false
+    })
+  );
+  sprite.name = "boundary-area-label";
+  sprite.scale.set(48, 18, 1);
+  sprite.renderOrder = 44;
+  return sprite;
+}
+
+function createBoundaryAreaLabel(area, areaIndex = 0) {
+  if (!area.closed || area.points.length < 3) return;
+
+  const center = getBoundaryAreaCenter(area.points);
+  if (!center) return;
+
+  const label = createBoundaryAreaLabelSprite(area, areaIndex);
+  label.position.set(center.x, 7.2, center.z);
+  boundaryToolGroup.add(label);
+}
+
+function redrawBoundaryTool() {
+  clearBoundaryToolVisuals();
+
+  boundaryToolState.points.forEach((point, index) => {
+    createBoundaryMarker(point, index);
+  });
+  createBoundaryLine(boundaryToolState.points, boundaryToolState.closed);
+  createBoundaryFill(boundaryToolState.points);
+  updateBoundaryToolPanel();
+}
+
+function addBoundaryPoint(point, event) {
+  if (boundaryToolState.closed || !point) return;
+
+  const firstPoint = boundaryToolState.points[0];
+  const canClose = boundaryToolState.points.length >= 3 && firstPoint;
+  const closeDistance = canClose
+    ? getBoundaryPointScreenDistance(firstPoint, event.clientX, event.clientY)
+    : Infinity;
+
+  if (closeDistance <= 18) {
+    boundaryToolState.closed = true;
+    redrawBoundaryTool();
+    return;
+  }
+
+  boundaryToolState.points.push(point);
+  redrawBoundaryTool();
+}
+
+function bindBoundaryToolEvents() {
+  if (!boundaryToolState.active) return;
+
+  renderer.domElement.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
+
+  renderer.domElement.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (event.button !== 2) return;
+      boundaryToolState.pointerStart = {
+        x: event.clientX,
+        y: event.clientY
+      };
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    true
+  );
+
+  renderer.domElement.addEventListener(
+    "pointerup",
+    (event) => {
+      if (event.button !== 2) return;
+      const start = boundaryToolState.pointerStart;
+      boundaryToolState.pointerStart = null;
+      event.preventDefault();
+      event.stopPropagation();
+      if (!start) return;
+
+      const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+      if (moved > 8) return;
+
+      const point = pickBoundaryPointAtClientPoint(event.clientX, event.clientY);
+      addBoundaryPoint(point, event);
+    },
+    true
+  );
+}
+
+createEntranceToolMarker();
+createEntranceToolPanel();
+bindEntranceToolEvents();
+createMapToolPanel();
+bindMapToolEvents();
+bindEntranceNavigationEvents();
+createBoundaryToolPanel();
+bindBoundaryToolEvents();
 
 /* =========================================================
    UI STATE
@@ -264,7 +2595,7 @@ function setGuidedDetailActions(isGuidedEntry) {
     viewDetailsBtn.type = "button";
     viewDetailsBtn.textContent = "View Dorms";
     viewDetailsBtn.addEventListener("click", () => {
-      window.location.href = "index.html#homeResults";
+      window.location.href = "index.html?home=1#homeResults";
     });
     actionWrap.appendChild(viewDetailsBtn);
   }
@@ -415,6 +2746,20 @@ async function fetchGeoJsonSafe(path) {
   }
 }
 
+async function fetchJsonSafe(path) {
+  try {
+    const response = await fetch(path);
+    if (!response.ok) {
+      console.warn(`Failed to load ${path}: HTTP ${response.status}`);
+      return null;
+    }
+    return await response.json();
+  } catch (error) {
+    console.warn(`Failed to load ${path}:`, error);
+    return null;
+  }
+}
+
 /* =========================================================
    GEOMETRY HELPERS
    ========================================================= */
@@ -450,19 +2795,115 @@ function polygonArea(ring) {
   return Math.abs(area) * 0.5;
 }
 
-function updateGroundDisk(center, radius) {
-  if (groundDisk) {
-    groundGroup.remove(groundDisk);
-    groundDisk.geometry.dispose();
-    groundDisk.material.dispose();
-    groundDisk = null;
+function getCampusBoundaryScenePoints(boundaryId, bounds) {
+  const points = CAMPUS_BOUNDARIES[boundaryId];
+  if (!Array.isArray(points) || points.length < 3 || !bounds) return [];
+
+  return points
+    .map((point) => {
+      const x = Number(point[0]);
+      const y = Number(point[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      const local = toSceneXZ(x, y, bounds.centerX, bounds.centerY, 1);
+      return new THREE.Vector3(local.x, 0, local.z);
+    })
+    .filter(Boolean);
+}
+
+function isScenePointInsideCampusBoundary(point) {
+  if (!point || campusBoundaryScenePoints.length < 3) return true;
+
+  let inside = false;
+  const x = point.x;
+  const z = point.z;
+
+  for (
+    let index = 0, previous = campusBoundaryScenePoints.length - 1;
+    index < campusBoundaryScenePoints.length;
+    previous = index, index += 1
+  ) {
+    const currentPoint = campusBoundaryScenePoints[index];
+    const previousPoint = campusBoundaryScenePoints[previous];
+    const crosses =
+      currentPoint.z > z !== previousPoint.z > z &&
+      x <
+        ((previousPoint.x - currentPoint.x) * (z - currentPoint.z)) /
+          (previousPoint.z - currentPoint.z) +
+          currentPoint.x;
+
+    if (crosses) inside = !inside;
   }
 
-  if (groundRing) {
-    groundGroup.remove(groundRing);
-    groundRing.geometry.dispose();
-    groundRing.material.dispose();
-    groundRing = null;
+  return inside;
+}
+
+function isSourcePointInsideCampusBoundary(x, y, centerX, centerY) {
+  if (campusBoundaryScenePoints.length < 3) return true;
+  const local = toSceneXZ(x, y, centerX, centerY, 1);
+  return isScenePointInsideCampusBoundary(local);
+}
+
+function getCampusMutedColor(color, insideCampus, mix = 0.84) {
+  if (insideCampus || campusBoundaryScenePoints.length < 3) return color;
+
+  const muted = new THREE.Color(color);
+  muted.lerp(new THREE.Color("#eef1ef"), mix);
+  return muted;
+}
+
+function getCoordinateCenter(coords) {
+  let totalX = 0;
+  let totalY = 0;
+  let count = 0;
+
+  for (const coord of coords || []) {
+    const x = Number(coord?.[0]);
+    const y = Number(coord?.[1]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    totalX += x;
+    totalY += y;
+    count += 1;
+  }
+
+  if (!count) return null;
+
+  return {
+    x: totalX / count,
+    y: totalY / count
+  };
+}
+
+function buildBoundaryGroundShape(center, radius, boundaryPoints) {
+  const outerSize = radius * 1.18;
+  const outerShape = new THREE.Shape([
+    new THREE.Vector2(center.x - outerSize, -(center.z - outerSize)),
+    new THREE.Vector2(center.x + outerSize, -(center.z - outerSize)),
+    new THREE.Vector2(center.x + outerSize, -(center.z + outerSize)),
+    new THREE.Vector2(center.x - outerSize, -(center.z + outerSize))
+  ]);
+
+  const boundaryPath = new THREE.Path(
+    boundaryPoints.map((point) => new THREE.Vector2(point.x, -point.z))
+  );
+  outerShape.holes.push(boundaryPath);
+
+  return outerShape;
+}
+
+function updateGroundDisk(center, radius, boundaryPoints = []) {
+  [groundDisk, groundRing, groundOuterDim, groundFocusBoundary].forEach((item) => {
+    if (!item) return;
+    groundGroup.remove(item);
+    item.geometry.dispose();
+    item.material.dispose();
+  });
+  groundDisk = null;
+  groundRing = null;
+  groundOuterDim = null;
+  groundFocusBoundary = null;
+
+  if (isLabMap) {
+    return;
   }
 
   groundDisk = new THREE.Mesh(
@@ -475,7 +2916,7 @@ function updateGroundDisk(center, radius) {
     })
   );
   groundDisk.rotation.x = -Math.PI / 2;
-  groundDisk.position.set(center.x, -1.9, center.z);
+  groundDisk.position.set(center.x, isLabMap ? -6.35 : -1.9, center.z);
   groundGroup.add(groundDisk);
 
   groundRing = new THREE.Mesh(
@@ -490,8 +2931,60 @@ function updateGroundDisk(center, radius) {
     })
   );
   groundRing.rotation.x = -Math.PI / 2;
-  groundRing.position.set(center.x, -1.85, center.z);
+  groundRing.position.set(center.x, isLabMap ? -6.25 : -1.85, center.z);
   groundGroup.add(groundRing);
+
+  const hasBoundary = boundaryPoints.length >= 3;
+  const focusRadius = radius * 0.64;
+  groundOuterDim = new THREE.Mesh(
+    hasBoundary
+      ? new THREE.ShapeGeometry(buildBoundaryGroundShape(center, radius, boundaryPoints))
+      : new THREE.RingGeometry(focusRadius, radius * 1.08, 160),
+    new THREE.MeshBasicMaterial({
+      color: "#edf6ff",
+      transparent: true,
+      opacity: isLabMap ? 0 : hasBoundary ? 0.2 : 0.62,
+      depthWrite: false,
+      depthTest: true,
+      side: THREE.DoubleSide
+    })
+  );
+  groundOuterDim.rotation.x = -Math.PI / 2;
+  groundOuterDim.position.set(hasBoundary ? 0 : center.x, hasBoundary ? -1.62 : 0.32, hasBoundary ? 0 : center.z);
+  groundOuterDim.renderOrder = hasBoundary ? -1 : 24;
+  groundGroup.add(groundOuterDim);
+
+  groundFocusBoundary = hasBoundary
+    ? new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(
+          [...boundaryPoints, boundaryPoints[0]].map(
+            (point) => new THREE.Vector3(point.x, 0.42, point.z)
+          )
+        ),
+        new THREE.LineBasicMaterial({
+          color: "#7f9aaa",
+          transparent: true,
+          opacity: 0.54,
+          depthWrite: false,
+          depthTest: true
+        })
+      )
+    : new THREE.Mesh(
+        new THREE.TorusGeometry(focusRadius, 0.72, 12, 160),
+        new THREE.MeshBasicMaterial({
+          color: "#7f9aaa",
+          transparent: true,
+          opacity: 0.34,
+          depthWrite: false,
+          depthTest: false
+        })
+      );
+  if (!hasBoundary && groundFocusBoundary instanceof THREE.Mesh) {
+    groundFocusBoundary.rotation.x = -Math.PI / 2;
+    groundFocusBoundary.position.set(center.x, 0.42, center.z);
+  }
+  groundFocusBoundary.renderOrder = hasBoundary ? 0 : 25;
+  groundGroup.add(groundFocusBoundary);
 }
 
 function getCampusCoverageFromBuildingsAndTrees() {
@@ -822,6 +3315,7 @@ function apply3DView() {
   perspectiveCamera.lookAt(sceneState.center3D);
 
   currentMode = "3d";
+  placeSelectedBuildingBeam(selectedBuilding);
   setButtonState("3d");
   labelsDirty = true;
   updateStatusText();
@@ -848,6 +3342,7 @@ function apply2DView() {
   orthoCamera.lookAt(sceneState.center3D);
 
   currentMode = "2d";
+  placeSelectedBuildingBeam(null);
   setButtonState("2d");
   labelsDirty = true;
   updateStatusText();
@@ -855,6 +3350,10 @@ function apply2DView() {
 
 function switchMode(mode) {
   if (!sceneState || isTransitioning || currentMode === mode) return;
+  if (mapToolState.active && mapToolState.mode === "boundary" && mode !== "2d") {
+    mapStatus.textContent = "圈地工具使用俯视 2D，请切回入口工具后再使用 3D。";
+    return;
+  }
 
   runModeTransition(() => {
     if (mode === "3d") {
@@ -1211,24 +3710,43 @@ function refreshBuildingStyles() {
     const typeConfig = building.typeConfig;
     const isSelected =
       selectedBuilding && selectedBuilding.displayNumber === building.displayNumber;
+    const insideCampus = building.isInsideCampusBoundary || !!isSelected;
 
     if (fc && typeConfig) {
-      building.mesh3D.material.color.set(isSelected ? typeConfig.selectedColor : typeConfig.baseColor);
-      building.mesh2D.material.color.set(isSelected ? typeConfig.selectedColor : typeConfig.baseColor);
-      building.edge3D.material.color.set(isSelected ? typeConfig.selectedEdgeColor : typeConfig.edgeColor);
-      building.edge2D.material.color.set(isSelected ? typeConfig.selectedEdgeColor : typeConfig.edgeColor);
+      building.mesh3D.material.color.set(
+        getCampusMutedColor(isSelected ? typeConfig.selectedColor : typeConfig.baseColor, insideCampus)
+      );
+      building.mesh2D.material.color.set(
+        getCampusMutedColor(isSelected ? typeConfig.selectedColor : typeConfig.baseColor, insideCampus)
+      );
+      building.edge3D.material.color.set(
+        getCampusMutedColor(
+          isSelected ? typeConfig.selectedEdgeColor : typeConfig.edgeColor,
+          insideCampus,
+          0.88
+        )
+      );
+      building.edge2D.material.color.set(
+        getCampusMutedColor(
+          isSelected ? typeConfig.selectedEdgeColor : typeConfig.edgeColor,
+          insideCampus,
+          0.88
+        )
+      );
 
       if (building.functionalLabelEl) {
         building.functionalLabelEl.classList.toggle("is-selected", !!isSelected);
         applyFunctionalLabelVisual(building.functionalLabelEl, typeConfig, !!isSelected);
       }
     } else {
-      building.mesh3D.material.color.set("#e2e0db");
-      building.mesh2D.material.color.set("#e2e0db");
-      building.edge3D.material.color.set("#cbc7bf");
-      building.edge2D.material.color.set("#cbc7bf");
+      building.mesh3D.material.color.set(getCampusMutedColor("#d6d5cf", insideCampus));
+      building.mesh2D.material.color.set(getCampusMutedColor("#d6d5cf", insideCampus));
+      building.edge3D.material.color.set(getCampusMutedColor("#bdbbb5", insideCampus, 0.88));
+      building.edge2D.material.color.set(getCampusMutedColor("#bdbbb5", insideCampus, 0.88));
     }
   }
+
+  placeSelectedBuildingBeam(selectedBuilding);
 }
 
 /* =========================================================
@@ -1244,6 +3762,13 @@ function addPolygonLayer(geojson, centerX, centerY, options) {
     const polygonSets = getPolygonSets(feature.geometry);
 
     for (const polygonCoords of polygonSets) {
+      const polygonCenter = getPolygonCenter(polygonCoords[0]);
+      const insideCampus = isSourcePointInsideCampusBoundary(
+        polygonCenter.x,
+        polygonCenter.y,
+        centerX,
+        centerY
+      );
       const shape = buildShapeFromPolygonCoordinates(
         polygonCoords,
         centerX,
@@ -1259,7 +3784,7 @@ function addPolygonLayer(geojson, centerX, centerY, options) {
       const mesh3D = new THREE.Mesh(
         geometry3D,
         new THREE.MeshStandardMaterial({
-          color: options.color3D,
+          color: getCampusMutedColor(options.color3D, insideCampus, 0.86),
           roughness: 1,
           metalness: 0,
           transparent: !!options.transparent,
@@ -1276,7 +3801,7 @@ function addPolygonLayer(geojson, centerX, centerY, options) {
       const mesh2D = new THREE.Mesh(
         geometry2D,
         new THREE.MeshStandardMaterial({
-          color: options.color2D,
+          color: getCampusMutedColor(options.color2D, insideCampus, 0.86),
           roughness: 1,
           metalness: 0,
           transparent: !!options.transparent,
@@ -1304,6 +3829,10 @@ function addLineLayer(geojson, centerX, centerY, options) {
 
     for (const coords of lineSets) {
       if (!Array.isArray(coords) || coords.length < 2) continue;
+      const sourceCenter = getCoordinateCenter(coords);
+      const insideCampus = sourceCenter
+        ? isSourcePointInsideCampusBoundary(sourceCenter.x, sourceCenter.y, centerX, centerY)
+        : true;
 
       const points3D = coords
         .map((point) => {
@@ -1321,7 +3850,7 @@ function addLineLayer(geojson, centerX, centerY, options) {
       const line3D = new THREE.Line(
         geometry3D,
         new THREE.LineBasicMaterial({
-          color: options.color3D,
+          color: getCampusMutedColor(options.color3D, insideCampus, 0.9),
           transparent: !!options.transparent,
           opacity: options.opacity3D ?? 1
         })
@@ -1335,7 +3864,7 @@ function addLineLayer(geojson, centerX, centerY, options) {
       const line2D = new THREE.Line(
         geometry2D,
         new THREE.LineBasicMaterial({
-          color: options.color2D,
+          color: getCampusMutedColor(options.color2D, insideCampus, 0.9),
           transparent: !!options.transparent,
           opacity: options.opacity2D ?? 1
         })
@@ -1360,10 +3889,21 @@ function addTreeLayer(geojson, centerX, centerY) {
     roughness: 1,
     metalness: 0
   });
+  const mutedSphereMaterial3D = new THREE.MeshStandardMaterial({
+    color: getCampusMutedColor("#8fd26a", false, 0.88),
+    roughness: 1,
+    metalness: 0
+  });
 
   const circleGeometry = new THREE.CircleGeometry(2.8, 12);
   const circleMaterial2D = new THREE.MeshStandardMaterial({
     color: "#8fd26a",
+    roughness: 1,
+    metalness: 0,
+    side: THREE.DoubleSide
+  });
+  const mutedCircleMaterial2D = new THREE.MeshStandardMaterial({
+    color: getCampusMutedColor("#8fd26a", false, 0.88),
     roughness: 1,
     metalness: 0,
     side: THREE.DoubleSide
@@ -1380,13 +3920,20 @@ function addTreeLayer(geojson, centerX, centerY) {
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
 
         const local = toSceneXZ(x, y, centerX, centerY, 1);
+        const insideCampus = isSourcePointInsideCampusBoundary(x, y, centerX, centerY);
         treeScenePoints.push({ x: local.x, z: local.z });
 
-        const tree3D = new THREE.Mesh(sphereGeometry, sphereMaterial3D);
+        const tree3D = new THREE.Mesh(
+          sphereGeometry,
+          insideCampus ? sphereMaterial3D : mutedSphereMaterial3D
+        );
         tree3D.position.set(local.x, 3.8, local.z);
         environment3D.add(tree3D);
 
-        const tree2D = new THREE.Mesh(circleGeometry, circleMaterial2D);
+        const tree2D = new THREE.Mesh(
+          circleGeometry,
+          insideCampus ? circleMaterial2D : mutedCircleMaterial2D
+        );
         tree2D.rotation.x = -Math.PI / 2;
         tree2D.position.set(local.x, 0.16, local.z);
         environment2D.add(tree2D);
@@ -1403,13 +3950,25 @@ function addTreeLayer(geojson, centerX, centerY) {
 
       const center = getPolygonCenter(outer);
       const local = toSceneXZ(center.x, center.y, centerX, centerY, 1);
+      const insideCampus = isSourcePointInsideCampusBoundary(
+        center.x,
+        center.y,
+        centerX,
+        centerY
+      );
       treeScenePoints.push({ x: local.x, z: local.z });
 
-      const tree3D = new THREE.Mesh(sphereGeometry, sphereMaterial3D);
+      const tree3D = new THREE.Mesh(
+        sphereGeometry,
+        insideCampus ? sphereMaterial3D : mutedSphereMaterial3D
+      );
       tree3D.position.set(local.x, 3.8, local.z);
       environment3D.add(tree3D);
 
-      const tree2D = new THREE.Mesh(circleGeometry, circleMaterial2D);
+      const tree2D = new THREE.Mesh(
+        circleGeometry,
+        insideCampus ? circleMaterial2D : mutedCircleMaterial2D
+      );
       tree2D.rotation.x = -Math.PI / 2;
       tree2D.position.set(local.x, 0.16, local.z);
       environment2D.add(tree2D);
@@ -1421,14 +3980,93 @@ function addTreeLayer(geojson, centerX, centerY) {
   return count;
 }
 
+function addTerrainReliefLayer(reliefData, centerX, centerY) {
+  if (!isLabMap || pageParams.get("terrain") !== "on" || !reliefData?.elevations?.length) return;
+
+  const cols = Number(reliefData.cols);
+  const rows = Number(reliefData.rows);
+  const minX = Number(reliefData.minX);
+  const minY = Number(reliefData.minY);
+  const maxX = Number(reliefData.maxX);
+  const maxY = Number(reliefData.maxY);
+  const minElevation = Number(reliefData.minElevation);
+  const maxElevation = Number(reliefData.maxElevation);
+  const elevationRange = Math.max(maxElevation - minElevation, 1);
+
+  if (
+    !Number.isInteger(cols) ||
+    !Number.isInteger(rows) ||
+    cols < 2 ||
+    rows < 2 ||
+    reliefData.elevations.length !== cols * rows
+  ) {
+    return;
+  }
+
+  const positions = [];
+  const colors = [];
+  const indices = [];
+  const lowColor = new THREE.Color("#efe9dc");
+  const midColor = new THREE.Color("#ded5bf");
+  const highColor = new THREE.Color("#c7b99f");
+
+  for (let row = 0; row < rows; row += 1) {
+    const sourceY = minY + ((maxY - minY) * row) / (rows - 1);
+
+    for (let col = 0; col < cols; col += 1) {
+      const sourceX = minX + ((maxX - minX) * col) / (cols - 1);
+      const elevation = Number(reliefData.elevations[row * cols + col]);
+      const t = THREE.MathUtils.clamp((elevation - minElevation) / elevationRange, 0, 1);
+      const local = toSceneXZ(sourceX, sourceY, centerX, centerY, 1);
+      const heightY = -5.8 + t * 5.25;
+      const color = t < 0.55
+        ? lowColor.clone().lerp(midColor, t / 0.55)
+        : midColor.clone().lerp(highColor, (t - 0.55) / 0.45);
+
+      positions.push(local.x, heightY, local.z);
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+
+  for (let row = 0; row < rows - 1; row += 1) {
+    for (let col = 0; col < cols - 1; col += 1) {
+      const a = row * cols + col;
+      const b = a + 1;
+      const c = a + cols;
+      const d = c + 1;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 1,
+    metalness: 0,
+    side: THREE.DoubleSide
+  });
+
+  const reliefMesh = new THREE.Mesh(geometry, material);
+  reliefMesh.renderOrder = -4;
+  terrainReliefGroup.clear();
+  terrainReliefGroup.add(reliefMesh);
+}
+
 async function loadEnvironmentLayers(centerX, centerY) {
   const [roadsGeo, greenGeo, treesGeo, water0Geo, water2Geo] = await Promise.all([
-    fetchGeoJsonSafe("./topo/roads.geojson"),
-    fetchGeoJsonSafe("./topo/green.geojson"),
-    fetchGeoJsonSafe("./topo/trees.geojson"),
-    fetchGeoJsonSafe("./topo/water0.geojson"),
-    fetchGeoJsonSafe("./topo/water2.geojson")
+    fetchGeoJsonSafe(topoPath("roads.geojson")),
+    fetchGeoJsonSafe(topoPath("green.geojson")),
+    fetchGeoJsonSafe(topoPath("trees.geojson")),
+    fetchGeoJsonSafe(topoPath("water0.geojson")),
+    fetchGeoJsonSafe(topoPath("water2.geojson"))
   ]);
+
+  buildEntranceRoadSegments(roadsGeo, centerX, centerY);
 
   environmentStats.green += addPolygonLayer(greenGeo, centerX, centerY, {
     color3D: "#dbeccf",
@@ -1507,17 +4145,25 @@ async function loadScene() {
       buildingTypesData,
       functionalBuildingsData,
       detailContentData,
+      dormEntrancesData,
+      campusBoundaryData,
+      terrainReliefData,
       buildingsGeoJson
     ] = await Promise.all([
-      fetchJsonStrict("./config/building-types.json"),
-      fetchJsonStrict("./config/functional-buildings.json"),
-      fetchJsonStrict("./config/detail-content.json"),
-      fetchJsonStrict("./topo/buildings.geojson")
+      fetchJsonStrict(configPath("building-types.json")),
+      fetchJsonStrict(configPath("functional-buildings.json")),
+      fetchJsonStrict(configPath("detail-content.json")),
+      fetchJsonStrict(configPath("dorm-entrances.json")),
+      fetchJsonStrict(configPath("campus-boundary.json")),
+      isLabMap ? fetchJsonSafe(topoPath("terrain-relief.json")) : Promise.resolve(null),
+      fetchJsonStrict(topoPath("buildings.geojson"))
     ]);
 
     BUILDING_TYPES = buildingTypesData;
-    FUNCTIONAL_BUILDINGS = functionalBuildingsData;
-    DETAIL_CONTENT = detailContentData;
+    FUNCTIONAL_BUILDINGS = functionalBuildingsData || {};
+    DETAIL_CONTENT = detailContentData || {};
+    DORM_ENTRANCES = dormEntrancesData || {};
+    CAMPUS_BOUNDARIES = campusBoundaryData || {};
 
     const features = buildingsGeoJson.features || [];
     if (!features.length) {
@@ -1525,11 +4171,19 @@ async function loadScene() {
     }
 
     const bounds = collectBounds(features);
+    mapToolState.bounds = mapToolState.active ? bounds : null;
+    entranceToolState.bounds = entranceToolState.active ? bounds : null;
+    entranceNavigationState.bounds = entranceNavigationState.active ? bounds : null;
+    boundaryToolState.bounds = (boundaryToolState.active || mapToolState.active) ? bounds : null;
+    campusBoundaryScenePoints = isLabMap
+      ? []
+      : getCampusBoundaryScenePoints("anu", bounds);
     const rawBuildings = [];
     let skippedCount = 0;
 
     treeScenePoints.length = 0;
     await loadEnvironmentLayers(bounds.centerX, bounds.centerY);
+    setupEntranceNavigationLayer();
 
     for (const feature of features) {
       try {
@@ -1564,10 +4218,29 @@ async function loadScene() {
           const center = getPolygonCenter(outerRing);
 
           rawBuildings.push({
+            featureId: String(feature.id ?? ""),
+            modelDisplayNumber: Number.isInteger(Number(feature.properties?.modelDisplayNumber))
+              ? Number(feature.properties.modelDisplayNumber)
+              : null,
+            modelHideNormalLabel: feature.properties?.modelHideNormalLabel === true,
+            modelHeightScale: Number(feature.properties?.modelHeightScale) || null,
+            modelHeightMeters: Number(feature.properties?.modelHeightMeters) || null,
+            modelMergeFeatureIds: Array.isArray(feature.properties?.modelMergeFeatureIds)
+              ? feature.properties.modelMergeFeatureIds.map(String)
+              : [],
+            modelMergedInto: feature.properties?.modelMergedInto
+              ? String(feature.properties.modelMergedInto)
+              : "",
             shape,
             area,
             sourceCenterX: center.x,
-            sourceCenterY: center.y
+            sourceCenterY: center.y,
+            isInsideCampusBoundary: isSourcePointInsideCampusBoundary(
+              center.x,
+              center.y,
+              bounds.centerX,
+              bounds.centerY
+            )
           });
         }
       } catch (featureError) {
@@ -1577,6 +4250,11 @@ async function loadScene() {
     }
 
     rawBuildings.sort((a, b) => {
+      if (a.modelDisplayNumber && b.modelDisplayNumber) {
+        return a.modelDisplayNumber - b.modelDisplayNumber;
+      }
+      if (a.modelDisplayNumber) return -1;
+      if (b.modelDisplayNumber) return 1;
       if (Math.abs(b.sourceCenterY - a.sourceCenterY) > 0.0001) {
         return b.sourceCenterY - a.sourceCenterY;
       }
@@ -1584,34 +4262,49 @@ async function loadScene() {
     });
 
     rawBuildings.forEach((item, index) => {
-      const displayNumber = index + 1;
+      const displayNumber = item.modelDisplayNumber || index + 1;
+      if (item.modelMergedInto) return;
+
       const stableId = `B${String(displayNumber).padStart(4, "0")}`;
       const functionalConfig = getFunctionalConfigForNumber(displayNumber);
       const typeConfig = getTypeConfig(functionalConfig?.type);
-      const height = estimateHeight(item.area);
+      const mergedItems = item.modelMergeFeatureIds
+        .map((featureId) => rawBuildings.find((modelItem) => modelItem.featureId === featureId))
+        .filter(Boolean);
+      const modelShapes = [item, ...mergedItems].map((modelItem) => modelItem.shape);
+      const matchedHeightNumber = BUILDING_HEIGHT_MATCH_OVERRIDES[displayNumber];
+      const matchedHeightItem = matchedHeightNumber ? rawBuildings[matchedHeightNumber - 1] : null;
+      const heightScale = item.modelHeightScale || BUILDING_HEIGHT_SCALE_OVERRIDES[displayNumber] || 1;
+      const heightSourceArea = matchedHeightItem?.area || item.area;
+      const heightSourceScale = matchedHeightNumber
+        ? BUILDING_HEIGHT_SCALE_OVERRIDES[matchedHeightNumber] || 1
+        : heightScale;
+      const heightSourceMeters = matchedHeightItem ? null : item.modelHeightMeters;
+      const height =
+        (heightSourceMeters || estimateHeight(heightSourceArea)) * heightSourceScale;
 
       const mesh3DMaterial = new THREE.MeshStandardMaterial({
-        color: typeConfig ? typeConfig.baseColor : "#e2e0db",
+        color: typeConfig ? typeConfig.baseColor : "#d6d5cf",
         roughness: 0.97,
         metalness: 0.02
       });
 
       const edge3DMaterial = new THREE.LineBasicMaterial({
-        color: typeConfig ? typeConfig.edgeColor : "#cbc7bf"
+        color: typeConfig ? typeConfig.edgeColor : "#bdbbb5"
       });
 
       const mesh2DMaterial = new THREE.MeshStandardMaterial({
-        color: typeConfig ? typeConfig.baseColor : "#e2e0db",
+        color: typeConfig ? typeConfig.baseColor : "#d6d5cf",
         roughness: 0.99,
         metalness: 0.01,
         side: THREE.DoubleSide
       });
 
       const edge2DMaterial = new THREE.LineBasicMaterial({
-        color: typeConfig ? typeConfig.edgeColor : "#cbc7bf"
+        color: typeConfig ? typeConfig.edgeColor : "#bdbbb5"
       });
 
-      const geometry3D = new THREE.ExtrudeGeometry(item.shape, {
+      const geometry3D = new THREE.ExtrudeGeometry(modelShapes, {
         depth: height,
         bevelEnabled: false,
         steps: 1,
@@ -1628,7 +4321,7 @@ async function loadScene() {
       );
       world3D.add(edge3D);
 
-      const geometry2D = new THREE.ShapeGeometry(item.shape);
+      const geometry2D = new THREE.ShapeGeometry(modelShapes);
       geometry2D.rotateX(-Math.PI / 2);
 
       const mesh2D = new THREE.Mesh(geometry2D, mesh2DMaterial);
@@ -1678,8 +4371,10 @@ async function loadScene() {
         edge2D,
         normalLabelEl,
         functionalLabelEl,
+        hideNormalLabel: item.modelHideNormalLabel,
         focusCenter,
         focusSize,
+        isInsideCampusBoundary: item.isInsideCampusBoundary,
         anchor3D: new THREE.Vector3(
           scenePos.x,
           height + (functionalConfig ? 10 : 7),
@@ -1749,7 +4444,8 @@ async function loadScene() {
     const squareSide = campusCoverage.squareSide;
     const diskRadius = campusCoverage.radius;
 
-    updateGroundDisk(worldCenter, diskRadius);
+    updateGroundDisk(worldCenter, diskRadius, campusBoundaryScenePoints);
+    addTerrainReliefLayer(terrainReliefData, bounds.centerX, bounds.centerY);
 
     sceneState = {
       center3D: worldCenter.clone(),
@@ -1778,8 +4474,18 @@ async function loadScene() {
     updateOrthoFrustum(sceneState);
     apply3DView();
     applyCityOverviewCamera();
+    if (boundaryToolState.active) {
+      apply2DView();
+    }
     refreshBuildingStyles();
     updateStatusText();
+    if (mapToolState.active) {
+      mapStatus.textContent = "地图工具已开启。点击地图记录点位坐标。";
+      syncMapToolMode();
+    }
+    if (boundaryToolState.active) {
+      mapStatus.textContent = "Boundary picker active. Right-click to add points; right-click near point 1 to close.";
+    }
     updateCityOverviewFade();
     syncSceneAfterLayoutChange();
     updateLabels(true);
@@ -1936,6 +4642,11 @@ function updateLabels(force = false) {
   const candidates = [];
 
   for (const building of buildingObjects) {
+    if (building.hideNormalLabel) {
+      building.normalLabelEl.style.display = "none";
+      continue;
+    }
+
     if (building.functionalLabelEl) {
       building.normalLabelEl.style.display = "none";
       continue;
@@ -2000,6 +4711,7 @@ btn2D.addEventListener("click", () => switchMode("2d"));
 btnNumbers.addEventListener("click", () => {
   showNormalLabels = !showNormalLabels;
   setNumbersButtonState();
+  updateStatusText();
   labelsDirty = true;
 });
 btnReset.addEventListener("click", () => {
@@ -2027,6 +4739,7 @@ function animate(now = 0) {
   controls.update();
   updateCityOverviewFade();
   updateLabels(false);
+  updateSelectedBuildingBeam(now);
   renderer.render(scene, activeCamera);
   requestAnimationFrame(animate);
 }

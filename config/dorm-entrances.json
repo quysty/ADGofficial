@@ -1,0 +1,98 @@
+{
+  "dorm_lena": {
+    "entrance": [
+      693362.119,
+      6094312.111
+    ],
+    "snap": [
+      693368.651,
+      6094311.075
+    ],
+    "snapRoadType": "Service",
+    "snapDistanceMeters": 6.614
+  },
+  "dorm_kinloch": {
+    "entrance": [
+      693320.258,
+      6094188.978
+    ],
+    "snap": [
+      693329.809,
+      6094181.651
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 12.038
+  },
+  "dorm_warrumbul": {
+    "entrance": [
+      693236.12,
+      6094198.182
+    ],
+    "snap": [
+      693231.951,
+      6094192.75
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 6.847
+  },
+  "dorm_davey": {
+    "entrance": [
+      693266.579,
+      6094109.538
+    ],
+    "snap": [
+      693271.699,
+      6094105.643
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 6.434
+  },
+  "dorm_wright": {
+    "entrance": [
+      692506.625,
+      6094409.947
+    ],
+    "snap": [
+      692514.174,
+      6094404.388
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 9.375
+  },
+  "academic_928": {
+    "entrance": [
+      692866.483,
+      6094095.252
+    ],
+    "snap": [
+      692866.116,
+      6094094.779
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 0.599
+  },
+  "academic_932": {
+    "entrance": [
+      693032.677,
+      6094097.32
+    ],
+    "snap": [
+      693030.856,
+      6094094.94
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 2.996
+  },
+  "retail_963": {
+    "entrance": [
+      693990.963,
+      6094002.718
+    ],
+    "snap": [
+      693988.748,
+      6094001.589
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 2.486
+  }
+}

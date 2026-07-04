@@ -2,8 +2,9 @@ const siteNavRoot = document.querySelector("#site-nav-root");
 const currentPage = document.body.dataset.page;
 
 const navItems = [
-  { key: "home", label: "首页", href: "index.html" },
-  { key: "explore", label: "Explore", href: "explore.html" },
+  { key: "home", label: "hero逻辑页（首页）", href: "index.html?home=1" },
+  { key: "map-tool", label: "地图工具", href: "map-tool.html" },
+  { key: "explore", label: "地图开发者版本", href: "explore.html" },
   { key: "information", label: "Information", href: "information.html" },
   { key: "question", label: "Question", href: "question.html" }
 ];
