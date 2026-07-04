@@ -244,6 +244,176 @@
         city: 76,
         value: 74
       }
+    },
+    {
+      id: "toad",
+      buildingId: "dorm_toad",
+      mapFocus: "dorm_toad",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Toad Hall",
+      shortName: "Toad",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6336.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Toad Hall.",
+      description:
+        "Toad Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "fenner",
+      buildingId: "dorm_fenner",
+      mapFocus: "dorm_fenner",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Fenner Hall",
+      shortName: "Fenner",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6845.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Fenner Hall.",
+      description:
+        "Fenner Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "bruce",
+      buildingId: "dorm_bruce",
+      mapFocus: "dorm_bruce",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Bruce Hall",
+      shortName: "Bruce",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6944.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Bruce Hall.",
+      description:
+        "Bruce Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "ursula-laurus",
+      buildingId: "dorm_ursula_laurus",
+      mapFocus: "dorm_ursula_laurus",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Ursula Hall Laurus Wing",
+      shortName: "Ursula",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_7082.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Ursula Hall Laurus Wing.",
+      description:
+        "Ursula Hall Laurus Wing is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "burton-garran",
+      buildingId: "dorm_burton_garran",
+      mapFocus: "dorm_burton_garran",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Burton & Garran Hall",
+      shortName: "B&G",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6288.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Burton & Garran Hall.",
+      description:
+        "Burton & Garran Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
     }
   ];
 })();

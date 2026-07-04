@@ -1,6 +1,7 @@
 {
   "777": {
     "buildingId": "dorm_lena",
+    "displayMode": "dorm",
     "type": "dorm",
     "name": "Lena Karmel Lodge",
     "shortName": "Lena",
@@ -8,6 +9,7 @@
   },
   "838": {
     "buildingId": "dorm_kinloch",
+    "displayMode": "dorm",
     "type": "dorm",
     "name": "Kinloch Lodge",
     "shortName": "Kinloch",
@@ -15,6 +17,7 @@
   },
   "821": {
     "buildingId": "dorm_warrumbul",
+    "displayMode": "dorm",
     "type": "dorm",
     "name": "Warrumbul Lodge",
     "shortName": "Warrumbul",
@@ -22,6 +25,7 @@
   },
   "930": {
     "buildingId": "dorm_davey",
+    "displayMode": "dorm",
     "type": "dorm",
     "name": "Davey Lodge",
     "shortName": "Davey",
@@ -29,14 +33,56 @@
   },
   "666": {
     "buildingId": "dorm_wright",
+    "displayMode": "dorm",
     "type": "dorm",
     "name": "Wright Hall",
     "shortName": "Wright",
     "interactive": true
   },
+  "735": {
+    "buildingId": "dorm_toad",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Toad Hall",
+    "shortName": "Toad",
+    "interactive": true
+  },
+  "863": {
+    "buildingId": "dorm_fenner",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Fenner Hall",
+    "shortName": "Fenner",
+    "interactive": true
+  },
+  "602": {
+    "buildingId": "dorm_bruce",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Bruce Hall",
+    "shortName": "Bruce",
+    "interactive": true
+  },
+  "953": {
+    "buildingId": "dorm_ursula_laurus",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Ursula Hall Laurus Wing",
+    "shortName": "Ursula",
+    "interactive": true
+  },
+  "812": {
+    "buildingId": "dorm_burton_garran",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burton & Garran Hall",
+    "shortName": "B&G",
+    "interactive": true
+  },
 
   "928": {
     "buildingId": "academic_928",
+    "displayMode": "functional",
     "type": "academic",
     "name": "Academic Building 928",
     "shortName": "928",
@@ -44,16 +90,74 @@
   },
   "907": {
     "buildingId": "academic_907",
+    "displayMode": "functional",
     "type": "academic",
     "name": "Academic Building 907",
     "shortName": "907",
     "interactive": false
   },
-  "932": {
-    "buildingId": "academic_932",
+  "935": {
+    "buildingId": "academic_935",
+    "displayMode": "functional",
     "type": "academic",
-    "name": "Academic Building 932",
-    "shortName": "932",
+    "name": "Academic Building 935",
+    "shortName": "935",
+    "interactive": true
+  },
+  "957": {
+    "buildingId": "academic_957",
+    "displayMode": "functional",
+    "type": "academic",
+    "name": "Academic Building 957",
+    "shortName": "957",
+    "interactive": true
+  },
+  "876": {
+    "buildingId": "social_876",
+    "displayMode": "social",
+    "type": "social",
+    "name": "Social Building 876",
+    "shortName": "876",
+    "interactive": false
+  },
+  "965": {
+    "buildingId": "reference_965",
+    "displayMode": "reference",
+    "type": "reference",
+    "name": "Mall Building 965",
+    "shortName": "965",
+    "interactive": false
+  },
+  "992": {
+    "buildingId": "social_992",
+    "displayMode": "social",
+    "type": "social",
+    "name": "Social Building 992",
+    "shortName": "992",
+    "interactive": false
+  },
+  "1004": {
+    "buildingId": "store_1004",
+    "displayMode": "store",
+    "type": "store",
+    "name": "Store Building 1004",
+    "shortName": "1004",
+    "interactive": false
+  },
+  "1076": {
+    "buildingId": "reference_1076",
+    "displayMode": "reference",
+    "type": "reference",
+    "name": "Mall Building 1076",
+    "shortName": "1076",
+    "interactive": false
+  },
+  "1786": {
+    "buildingId": "store_1786",
+    "displayMode": "store",
+    "type": "store",
+    "name": "Store Building 1786",
+    "shortName": "1786",
     "interactive": false
   }
 }

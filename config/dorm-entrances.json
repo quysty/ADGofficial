@@ -83,7 +83,9 @@
     "snapRoadType": "Footway",
     "snapDistanceMeters": 2.996
   },
-  "retail_963": {
+  "reference_965_entrance_08": {
+    "buildingId": "reference_965",
+    "label": "965",
     "entrance": [
       693990.963,
       6094002.718
@@ -94,5 +96,85 @@
     ],
     "snapRoadType": "Footway",
     "snapDistanceMeters": 2.486
+  },
+  "entrance_09": {
+    "label": "点位 1",
+    "entrance": [
+      692807.665,
+      6094107.301
+    ],
+    "snap": [
+      692808.634,
+      6094106.573
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 1.213
+  },
+  "entrance_10": {
+    "label": "点位 2",
+    "entrance": [
+      692853.643,
+      6094078.173
+    ],
+    "snap": [
+      692858.144,
+      6094074.796
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 5.627
+  },
+  "store_1786": {
+    "label": "1786",
+    "entrance": [
+      693313.529,
+      6094176.066
+    ],
+    "snap": [
+      693321.08,
+      6094170.273
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 9.517
+  },
+  "store_1004": {
+    "label": "1004",
+    "entrance": [
+      693335.55,
+      6093962.968
+    ],
+    "snap": [
+      693342.131,
+      6093958.355
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 8.037
+  },
+  "entrance_13": {
+    "buildingId": "reference_965",
+    "label": "965",
+    "entrance": [
+      693955.109,
+      6094070.688
+    ],
+    "snap": [
+      693948.102,
+      6094062.957
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 10.435
+  },
+  "entrance_14": {
+    "buildingId": "reference_1076",
+    "label": "1076",
+    "entrance": [
+      694038.665,
+      6093829.394
+    ],
+    "snap": [
+      694046.633,
+      6093832.948
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 8.725
   }
 }

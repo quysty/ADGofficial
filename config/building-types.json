@@ -1,17 +1,17 @@
 {
   "dorm": {
     "labelStyle": "droplet",
-    "baseColor": "#dcedd2",
-    "selectedColor": "#c8e5bb",
-    "edgeColor": "#a8c492",
-    "selectedEdgeColor": "#7fa96f"
+    "baseColor": "#a4e878",
+    "selectedColor": "#84d85f",
+    "edgeColor": "#4fbd55",
+    "selectedEdgeColor": "#2d8f3a"
   },
   "academic": {
     "labelStyle": "droplet",
-    "baseColor": "#dcecff",
-    "selectedColor": "#bfdcff",
-    "edgeColor": "#9ec5f0",
-    "selectedEdgeColor": "#6ea7e8"
+    "baseColor": "#90d7ff",
+    "selectedColor": "#68c5ff",
+    "edgeColor": "#36a3ea",
+    "selectedEdgeColor": "#177dca"
   },
   "retail": {
     "labelStyle": "droplet",
@@ -19,5 +19,26 @@
     "selectedColor": "#ffd3b0",
     "edgeColor": "#f2b983",
     "selectedEdgeColor": "#e69a4f"
+  },
+  "store": {
+    "labelStyle": "droplet",
+    "baseColor": "#fed7aa",
+    "selectedColor": "#fdba74",
+    "edgeColor": "#f59e0b",
+    "selectedEdgeColor": "#d97706"
+  },
+  "reference": {
+    "labelStyle": "droplet",
+    "baseColor": "#eadcff",
+    "selectedColor": "#d8c0ff",
+    "edgeColor": "#b89af1",
+    "selectedEdgeColor": "#986ee3"
+  },
+  "social": {
+    "labelStyle": "droplet",
+    "baseColor": "#fff3a3",
+    "selectedColor": "#ffe66d",
+    "edgeColor": "#e8c227",
+    "selectedEdgeColor": "#c9a21a"
   }
 }

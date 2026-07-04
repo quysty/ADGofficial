@@ -96,20 +96,24 @@ const world2D = new THREE.Group();
 const selectedBuildingBeam = new THREE.Group();
 const entranceToolMarker = new THREE.Group();
 const mapToolMarkerGroup = new THREE.Group();
+const mapToolRoadGroup = new THREE.Group();
 const entranceNavigationGroup = new THREE.Group();
 const entranceRouteGroup = new THREE.Group();
 const boundaryToolGroup = new THREE.Group();
 const boundaryToolShapeGroup = new THREE.Group();
 const terrainReliefGroup = new THREE.Group();
+const campusTerritoryGroup = new THREE.Group();
 
 scene.add(environment3D);
 scene.add(environment2D);
 scene.add(terrainReliefGroup);
+scene.add(campusTerritoryGroup);
 scene.add(world3D);
 scene.add(world2D);
 scene.add(selectedBuildingBeam);
 scene.add(entranceToolMarker);
 scene.add(mapToolMarkerGroup);
+scene.add(mapToolRoadGroup);
 scene.add(entranceNavigationGroup);
 scene.add(entranceRouteGroup);
 scene.add(boundaryToolShapeGroup);
@@ -140,6 +144,9 @@ let labelsDirty = true;
 let lastLabelMode = "";
 
 const buildingObjects = [];
+const entranceRouteTimeLabels = [];
+let activeEntranceRouteLabelId = null;
+let entranceRoutePointerStart = null;
 const buildingStats = {
   count: 0,
   skipped: 0
@@ -152,14 +159,12 @@ const environmentStats = {
   trees: 0
 };
 const BUILDING_HEIGHT_SCALE_OVERRIDES = {
-  932: 0.5,
   963: 0.5,
   1089: 0.5,
   1176: 0.5,
   1238: 1 / 3
 };
 const BUILDING_HEIGHT_MATCH_OVERRIDES = {
-  777: 821,
   928: 821
 };
 
@@ -169,6 +174,7 @@ let DETAIL_CONTENT = {};
 let DORM_ENTRANCES = {};
 let CAMPUS_BOUNDARIES = {};
 let campusBoundaryScenePoints = [];
+let campusTerritoryScenePoints = [];
 const DORMS = Array.isArray(window.DORM_DATA) ? window.DORM_DATA : [];
 const raycaster = new THREE.Raycaster();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -177,7 +183,9 @@ const pageParams = new URLSearchParams(window.location.search);
 const isBaseMap = pageParams.get("map") === "base";
 const isLabMap = !isBaseMap;
 const topoDataRoot = isBaseMap ? "topo" : "topo-lab";
-const CONFIG_CACHE_VERSION = "labels-clean-v2";
+const DATA_CACHE_VERSION = "territory-sharpness-v1";
+const CONFIG_CACHE_VERSION = DATA_CACHE_VERSION;
+const TOPO_CACHE_VERSION = DATA_CACHE_VERSION;
 if (pageParams.get("labels") === "off") {
   document.body.classList.add("is-map-labels-hidden");
 }
@@ -187,7 +195,7 @@ function configPath(fileName) {
 }
 
 function topoPath(fileName) {
-  return `./${topoDataRoot}/${fileName}`;
+  return `./${topoDataRoot}/${fileName}?v=${TOPO_CACHE_VERSION}`;
 }
 
 const guidedPreviewState = {
@@ -195,15 +203,114 @@ const guidedPreviewState = {
   from: pageParams.get("from") || "",
   focusValue: pageParams.get("focus") || pageParams.get("building") || "",
   entryBuildingId: null,
-  entryDormId: null
+  entryDormId: null,
+  navigationTargetMode: null,
+  navigationCategoryViewActive: false
 };
 const isHomePathEntry = !guidedPreviewState.active && guidedPreviewState.from === "homePath";
 const isMapToolPage = document.body.dataset.page === "map-tool" || pageParams.get("tool") === "point";
 const entranceToolParam = pageParams.get("entrance") || "";
 const boundaryToolParam = pageParams.get("boundary") || "";
 const MAP_TOOL_MAX_POINTS = 10;
+const MAP_ROAD_MAX_POINTS = 40;
 const MAP_BOUNDARY_MAX_AREAS = 3;
 const MAP_BOUNDARY_AREA_COLORS = ["#2f8cff", "#f59e0b", "#10b981"];
+const BUILDING_DISPLAY_MODES = {
+  dorm: {
+    key: "dorm",
+    label: "宿舍",
+    detailKicker: "DORM DETAIL",
+    labelClass: "is-building-mode-dorm",
+    detailClass: "scene-panel-detail--mode-dorm",
+    fallbackSubtitle: "Dormitory",
+    detailBlockTitle: "宿舍模式内容",
+    frameworkTitle: "宿舍交互框架",
+    frameworkCopy:
+      "这个分支专门留给宿舍建筑：后续可以接入宿舍对比、房型、生活氛围、入口导航和 Information 页面联动。",
+    style: {
+      baseColor: "#a4e878",
+      selectedColor: "#84d85f",
+      edgeColor: "#4fbd55",
+      selectedEdgeColor: "#2d8f3a"
+    }
+  },
+  functional: {
+    key: "functional",
+    label: "功能建筑",
+    detailKicker: "FUNCTIONAL BUILDING",
+    labelClass: "is-building-mode-functional",
+    detailClass: "scene-panel-detail--mode-functional",
+    fallbackSubtitle: "Functional building",
+    detailBlockTitle: "功能建筑模式内容",
+    frameworkTitle: "功能建筑交互框架",
+    frameworkCopy:
+      "这个分支专门留给非宿舍功能建筑：后续可以接入教学楼、商店、服务点、设施说明和路线引导。",
+    style: {
+      baseColor: "#90d7ff",
+      selectedColor: "#68c5ff",
+      edgeColor: "#36a3ea",
+      selectedEdgeColor: "#177dca"
+    }
+  },
+  store: {
+    key: "store",
+    label: "商店",
+    detailKicker: "STORE",
+    labelClass: "is-building-mode-store",
+    detailClass: "scene-panel-detail--mode-store",
+    fallbackSubtitle: "Store",
+    detailBlockTitle: "商店模式内容",
+    frameworkTitle: "商店标记框架",
+    frameworkCopy:
+      "这个分支专门留给商店建筑：当前只用于地图识别，默认不接入点击、详情、导航或其他交互。",
+    style: {
+      baseColor: "#fed7aa",
+      selectedColor: "#fdba74",
+      edgeColor: "#f59e0b",
+      selectedEdgeColor: "#d97706"
+    }
+  },
+  reference: {
+    key: "reference",
+    label: "商场",
+    detailKicker: "MALL",
+    labelClass: "is-building-mode-reference",
+    detailClass: "scene-panel-detail--mode-reference",
+    fallbackSubtitle: "Mall",
+    detailBlockTitle: "商场模式内容",
+    frameworkTitle: "商场标记框架",
+    frameworkCopy:
+      "这个分支专门留给商场建筑：当前先用于地图识别和导航类别，后续可以接入商场内容与路线逻辑。",
+    style: {
+      baseColor: "#eadcff",
+      selectedColor: "#d8c0ff",
+      edgeColor: "#b89af1",
+      selectedEdgeColor: "#986ee3"
+    }
+  },
+  social: {
+    key: "social",
+    label: "社会建筑",
+    detailKicker: "SOCIAL BUILDING",
+    labelClass: "is-building-mode-social",
+    detailClass: "scene-panel-detail--mode-social",
+    fallbackSubtitle: "Social building",
+    detailBlockTitle: "社会建筑模式内容",
+    frameworkTitle: "社会建筑标记框架",
+    frameworkCopy:
+      "这个分支专门留给社会建筑：当前只用于地图识别，默认不接入点击、详情、导航或其他交互。",
+    style: {
+      baseColor: "#fff3a3",
+      selectedColor: "#ffe66d",
+      edgeColor: "#e8c227",
+      selectedEdgeColor: "#c9a21a"
+    }
+  }
+};
+const BUILDING_DETAIL_MODE_CLASSES = Object.values(BUILDING_DISPLAY_MODES).map(
+  (mode) => mode.detailClass
+);
+const NAVIGATION_TARGET_MODE_ORDER = ["dorm", "functional", "social", "store", "reference"];
 
 function createMapBoundaryArea(index) {
   return {
@@ -221,7 +328,14 @@ const mapToolState = {
   bounds: null,
   panel: null,
   picks: [],
+  entranceMode: "mouse",
+  roadMode: "mouse",
+  roadAction: "add",
+  roadPoints: [],
+  removedRoadSegments: [],
+  boundaryLabelsEnabled: false,
   pointerStart: null,
+  roadPointerStart: null,
   boundaryPointerStart: null,
   previousMapViewMode: null,
   lastPickedAt: 0
@@ -471,6 +585,7 @@ function buildEntranceRoadSegments(roadsGeo, centerX, centerY) {
   for (const feature of roadsGeo.features) {
     const roadType = feature.properties?.type || "Unknown";
     const lineSets = getLineSets(feature.geometry);
+    let featureSegmentIndex = 0;
 
     for (const coords of lineSets) {
       if (!Array.isArray(coords) || coords.length < 2) continue;
@@ -489,7 +604,12 @@ function buildEntranceRoadSegments(roadsGeo, centerX, centerY) {
         .filter(Boolean);
 
       for (let index = 1; index < points.length; index += 1) {
+        featureSegmentIndex += 1;
+
         segments.push({
+          id: `${String(feature.id ?? "road")}:${featureSegmentIndex}`,
+          featureId: String(feature.id ?? ""),
+          segmentIndex: featureSegmentIndex,
           type: roadType,
           start: points[index - 1],
           end: points[index]
@@ -774,14 +894,25 @@ function createMapToolPanel() {
   panel.innerHTML = `
     <div class="map-tool-panel__head">
       <p class="entrance-tool-panel__kicker map-tool-panel__title">入口工具</p>
-      <button class="map-tool-panel__mode-toggle" type="button">切到圈地</button>
+      <div class="map-tool-panel__mode-actions">
+        <button class="map-tool-panel__entrance-toggle" type="button">鼠标模式</button>
+        <button class="map-tool-panel__mode-toggle" type="button">切到圈地</button>
+        <button class="map-tool-panel__road-toggle" type="button">切到道路</button>
+      </div>
     </div>
     <p class="entrance-tool-panel__hint map-tool-panel__hint">点击地图记录坐标；拖动地图不会记录。蓝色入口标记仅用于参考，不触发连线。</p>
     <div class="map-tool-boundary-controls" hidden>
       <div class="map-tool-boundary-areas" aria-label="圈地面积管理">
         ${boundaryRowsHtml}
       </div>
+      <button class="map-tool-panel__button map-tool-boundary-label-toggle" type="button">建筑编号：关</button>
       <button class="map-tool-panel__button map-tool-boundary-copy-all" type="button" disabled>一起复制</button>
+    </div>
+    <div class="map-tool-road-controls" hidden>
+      <div class="map-tool-road-actions" aria-label="道路调整模式">
+        <button class="map-tool-road-action is-active" type="button" data-road-action="add">新增道路</button>
+        <button class="map-tool-road-action" type="button" data-road-action="remove">删除道路</button>
+      </div>
     </div>
     <pre class="entrance-tool-panel__output map-tool-panel__output">暂无点位。</pre>
     <div class="map-tool-panel__actions">
@@ -818,6 +949,26 @@ function createMapToolPanel() {
     event.preventDefault();
     event.stopPropagation();
     setMapToolMode(mapToolState.mode === "boundary" ? "entrance" : "boundary");
+  });
+
+  panel.querySelector(".map-tool-panel__entrance-toggle")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleMapToolInputMode();
+  });
+
+  panel.querySelector(".map-tool-panel__road-toggle")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMapToolMode(mapToolState.mode === "road" ? "entrance" : "road");
+  });
+
+  panel.querySelectorAll("[data-road-action]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setMapRoadAction(button.dataset.roadAction);
+    });
   });
 
   panel.querySelector(".map-tool-panel__copy")?.addEventListener("click", async (event) => {
@@ -866,6 +1017,12 @@ function createMapToolPanel() {
     event.preventDefault();
     event.stopPropagation();
     await copyMapBoundaryAllToClipboard();
+  });
+
+  panel.querySelector(".map-tool-boundary-label-toggle")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleMapBoundaryLabels();
   });
 }
 
@@ -941,16 +1098,104 @@ function getMapBoundaryOutput() {
   };
 }
 
+function getRoadSegmentsForMapTool() {
+  return entranceToolState.roadSegments.length
+    ? entranceToolState.roadSegments
+    : entranceNavigationState.roadSegments;
+}
+
+function getMapRoadAddSegments() {
+  const points = mapToolState.roadPoints;
+  const segments = [];
+
+  for (let index = 1; index < points.length; index += 1) {
+    const from = points[index - 1];
+    const to = points[index];
+    const fromScene = new THREE.Vector3(from.groundScene[0], 0, from.groundScene[2]);
+    const toScene = new THREE.Vector3(to.groundScene[0], 0, to.groundScene[2]);
+
+    segments.push({
+      index,
+      label: `新增道路段 ${index}`,
+      from: from.id,
+      to: to.id,
+      source: [from.source, to.source],
+      scene: [from.groundScene, to.groundScene],
+      distanceMeters: Number(formatEntranceNumber(fromScene.distanceTo(toScene)))
+    });
+  }
+
+  return segments;
+}
+
+function getMapRoadRemoveSegmentOutput(segment, index) {
+  return {
+    id: segment.id || `road_segment_${index + 1}`,
+    index: index + 1,
+    label: `删除道路段 ${index + 1}`,
+    featureId: segment.featureId || null,
+    segmentIndex: Number.isFinite(segment.segmentIndex) ? segment.segmentIndex : null,
+    roadType: segment.type || "Unknown",
+    source: [
+      [
+        Number(formatEntranceNumber(segment.start.source.x)),
+        Number(formatEntranceNumber(segment.start.source.y))
+      ],
+      [
+        Number(formatEntranceNumber(segment.end.source.x)),
+        Number(formatEntranceNumber(segment.end.source.y))
+      ]
+    ],
+    scene: [
+      [
+        Number(formatEntranceNumber(segment.start.scene.x)),
+        0,
+        Number(formatEntranceNumber(segment.start.scene.z))
+      ],
+      [
+        Number(formatEntranceNumber(segment.end.scene.x)),
+        0,
+        Number(formatEntranceNumber(segment.end.scene.z))
+      ]
+    ],
+    distanceMeters: Number(formatEntranceNumber(segment.start.scene.distanceTo(segment.end.scene)))
+  };
+}
+
+function getMapRoadOutput() {
+  const addSegments = getMapRoadAddSegments();
+  const removeSegments = mapToolState.removedRoadSegments.map(getMapRoadRemoveSegmentOutput);
+
+  return {
+    tool: "road-adjustment",
+    mode: "custom-navigation-route",
+    activeAction: mapToolState.roadAction,
+    totalPoints: mapToolState.roadPoints.length + removeSegments.length,
+    totalAddPoints: mapToolState.roadPoints.length,
+    totalAddSegments: addSegments.length,
+    totalRemoveSegments: removeSegments.length,
+    addRoute: {
+      totalPoints: mapToolState.roadPoints.length,
+      points: mapToolState.roadPoints,
+      segments: addSegments
+    },
+    removeSegments
+  };
+}
+
 function getCurrentMapToolOutput() {
-  return mapToolState.mode === "boundary"
-    ? getMapBoundaryOutput()
-    : getMapToolOutput();
+  if (mapToolState.mode === "boundary") return getMapBoundaryOutput();
+  if (mapToolState.mode === "road") return getMapRoadOutput();
+  return getMapToolOutput();
 }
 
 function updateMapToolPanel() {
   const isBoundaryMode = mapToolState.mode === "boundary";
+  const isRoadMode = mapToolState.mode === "road";
   const title = mapToolState.panel?.querySelector(".map-tool-panel__title");
+  const entranceToggleButton = mapToolState.panel?.querySelector(".map-tool-panel__entrance-toggle");
   const toggleButton = mapToolState.panel?.querySelector(".map-tool-panel__mode-toggle");
+  const roadToggleButton = mapToolState.panel?.querySelector(".map-tool-panel__road-toggle");
   const hint = mapToolState.panel?.querySelector(".map-tool-panel__hint");
   const output = mapToolState.panel?.querySelector(".map-tool-panel__output");
   const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
@@ -958,21 +1203,62 @@ function updateMapToolPanel() {
   const deleteButton = mapToolState.panel?.querySelector(".map-tool-panel__delete");
   const clearButton = mapToolState.panel?.querySelector(".map-tool-panel__clear");
   const boundaryControls = mapToolState.panel?.querySelector(".map-tool-boundary-controls");
+  const roadControls = mapToolState.panel?.querySelector(".map-tool-road-controls");
+  const boundaryLabelButton = mapToolState.panel?.querySelector(".map-tool-boundary-label-toggle");
   const copyAllButton = mapToolState.panel?.querySelector(".map-tool-boundary-copy-all");
   const activeArea = getMapBoundaryActiveArea();
   const boundaryTotalPoints = getMapBoundaryTotalPoints();
-  const itemCount = isBoundaryMode ? activeArea.points.length : mapToolState.picks.length;
+  const roadItemCount = mapToolState.roadAction === "remove"
+    ? mapToolState.removedRoadSegments.length
+    : mapToolState.roadPoints.length;
+  const roadOutputTotal = mapToolState.roadPoints.length + mapToolState.removedRoadSegments.length;
+  const itemCount = isBoundaryMode
+    ? activeArea.points.length
+    : isRoadMode
+      ? roadItemCount
+      : mapToolState.picks.length;
 
-  if (title) title.textContent = isBoundaryMode ? "圈地工具" : "入口工具";
-  if (toggleButton) toggleButton.textContent = isBoundaryMode ? "切回入口" : "切到圈地";
+  if (title) {
+    title.textContent = isBoundaryMode ? "圈地工具" : isRoadMode ? "道路工具" : "入口工具";
+  }
+  if (entranceToggleButton) {
+    const activeInputMode = isRoadMode ? mapToolState.roadMode : mapToolState.entranceMode;
+    entranceToggleButton.textContent = activeInputMode === "select"
+      ? "选点模式"
+      : "鼠标模式";
+    entranceToggleButton.classList.toggle(
+      "is-active",
+      !isBoundaryMode && activeInputMode === "select"
+    );
+    entranceToggleButton.disabled = isBoundaryMode;
+  }
+  if (toggleButton) {
+    toggleButton.textContent = isBoundaryMode ? "切回入口" : "切到圈地";
+    toggleButton.classList.toggle("is-active", isBoundaryMode);
+  }
+  if (roadToggleButton) {
+    roadToggleButton.textContent = isRoadMode ? "切回入口" : "切到道路";
+    roadToggleButton.classList.toggle("is-active", isRoadMode);
+  }
   if (hint) {
     hint.textContent = isBoundaryMode
       ? "俯视 2D 圈地。右键添加当前面积的边界点；右键靠近第 1 点闭合。最多保留 3 个面积。"
-      : "点击地图记录坐标；拖动地图不会记录。蓝色入口标记仅用于参考，不触发连线。";
+      : isRoadMode
+        ? mapToolState.roadMode === "select"
+          ? mapToolState.roadAction === "remove"
+            ? "道路选点模式：点击现有道路段，把它加入待删除列表；不会直接修改道路文件。"
+            : "道路选点模式：点击地图添加路线节点，节点之间会形成自定义导航道路；拖动地图不会记录。"
+          : "道路鼠标模式：可以拖动、缩放和查看地图，不会新增或删除道路；需要操作道路时切到选点模式。"
+        : mapToolState.entranceMode === "select"
+          ? "选点模式：点击地图记录入口坐标；拖动地图不会记录。蓝色入口标记仅用于参考，不触发连线。"
+          : "鼠标模式：可以拖动、缩放和查看地图，不会记录入口点；需要标入口时切到选点模式。";
   }
 
   if (boundaryControls) {
     boundaryControls.hidden = !isBoundaryMode;
+  }
+  if (roadControls) {
+    roadControls.hidden = !isRoadMode;
   }
 
   if (output) {
@@ -980,6 +1266,10 @@ function updateMapToolPanel() {
       output.textContent = boundaryTotalPoints
         ? JSON.stringify(getMapBoundaryOutput(), null, 2)
         : "暂无圈地面积。";
+    } else if (isRoadMode) {
+      output.textContent = roadOutputTotal
+        ? JSON.stringify(getMapRoadOutput(), null, 2)
+        : "暂无道路调整。";
     } else {
       output.textContent = mapToolState.picks.length
         ? JSON.stringify(getMapToolOutput(), null, 2)
@@ -989,35 +1279,61 @@ function updateMapToolPanel() {
 
   if (status) {
     if (isBoundaryMode) {
+      const labelText = mapToolState.boundaryLabelsEnabled ? "编号开" : "编号关";
       status.textContent = activeArea.closed
-        ? `${activeArea.label} 已闭合，${activeArea.points.length} 个边界点。`
-        : `当前：${activeArea.label}，${activeArea.points.length} 个边界点。`;
+        ? `${activeArea.label} 已闭合，${activeArea.points.length} 个边界点，${labelText}。`
+        : `当前：${activeArea.label}，${activeArea.points.length} 个边界点，${labelText}。`;
+    } else if (isRoadMode) {
+      const roadModeText = mapToolState.roadMode === "select" ? "选点模式" : "鼠标模式";
+      status.textContent = mapToolState.roadAction === "remove"
+        ? `${roadModeText}，待删除道路段 ${mapToolState.removedRoadSegments.length} 个；新增道路点 ${mapToolState.roadPoints.length} 个。`
+        : mapToolState.roadPoints.length >= MAP_ROAD_MAX_POINTS
+          ? `${roadModeText}，已记录 ${MAP_ROAD_MAX_POINTS} 个道路点，已达到上限。`
+          : `${roadModeText}，新增道路点 ${mapToolState.roadPoints.length} 个；待删除道路段 ${mapToolState.removedRoadSegments.length} 个。`;
     } else if (!mapToolState.picks.length) {
-      status.textContent = `0 个点位，最多 ${MAP_TOOL_MAX_POINTS} 个。`;
+      status.textContent = mapToolState.entranceMode === "select"
+        ? `选点模式，0 个点位，最多 ${MAP_TOOL_MAX_POINTS} 个。`
+        : `鼠标模式，0 个点位；当前不会记录入口。`;
     } else if (mapToolState.picks.length >= MAP_TOOL_MAX_POINTS) {
       status.textContent = `已记录 ${MAP_TOOL_MAX_POINTS} 个点位，已达到上限。`;
     } else {
-      status.textContent = `已记录 ${mapToolState.picks.length} 个点位，最后一个：点位 ${mapToolState.picks.length}。`;
+      const modeText = mapToolState.entranceMode === "select" ? "选点模式" : "鼠标模式";
+      status.textContent = `${modeText}，已记录 ${mapToolState.picks.length} 个点位，最后一个：点位 ${mapToolState.picks.length}。`;
     }
   }
 
   if (copyButton) {
-    copyButton.disabled = itemCount === 0;
-    copyButton.textContent = isBoundaryMode ? "复制当前" : "复制 JSON";
+    copyButton.disabled = isRoadMode ? roadOutputTotal === 0 : itemCount === 0;
+    copyButton.textContent = isBoundaryMode ? "复制当前" : isRoadMode ? "复制道路" : "复制 JSON";
   }
 
   if (deleteButton) {
     deleteButton.disabled = itemCount === 0;
-    deleteButton.textContent = isBoundaryMode ? "删除上一点" : "删除上一个";
+    deleteButton.textContent = isBoundaryMode
+      ? "删除上一点"
+      : isRoadMode
+        ? mapToolState.roadAction === "remove" ? "撤销删段" : "删除节点"
+        : "删除上一个";
   }
 
   if (clearButton) {
     clearButton.disabled = itemCount === 0;
-    clearButton.textContent = isBoundaryMode ? "清空当前" : "清空";
+    clearButton.textContent = isBoundaryMode
+      ? "清空当前"
+      : isRoadMode
+        ? mapToolState.roadAction === "remove" ? "清空删段" : "清空路线"
+        : "清空";
   }
 
   if (copyAllButton) {
     copyAllButton.disabled = boundaryTotalPoints === 0;
+  }
+
+  if (boundaryLabelButton) {
+    boundaryLabelButton.textContent = mapToolState.boundaryLabelsEnabled
+      ? "建筑编号：开"
+      : "建筑编号：关";
+    boundaryLabelButton.classList.toggle("is-active", mapToolState.boundaryLabelsEnabled);
   }
 
   boundaryToolState.areas.forEach((area, index) => {
@@ -1048,6 +1364,10 @@ function updateMapToolPanel() {
     }
     if (copyAreaButton) copyAreaButton.disabled = !hasPoints;
     if (deleteAreaButton) deleteAreaButton.disabled = !hasPoints;
+  });
+
+  mapToolState.panel?.querySelectorAll("[data-road-action]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.roadAction === mapToolState.roadAction);
   });
 }
 
@@ -1202,6 +1522,244 @@ function redrawMapToolMarkers() {
   });
 }
 
+function clearMapRoadToolVisuals() {
+  for (const child of [...mapToolRoadGroup.children]) {
+    mapToolRoadGroup.remove(child);
+    disposeObject3D(child);
+  }
+}
+
+function createMapRoadPointMarker(point, index) {
+  if (!point?.groundScene) return null;
+
+  const marker = new THREE.Group();
+  marker.name = `map-tool-road-point-${index}`;
+  marker.position.set(Number(point.groundScene[0]), 0, Number(point.groundScene[2]));
+
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(4.2, 18, 18),
+    new THREE.MeshBasicMaterial({
+      color: "#f59e0b",
+      transparent: true,
+      opacity: 0.96,
+      depthWrite: false
+    })
+  );
+  dot.position.y = 5.6;
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(8.6, 0.72, 12, 56),
+    new THREE.MeshBasicMaterial({
+      color: "#fbbf24",
+      transparent: true,
+      opacity: 0.78,
+      depthWrite: false
+    })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.95;
+
+  marker.add(dot, ring, createMapToolLabelSprite(index));
+  mapToolRoadGroup.add(marker);
+  return marker;
+}
+
+function createMapRoadSegmentLine(from, to, color, radius = 1.85) {
+  const start = new THREE.Vector3(from[0], 2.4, from[2]);
+  const end = new THREE.Vector3(to[0], 2.4, to[2]);
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.88,
+    depthWrite: false
+  });
+  const line = createRouteCylinder(start, end, material);
+  if (!line) {
+    material.dispose();
+    return null;
+  }
+
+  line.scale.x = radius / 1.7;
+  line.scale.z = radius / 1.7;
+  line.renderOrder = 82;
+  mapToolRoadGroup.add(line);
+  return line;
+}
+
+function redrawMapRoadTool() {
+  clearMapRoadToolVisuals();
+
+  mapToolState.roadPoints.forEach((point, index) => {
+    createMapRoadPointMarker(point, index + 1);
+    if (index > 0) {
+      createMapRoadSegmentLine(
+        mapToolState.roadPoints[index - 1].groundScene,
+        point.groundScene,
+        "#f59e0b",
+        2
+      );
+    }
+  });
+
+  mapToolState.removedRoadSegments.forEach((segment) => {
+    createMapRoadSegmentLine(
+      [
+        Number(formatEntranceNumber(segment.start.scene.x)),
+        0,
+        Number(formatEntranceNumber(segment.start.scene.z))
+      ],
+      [
+        Number(formatEntranceNumber(segment.end.scene.x)),
+        0,
+        Number(formatEntranceNumber(segment.end.scene.z))
+      ],
+      "#ef4444",
+      2.4
+    );
+  });
+
+  updateMapToolPanel();
+}
+
+function setMapRoadAction(action) {
+  const nextAction = action === "remove" ? "remove" : "add";
+  if (mapToolState.roadAction === nextAction) return;
+
+  mapToolState.roadAction = nextAction;
+  mapToolState.roadPointerStart = null;
+  updateMapToolPanel();
+}
+
+function toggleMapToolInputMode() {
+  if (!mapToolState.active) return;
+
+  if (mapToolState.mode === "road") {
+    toggleMapRoadInputMode();
+    return;
+  }
+
+  toggleMapEntranceInputMode();
+}
+
+function toggleMapEntranceInputMode() {
+  if (mapToolState.mode !== "entrance") return;
+
+  mapToolState.entranceMode = mapToolState.entranceMode === "select" ? "mouse" : "select";
+  mapToolState.pointerStart = null;
+  refreshMapToolMarker();
+  updateMapToolPanel();
+}
+
+function toggleMapRoadInputMode() {
+  if (mapToolState.mode !== "road") return;
+
+  mapToolState.roadMode = mapToolState.roadMode === "select" ? "mouse" : "select";
+  mapToolState.roadPointerStart = null;
+  updateMapToolPanel();
+}
+
+function findNearestMapRoadSegment(scenePoint) {
+  if (!scenePoint) return null;
+
+  const roadSegments = getRoadSegmentsForMapTool();
+  if (!roadSegments.length) return null;
+
+  let best = null;
+  for (const segment of roadSegments) {
+    const closest = getClosestPointOnSegment(scenePoint, segment.start.scene, segment.end.scene);
+    if (!best || closest.distance < best.distance) {
+      best = {
+        segment,
+        distance: closest.distance,
+        scenePoint: closest.point
+      };
+    }
+  }
+
+  return best;
+}
+
+function pickMapRoadPointAtClientPoint(clientX, clientY) {
+  if (!mapToolState.active || !mapToolState.bounds) return null;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1)
+  );
+  let scenePoint = null;
+  let hitScenePoint = null;
+
+  raycaster.setFromCamera(pointer, activeCamera);
+
+  const buildingMeshes = buildingObjects
+    .map((building) => (currentMode === "2d" ? building.mesh2D : building.mesh3D))
+    .filter(Boolean);
+  const buildingHits = raycaster.intersectObjects(buildingMeshes, false);
+
+  if (buildingHits.length) {
+    hitScenePoint = buildingHits[0].point.clone();
+    scenePoint = new THREE.Vector3(buildingHits[0].point.x, 0, buildingHits[0].point.z);
+  } else {
+    scenePoint = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(groundPlane, scenePoint)) return null;
+    hitScenePoint = scenePoint.clone();
+  }
+
+  const sourcePoint = sceneToSourcePoint(scenePoint);
+  if (!sourcePoint) return null;
+
+  const snap = findNearestRoadSnap(scenePoint);
+  const nextIndex = mapToolState.roadPoints.length + 1;
+
+  return {
+    id: `road_point_${String(nextIndex).padStart(2, "0")}`,
+    index: nextIndex,
+    label: `道路点 ${nextIndex}`,
+    source: [
+      Number(formatEntranceNumber(sourcePoint.x)),
+      Number(formatEntranceNumber(sourcePoint.y))
+    ],
+    scene: [
+      Number(formatEntranceNumber(hitScenePoint.x)),
+      Number(formatEntranceNumber(hitScenePoint.y)),
+      Number(formatEntranceNumber(hitScenePoint.z))
+    ],
+    groundScene: [
+      Number(formatEntranceNumber(scenePoint.x)),
+      Number(formatEntranceNumber(scenePoint.y)),
+      Number(formatEntranceNumber(scenePoint.z))
+    ],
+    snap: snap
+      ? [
+        Number(formatEntranceNumber(snap.sourcePoint.x)),
+        Number(formatEntranceNumber(snap.sourcePoint.y))
+      ]
+      : null,
+    snapRoadType: snap?.type || null,
+    snapDistanceMeters: snap ? Number(formatEntranceNumber(snap.distance)) : null
+  };
+}
+
+function pickMapRoadSegmentAtClientPoint(clientX, clientY) {
+  if (!mapToolState.active || !mapToolState.bounds) return null;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1)
+  );
+  const scenePoint = new THREE.Vector3();
+
+  raycaster.setFromCamera(pointer, activeCamera);
+  if (!raycaster.ray.intersectPlane(groundPlane, scenePoint)) return null;
+
+  const nearest = findNearestMapRoadSegment(scenePoint);
+  if (!nearest || nearest.distance > 18) return null;
+
+  return nearest.segment;
+}
+
 function setActiveMapBoundaryArea(areaIndex) {
   const nextIndex = Number(areaIndex);
   if (!Number.isInteger(nextIndex) || !boundaryToolState.areas[nextIndex]) return;
@@ -1250,37 +1808,83 @@ function redrawMapBoundaryTool() {
   updateMapToolPanel();
 }
 
+function isMapToolBoundaryMode() {
+  return mapToolState.active && mapToolState.mode === "boundary";
+}
+
+function isMapToolBoundaryLabelMode() {
+  return isMapToolBoundaryMode() && mapToolState.boundaryLabelsEnabled;
+}
+
+function toggleMapBoundaryLabels() {
+  if (!isMapToolBoundaryMode()) return;
+
+  mapToolState.boundaryLabelsEnabled = !mapToolState.boundaryLabelsEnabled;
+  labelsDirty = true;
+  setNumbersButtonState();
+  updateMapToolPanel();
+  updateLabels(true);
+}
+
+function isMapToolRoadMode() {
+  return mapToolState.active && mapToolState.mode === "road";
+}
+
 function syncMapToolMode() {
-  const isBoundaryMode = mapToolState.mode === "boundary";
+  const isBoundaryMode = isMapToolBoundaryMode();
+  const isRoadMode = isMapToolRoadMode();
   document.body.classList.toggle("is-map-boundary-mode", isBoundaryMode);
-  mapToolMarkerGroup.visible = !isBoundaryMode;
+  document.body.classList.toggle("is-map-road-mode", isRoadMode);
+  mapToolMarkerGroup.visible = !isBoundaryMode && !isRoadMode;
+  mapToolRoadGroup.visible = isRoadMode;
   boundaryToolGroup.visible = isBoundaryMode;
   boundaryToolShapeGroup.visible = isBoundaryMode;
 
-  if (isBoundaryMode) {
+  if (isBoundaryMode || isRoadMode) {
+    setNumbersButtonState();
+
     if (currentMode !== "2d") {
       apply2DView();
     }
+    applyBoundaryOverviewView();
     updateEntranceToolMarker(null, null);
-    redrawMapBoundaryTool();
+    if (isBoundaryMode) {
+      redrawMapBoundaryTool();
+    } else {
+      redrawMapRoadTool();
+    }
   } else {
+    setNumbersButtonState();
+    clearMapRoadToolVisuals();
     redrawMapToolMarkers();
   }
 
+  labelsDirty = true;
   updateMapToolPanel();
 }
 
 function setMapToolMode(mode) {
-  const nextMode = mode === "boundary" ? "boundary" : "entrance";
+  const nextMode = mode === "boundary" || mode === "road" ? mode : "entrance";
   if (mapToolState.mode === nextMode) return;
 
+  const wasEditMode = mapToolState.mode === "boundary" || mapToolState.mode === "road";
   mapToolState.mode = nextMode;
   mapToolState.pointerStart = null;
+  mapToolState.roadPointerStart = null;
   mapToolState.boundaryPointerStart = null;
-  if (nextMode === "boundary") {
+  if (nextMode === "entrance") {
+    mapToolState.entranceMode = "mouse";
+  }
+  if (nextMode === "road") {
+    mapToolState.roadMode = "mouse";
+  }
+
+  if ((nextMode === "boundary" || nextMode === "road") && !wasEditMode) {
     mapToolState.previousMapViewMode = currentMode;
-  } else if (mapToolState.previousMapViewMode === "3d") {
+  } else if (nextMode === "entrance" && mapToolState.previousMapViewMode === "3d") {
     apply3DView();
+    mapToolState.previousMapViewMode = null;
+  } else if (nextMode === "entrance") {
     mapToolState.previousMapViewMode = null;
   }
   syncMapToolMode();
@@ -1320,6 +1924,18 @@ function deleteLastMapToolPoint() {
     return;
   }
 
+  if (mapToolState.mode === "road") {
+    if (mapToolState.roadAction === "remove") {
+      if (!mapToolState.removedRoadSegments.length) return;
+      mapToolState.removedRoadSegments.pop();
+    } else {
+      if (!mapToolState.roadPoints.length) return;
+      mapToolState.roadPoints.pop();
+    }
+    redrawMapRoadTool();
+    return;
+  }
+
   if (!mapToolState.picks.length) return;
 
   mapToolState.picks.pop();
@@ -1335,6 +1951,18 @@ function clearMapToolPoints() {
 
     resetMapBoundaryArea(boundaryToolState.activeAreaIndex);
     redrawMapBoundaryTool();
+    return;
+  }
+
+  if (mapToolState.mode === "road") {
+    if (mapToolState.roadAction === "remove") {
+      if (!mapToolState.removedRoadSegments.length) return;
+      mapToolState.removedRoadSegments = [];
+    } else {
+      if (!mapToolState.roadPoints.length) return;
+      mapToolState.roadPoints = [];
+    }
+    redrawMapRoadTool();
     return;
   }
 
@@ -1481,15 +2109,29 @@ function bindMapToolEvents() {
   }
 
   function shouldHandleEntrancePointerEvent(event) {
-    return mapToolState.mode === "entrance" && event.button !== 2 && isMapToolPointerOnMap(event);
+    return (
+      mapToolState.mode === "entrance" &&
+      mapToolState.entranceMode === "select" &&
+      event.button !== 2 &&
+      isMapToolPointerOnMap(event)
+    );
   }
 
   function shouldHandleBoundaryPointerEvent(event) {
     return mapToolState.mode === "boundary" && event.button === 2 && isMapToolPointerOnMap(event);
   }
 
+  function shouldHandleRoadPointerEvent(event) {
+    return (
+      mapToolState.mode === "road" &&
+      mapToolState.roadMode === "select" &&
+      event.button !== 2 &&
+      isMapToolPointerOnMap(event)
+    );
+  }
+
   function addMapToolPointFromClientPoint(clientX, clientY) {
-    if (mapToolState.mode !== "entrance") return false;
+    if (mapToolState.mode !== "entrance" || mapToolState.entranceMode !== "select") return false;
 
     const entranceHit = findEntranceNavigationHitData(clientX, clientY);
     if (entranceHit?.entranceId) {
@@ -1529,6 +2171,54 @@ function bindMapToolEvents() {
     return true;
   }
 
+  function addMapRoadEditFromClientPoint(clientX, clientY) {
+    if (mapToolState.mode !== "road" || mapToolState.roadMode !== "select") return false;
+
+    const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
+
+    if (mapToolState.roadAction === "remove") {
+      const segment = pickMapRoadSegmentAtClientPoint(clientX, clientY);
+      if (!segment) {
+        if (status) status.textContent = "没有选中道路段，请靠近道路线点击。";
+        return false;
+      }
+
+      const segmentId = segment.id || `${segment.featureId}:${segment.segmentIndex}`;
+      const existingIndex = mapToolState.removedRoadSegments.findIndex((item) => {
+        const itemId = item.id || `${item.featureId}:${item.segmentIndex}`;
+        return itemId === segmentId;
+      });
+
+      if (existingIndex >= 0) {
+        mapToolState.removedRoadSegments.splice(existingIndex, 1);
+        if (status) status.textContent = "已取消该道路段的删除标记。";
+      } else {
+        mapToolState.removedRoadSegments.push(segment);
+        if (status) status.textContent = `已标记删除道路段 ${mapToolState.removedRoadSegments.length}。`;
+      }
+
+      mapToolState.lastPickedAt = performance.now();
+      redrawMapRoadTool();
+      return true;
+    }
+
+    if (mapToolState.roadPoints.length >= MAP_ROAD_MAX_POINTS) {
+      if (status) status.textContent = `最多只能记录 ${MAP_ROAD_MAX_POINTS} 个道路点，请先删除或清空。`;
+      return false;
+    }
+
+    const point = pickMapRoadPointAtClientPoint(clientX, clientY);
+    if (!point) {
+      if (status) status.textContent = "这次点击没有取到道路点，请点击可见建筑、道路或地面。";
+      return false;
+    }
+
+    mapToolState.roadPoints.push(point);
+    mapToolState.lastPickedAt = performance.now();
+    redrawMapRoadTool();
+    return true;
+  }
+
   document.addEventListener("contextmenu", (event) => {
     if (mapToolState.mode !== "boundary" || !isMapToolPointerOnMap(event)) return;
 
@@ -1544,6 +2234,14 @@ function bindMapToolEvents() {
       };
       event.preventDefault();
       event.stopPropagation();
+      return;
+    }
+
+    if (shouldHandleRoadPointerEvent(event)) {
+      mapToolState.roadPointerStart = {
+        x: event.clientX,
+        y: event.clientY
+      };
       return;
     }
 
@@ -1571,6 +2269,18 @@ function bindMapToolEvents() {
       return;
     }
 
+    if (shouldHandleRoadPointerEvent(event)) {
+      const start = mapToolState.roadPointerStart;
+      mapToolState.roadPointerStart = null;
+      if (!start) return;
+
+      const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+      if (moved > 6) return;
+
+      addMapRoadEditFromClientPoint(event.clientX, event.clientY);
+      return;
+    }
+
     if (!shouldHandleEntrancePointerEvent(event)) return;
 
     const start = mapToolState.pointerStart;
@@ -1584,6 +2294,12 @@ function bindMapToolEvents() {
   }, true);
 
   document.addEventListener("click", (event) => {
+    if (shouldHandleRoadPointerEvent(event)) {
+      if (performance.now() - mapToolState.lastPickedAt < 250) return;
+      addMapRoadEditFromClientPoint(event.clientX, event.clientY);
+      return;
+    }
+
     if (!shouldHandleEntrancePointerEvent(event)) return;
     if (performance.now() - mapToolState.lastPickedAt < 250) return;
     addMapToolPointFromClientPoint(event.clientX, event.clientY);
@@ -1835,11 +2551,27 @@ function disposeObject3D(object) {
   });
 }
 
+function clearEntranceRouteTimeLabels() {
+  for (const item of entranceRouteTimeLabels.splice(0)) {
+    item.el.remove();
+  }
+  activeEntranceRouteLabelId = null;
+}
+
 function clearEntranceRoute() {
   for (const child of [...entranceRouteGroup.children]) {
     entranceRouteGroup.remove(child);
     disposeObject3D(child);
   }
+  clearEntranceRouteTimeLabels();
+  labelsDirty = true;
+}
+
+function clearGuidedNavigationRoutes() {
+  clearEntranceRoute();
+  entranceNavigationState.selectedStartId = null;
+  entranceNavigationState.routeEndpointIds = new Set();
+  refreshEntranceMarkerStyles();
 }
 
 function createRouteCylinder(start, end, material) {
@@ -1884,7 +2616,145 @@ function drawEntranceRoute(route) {
   }
 }
 
+function getRoutePoints(route) {
+  return [
+    route.start.entranceScene,
+    ...route.path.nodeKeys.map((key) => route.graph.get(key)?.scene).filter(Boolean),
+    route.end.entranceScene
+  ].map((point) => new THREE.Vector3(point.x, 3.2, point.z));
+}
+
+function getRouteMidpoint(points) {
+  if (!points.length) return null;
+  if (points.length === 1) return points[0].clone();
+
+  let totalDistance = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    totalDistance += points[index - 1].distanceTo(points[index]);
+  }
+
+  if (totalDistance <= 0) return points[Math.floor(points.length / 2)].clone();
+
+  const halfDistance = totalDistance / 2;
+  let walked = 0;
+
+  for (let index = 1; index < points.length; index += 1) {
+    const from = points[index - 1];
+    const to = points[index];
+    const segmentDistance = from.distanceTo(to);
+
+    if (walked + segmentDistance >= halfDistance) {
+      const t = (halfDistance - walked) / Math.max(segmentDistance, 0.001);
+      return from.clone().lerp(to, THREE.MathUtils.clamp(t, 0, 1));
+    }
+
+    walked += segmentDistance;
+  }
+
+  return points[points.length - 1].clone();
+}
+
+function getRouteColorForBuilding(building, fallbackModeKey) {
+  const styleConfig = building?.typeConfig || getBuildingDisplayModeConfig(fallbackModeKey).style;
+  return styleConfig.selectedEdgeColor || styleConfig.edgeColor || "#ef4444";
+}
+
+function setActiveEntranceRouteLabel(routeId) {
+  activeEntranceRouteLabelId = routeId || null;
+  labelsDirty = true;
+}
+
+function createEntranceRouteTimeLabel(anchor, color, routeId) {
+  const label = document.createElement("div");
+  label.className = "entrance-route-time-label";
+  label.textContent = "10min";
+  label.dataset.routeId = routeId;
+  label.style.setProperty("--route-time-color", color);
+  labelLayer.appendChild(label);
+  entranceRouteTimeLabels.push({ el: label, anchor, routeId });
+}
+
+function drawEntranceRoutes(routes, modeKey) {
+  clearEntranceRoute();
+
+  routes.forEach((route, routeIndex) => {
+    const routeId = `guided-route-${modeKey}-${routeIndex}`;
+    const routeColor = getRouteColorForBuilding(route.targetBuilding, modeKey);
+    const material = new THREE.MeshBasicMaterial({
+      color: routeColor,
+      transparent: true,
+      opacity: 0.78,
+      depthWrite: false,
+      depthTest: false
+    });
+    const points = getRoutePoints(route);
+
+    for (let index = 1; index < points.length; index += 1) {
+      const segment = createRouteCylinder(points[index - 1], points[index], material);
+      if (segment) {
+        segment.userData.isGuidedCategoryRoute = true;
+        segment.userData.routeId = routeId;
+        entranceRouteGroup.add(segment);
+      }
+    }
+
+    const midpoint = getRouteMidpoint(points);
+    if (midpoint) {
+      createEntranceRouteTimeLabel(midpoint.clone().setY(9.5), routeColor, routeId);
+    }
+  });
+
+  labelsDirty = true;
+}
+
+function findEntranceRouteHit(clientX, clientY) {
+  if (!entranceRouteGroup.children.length) return null;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1)
+  );
+
+  raycaster.setFromCamera(pointer, activeCamera);
+  const hits = raycaster.intersectObjects(entranceRouteGroup.children, false);
+  return hits.find((hit) => hit.object?.userData?.isGuidedCategoryRoute)?.object || null;
+}
+
+function bindEntranceRouteEvents() {
+  renderer.domElement.addEventListener("pointerdown", (event) => {
+    entranceRoutePointerStart = {
+      x: event.clientX,
+      y: event.clientY
+    };
+  });
+
+  renderer.domElement.addEventListener("pointerup", (event) => {
+    const start = entranceRoutePointerStart;
+    entranceRoutePointerStart = null;
+    if (!start) return;
+
+    const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (moved > 6) return;
+
+    const routeSegment = findEntranceRouteHit(event.clientX, event.clientY);
+    if (!routeSegment) {
+      if (activeEntranceRouteLabelId) {
+        setActiveEntranceRouteLabel(null);
+      }
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setActiveEntranceRouteLabel(routeSegment.userData.routeId);
+  });
+}
+
 function getDormEntranceName(entranceId) {
+  const entranceLabel = DORM_ENTRANCES[entranceId]?.label;
+  if (entranceLabel) return entranceLabel;
+
   const dormId = entranceId.replace(/^dorm_/, "");
   const dorm = DORMS.find((item) => item.buildingId === entranceId || item.id === dormId);
   return dorm?.shortName || dorm?.name || entranceId.replace(/^dorm_/, "");
@@ -2128,6 +2998,7 @@ function bindEntranceNavigationEvents() {
 
     const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
     if (moved > 6) return;
+    if (guidedPreviewState.navigationCategoryViewActive) return;
 
     const entranceId = findEntranceNavigationHit(event.clientX, event.clientY);
     if (!entranceId) return;
@@ -2490,6 +3361,7 @@ bindEntranceToolEvents();
 createMapToolPanel();
 bindMapToolEvents();
 bindEntranceNavigationEvents();
+bindEntranceRouteEvents();
 createBoundaryToolPanel();
 bindBoundaryToolEvents();
 
@@ -2505,6 +3377,16 @@ function setButtonState(mode) {
 }
 
 function setNumbersButtonState() {
+  if (isMapToolBoundaryMode()) {
+    btnNumbers.classList.toggle("is-active", mapToolState.boundaryLabelsEnabled);
+    btnNumbers.disabled = true;
+    btnNumbers.textContent = mapToolState.boundaryLabelsEnabled ? "Labels On" : "Labels Off";
+    btnNumbers.title = "圈地模式的建筑编号由圈地工具面板里的开关控制。";
+    return;
+  }
+
+  btnNumbers.disabled = false;
+  btnNumbers.title = "";
   btnNumbers.classList.toggle("is-active", showNormalLabels);
   btnNumbers.textContent = showNormalLabels ? "Developer On" : "Developer Off";
 }
@@ -2553,7 +3435,8 @@ function updateStatusText() {
       : " Drag to pan, scroll to zoom.";
 
   if (selectedBuilding?.functionalConfig) {
-    mapStatus.textContent = `${head}${envPart}${devPart} Selected: ${selectedBuilding.functionalConfig.name}.${helpText}`;
+    const modeConfig = getBuildingDisplayModeConfig(selectedBuilding.displayMode);
+    mapStatus.textContent = `${head}${envPart}${devPart} Selected ${modeConfig.label}: ${selectedBuilding.functionalConfig.name}.${helpText}`;
   } else {
     mapStatus.textContent = `${head}${envPart}${devPart}${helpText}`;
   }
@@ -2579,6 +3462,9 @@ function setGuidedDetailActions(isGuidedEntry) {
       detailPanel.appendChild(btnBackOverview);
       actionWrap.remove();
     }
+    guidedPreviewState.navigationTargetMode = null;
+    guidedPreviewState.navigationCategoryViewActive = false;
+    clearGuidedNavigationRoutes();
     btnBackOverview.textContent = "Return to Explore";
     return;
   }
@@ -2588,6 +3474,17 @@ function setGuidedDetailActions(isGuidedEntry) {
     actionWrap.className = "guided-detail-actions";
     detailPanel.insertBefore(actionWrap, btnBackOverview);
     actionWrap.appendChild(btnBackOverview);
+
+    const navigationBtn = document.createElement("button");
+    navigationBtn.id = "btnGuidedNavigation";
+    navigationBtn.className = "scene-detail-back scene-detail-back--navigation";
+    navigationBtn.type = "button";
+    navigationBtn.textContent = "Navigation";
+    navigationBtn.setAttribute("aria-pressed", "false");
+    navigationBtn.addEventListener("click", () => {
+      renderDormNavigationCategoryView();
+    });
+    actionWrap.appendChild(navigationBtn);
 
     const viewDetailsBtn = document.createElement("button");
     viewDetailsBtn.id = "btnGuidedViewDetails";
@@ -2601,6 +3498,14 @@ function setGuidedDetailActions(isGuidedEntry) {
   }
 
   btnBackOverview.textContent = "Return to ANU";
+}
+
+function setGuidedNavigationButtonActive(isActive) {
+  const navigationBtn = detailPanel.querySelector("#btnGuidedNavigation");
+  if (!navigationBtn) return;
+
+  navigationBtn.classList.toggle("is-active", isActive);
+  navigationBtn.setAttribute("aria-pressed", isActive ? "true" : "false");
 }
 
 function escapeHtml(value) {
@@ -2634,6 +3539,174 @@ function getGuidedDorm(building) {
   return DORMS.find((dorm) => dorm.buildingId === buildingId || dorm.mapFocus === buildingId) || null;
 }
 
+function getNavigationTargetModes() {
+  return NAVIGATION_TARGET_MODE_ORDER
+    .map((modeKey) => BUILDING_DISPLAY_MODES[modeKey])
+    .filter(Boolean);
+}
+
+function getBuildingEntranceIds(building) {
+  const buildingId = building?.functionalConfig?.buildingId;
+  if (!buildingId) return [];
+
+  return Object.entries(DORM_ENTRANCES)
+    .filter(([entranceId, entranceData]) => (
+      entranceId === buildingId ||
+      entranceData?.buildingId === buildingId
+    ))
+    .map(([entranceId]) => entranceId);
+}
+
+function getBuildingEntranceId(building) {
+  return getBuildingEntranceIds(building)[0] || null;
+}
+
+function getNavigationTargetBuildings(modeKey, sourceBuilding) {
+  const sourceEntranceIds = new Set(getBuildingEntranceIds(sourceBuilding));
+
+  return buildingObjects.filter((building) => {
+    const targetEntranceIds = getBuildingEntranceIds(building);
+    return (
+      building !== sourceBuilding &&
+      building.displayMode === modeKey &&
+      targetEntranceIds.some((entranceId) => !sourceEntranceIds.has(entranceId))
+    );
+  });
+}
+
+function getEntranceRouteDistance(route) {
+  return (
+    route.path.distance +
+    route.start.entranceScene.distanceTo(route.start.snapScene) +
+    route.end.entranceScene.distanceTo(route.end.snapScene)
+  );
+}
+
+function findShortestBuildingRoute(sourceBuilding, targetBuilding) {
+  const sourceEntranceIds = getBuildingEntranceIds(sourceBuilding);
+  const targetEntranceIds = getBuildingEntranceIds(targetBuilding);
+  let bestRoute = null;
+
+  for (const sourceEntranceId of sourceEntranceIds) {
+    for (const targetEntranceId of targetEntranceIds) {
+      if (sourceEntranceId === targetEntranceId) continue;
+
+      const route = findShortestEntranceRoute(sourceEntranceId, targetEntranceId);
+      if (!route) continue;
+
+      if (!bestRoute || getEntranceRouteDistance(route) < getEntranceRouteDistance(bestRoute)) {
+        bestRoute = route;
+      }
+    }
+  }
+
+  return bestRoute;
+}
+
+function applyGuidedNavigationTarget(modeKey) {
+  const sourceBuilding = selectedBuilding;
+  const sourceEntranceId = getBuildingEntranceId(sourceBuilding);
+  const modeConfig = getBuildingDisplayModeConfig(modeKey);
+
+  if (!sourceBuilding || !sourceEntranceId) {
+    clearGuidedNavigationRoutes();
+    return {
+      status: "当前建筑还没有绑定入口，暂时不能自动导航。"
+    };
+  }
+
+  const routes = getNavigationTargetBuildings(modeKey, sourceBuilding)
+    .map((targetBuilding) => {
+      const route = findShortestBuildingRoute(sourceBuilding, targetBuilding);
+      return route ? { ...route, targetBuilding } : null;
+    })
+    .filter(Boolean);
+
+  if (!routes.length) {
+    clearGuidedNavigationRoutes();
+    mapStatus.textContent = `暂无可导航到的${modeConfig.label}入口。`;
+    return {
+      status: `暂无可导航到的${modeConfig.label}入口。`
+    };
+  }
+
+  drawEntranceRoutes(routes, modeKey);
+  entranceNavigationState.selectedStartId = sourceEntranceId;
+  entranceNavigationState.routeEndpointIds = new Set([
+    sourceEntranceId,
+    ...routes.flatMap((route) => [route.startId, route.endId])
+  ]);
+  refreshEntranceMarkerStyles();
+
+  const sourceName = getDormEntranceName(sourceEntranceId);
+  mapStatus.textContent = `${sourceName} 已连接 ${routes.length} 个${modeConfig.label}入口。`;
+
+  return {
+    status: `已连接 ${routes.length} 个${modeConfig.label}入口。`
+  };
+}
+
+function renderDormNavigationCategoryView() {
+  setGuidedDetailActions(guidedPreviewState.active || isHomePathEntry || cityOverviewState.dismissed);
+  setGuidedNavigationButtonActive(true);
+  guidedPreviewState.navigationCategoryViewActive = true;
+
+  const targetModes = getNavigationTargetModes();
+  detailTitle.textContent = "Navigation";
+  detailCode.textContent = guidedPreviewState.entryBuildingId
+    ? `起点 ${guidedPreviewState.entryBuildingId}`
+    : "选择目标类别";
+
+  detailScroll.innerHTML = `
+    <div class="dorm-navigation-panel">
+      <p class="dorm-navigation-panel__eyebrow">Navigation</p>
+      <h2 class="dorm-navigation-panel__title">选择目标类别</h2>
+      <div class="dorm-navigation-panel__grid">
+        ${targetModes
+          .map((mode) => `
+            <button
+              class="dorm-navigation-category"
+              type="button"
+              data-navigation-category="${escapeHtml(mode.key)}"
+              style="--nav-category-bg: ${escapeHtml(mode.style.baseColor)}; --nav-category-selected: ${escapeHtml(mode.style.selectedColor)}; --nav-category-edge: ${escapeHtml(mode.style.edgeColor)};"
+              aria-pressed="${guidedPreviewState.navigationTargetMode === mode.key ? "true" : "false"}"
+            >
+              <span class="dorm-navigation-category__swatch" aria-hidden="true"></span>
+              <span>${escapeHtml(mode.label)}</span>
+            </button>
+          `)
+          .join("")}
+      </div>
+      <p class="dorm-navigation-panel__status" aria-live="polite" hidden></p>
+    </div>
+  `;
+
+  const statusEl = detailScroll.querySelector(".dorm-navigation-panel__status");
+
+  detailScroll.querySelectorAll(".dorm-navigation-category").forEach((button) => {
+    const isSelected = guidedPreviewState.navigationTargetMode === button.dataset.navigationCategory;
+    button.classList.toggle("is-selected", isSelected);
+
+    button.addEventListener("click", () => {
+      guidedPreviewState.navigationTargetMode = button.dataset.navigationCategory || null;
+
+      detailScroll.querySelectorAll(".dorm-navigation-category").forEach((item) => {
+        const itemSelected = item.dataset.navigationCategory === guidedPreviewState.navigationTargetMode;
+        item.classList.toggle("is-selected", itemSelected);
+        item.setAttribute("aria-pressed", itemSelected ? "true" : "false");
+      });
+
+      const result = applyGuidedNavigationTarget(guidedPreviewState.navigationTargetMode);
+      if (statusEl) {
+        statusEl.textContent = result.status;
+        statusEl.hidden = false;
+      }
+    });
+  });
+
+  detailScroll.scrollTop = 0;
+}
+
 function renderGuidedDetailContent(building) {
   const dorm = getGuidedDorm(building);
   if (!dorm) return false;
@@ -2642,15 +3715,27 @@ function renderGuidedDetailContent(building) {
   setGuidedDetailActions(guidedPreviewState.active || isHomePathEntry || cityOverviewState.dismissed);
   guidedPreviewState.entryBuildingId = building.functionalConfig?.buildingId || null;
   guidedPreviewState.entryDormId = dorm.id || null;
+  guidedPreviewState.navigationTargetMode = null;
+  guidedPreviewState.navigationCategoryViewActive = false;
+  setGuidedNavigationButtonActive(false);
+  clearGuidedNavigationRoutes();
 
   detailTitle.textContent = dorm.name || building.functionalConfig?.name || "Selected dorm";
   detailCode.textContent = "Guided dorm information";
 
+  const quickPoints = [
+    ["Best for", dorm.bestFor],
+    ["Location feel", dorm.locationFeel],
+    ["Main trade-off", dorm.tradeOff]
+  ]
+    .filter(([, value]) => value)
+    .slice(0, 3);
+
   detailScroll.innerHTML = `
-    <div class="information-drawer-panel information-drawer-panel--guided">
+    <div class="information-drawer-panel information-drawer-panel--guided information-drawer-panel--guided-compact">
       <p class="information-drawer__eyebrow">Residence detail</p>
       <h2 class="information-drawer__title">${escapeHtml(dorm.name)}</h2>
-      <p class="information-drawer__summary">${escapeHtml(dorm.description || dorm.summary || "")}</p>
+      <p class="information-drawer__summary">${escapeHtml(dorm.summary || dorm.description || "")}</p>
 
       <div class="information-drawer__facts">
         <div>
@@ -2667,30 +3752,15 @@ function renderGuidedDetailContent(building) {
         </div>
       </div>
 
-      <section class="information-drawer__section">
-        <h3>Best for</h3>
-        <p>${escapeHtml(dorm.bestFor || "—")}</p>
-      </section>
-
-      <section class="information-drawer__section">
-        <h3>Location feel</h3>
-        <p>${escapeHtml(dorm.locationFeel || "—")}</p>
-      </section>
-
-      <section class="information-drawer__section">
-        <h3>Main trade-off</h3>
-        <p>${escapeHtml(dorm.tradeOff || "—")}</p>
-      </section>
-
-      <div class="information-drawer__two-col">
-        <section>
-          <h3>Pros</h3>
-          <ul>${renderGuidedList(dorm.pros)}</ul>
-        </section>
-        <section>
-          <h3>Cons</h3>
-          <ul>${renderGuidedList(dorm.cons)}</ul>
-        </section>
+      <div class="information-drawer__compact-notes">
+        ${quickPoints
+          .map(([label, value]) => `
+            <section class="information-drawer__compact-note">
+              <h3>${escapeHtml(label)}</h3>
+              <p>${escapeHtml(value)}</p>
+            </section>
+          `)
+          .join("")}
       </div>
 
     </div>
@@ -2810,20 +3880,22 @@ function getCampusBoundaryScenePoints(boundaryId, bounds) {
     .filter(Boolean);
 }
 
-function isScenePointInsideCampusBoundary(point) {
-  if (!point || campusBoundaryScenePoints.length < 3) return true;
+function isScenePointInsidePolygon(point, polygonPoints, fallback = false) {
+  if (!point || !Array.isArray(polygonPoints) || polygonPoints.length < 3) {
+    return fallback;
+  }
 
   let inside = false;
   const x = point.x;
   const z = point.z;
 
   for (
-    let index = 0, previous = campusBoundaryScenePoints.length - 1;
-    index < campusBoundaryScenePoints.length;
+    let index = 0, previous = polygonPoints.length - 1;
+    index < polygonPoints.length;
     previous = index, index += 1
   ) {
-    const currentPoint = campusBoundaryScenePoints[index];
-    const previousPoint = campusBoundaryScenePoints[previous];
+    const currentPoint = polygonPoints[index];
+    const previousPoint = polygonPoints[previous];
     const crosses =
       currentPoint.z > z !== previousPoint.z > z &&
       x <
@@ -2837,10 +3909,24 @@ function isScenePointInsideCampusBoundary(point) {
   return inside;
 }
 
+function isScenePointInsideCampusBoundary(point) {
+  return isScenePointInsidePolygon(point, campusBoundaryScenePoints, true);
+}
+
 function isSourcePointInsideCampusBoundary(x, y, centerX, centerY) {
   if (campusBoundaryScenePoints.length < 3) return true;
   const local = toSceneXZ(x, y, centerX, centerY, 1);
   return isScenePointInsideCampusBoundary(local);
+}
+
+function isScenePointInsideCampusTerritory(point) {
+  return isScenePointInsidePolygon(point, campusTerritoryScenePoints, false);
+}
+
+function isSourcePointInsideCampusTerritory(x, y, centerX, centerY) {
+  if (campusTerritoryScenePoints.length < 3) return false;
+  const local = toSceneXZ(x, y, centerX, centerY, 1);
+  return isScenePointInsideCampusTerritory(local);
 }
 
 function getCampusMutedColor(color, insideCampus, mix = 0.84) {
@@ -2849,6 +3935,69 @@ function getCampusMutedColor(color, insideCampus, mix = 0.84) {
   const muted = new THREE.Color(color);
   muted.lerp(new THREE.Color("#eef1ef"), mix);
   return muted;
+}
+
+function getTerritorySharpnessColor(color, insideTerritory, outsideMix = 0.58) {
+  const adjusted = color instanceof THREE.Color ? color.clone() : new THREE.Color(color);
+  if (campusTerritoryScenePoints.length < 3) return adjusted;
+
+  if (insideTerritory) {
+    adjusted.offsetHSL(0, 0.045, -0.012);
+    return adjusted;
+  }
+
+  adjusted.lerp(new THREE.Color("#edf1e8"), outsideMix);
+  adjusted.offsetHSL(0, -0.05, 0.018);
+  return adjusted;
+}
+
+function getBuildingVisualColor(color, building, insideCampus, mix = 0.84) {
+  return getTerritorySharpnessColor(
+    getCampusMutedColor(color, insideCampus, mix),
+    !!building?.isInsideCampusTerritory || building === selectedBuilding
+  );
+}
+
+function clearCampusTerritoryBoundary() {
+  for (const child of [...campusTerritoryGroup.children]) {
+    campusTerritoryGroup.remove(child);
+    disposeObject3D(child);
+  }
+}
+
+function createCampusTerritorySegment(from, to, color, opacity, radius, y, renderOrder) {
+  const start = new THREE.Vector3(from.x, y, from.z);
+  const end = new THREE.Vector3(to.x, y, to.z);
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    depthTest: false
+  });
+  const line = createRouteCylinder(start, end, material);
+  if (!line) {
+    material.dispose();
+    return null;
+  }
+
+  line.scale.x = radius / 1.7;
+  line.scale.z = radius / 1.7;
+  line.renderOrder = renderOrder;
+  campusTerritoryGroup.add(line);
+  return line;
+}
+
+function drawCampusTerritoryBoundary(points) {
+  clearCampusTerritoryBoundary();
+  if (!Array.isArray(points) || points.length < 3) return;
+
+  for (let index = 0; index < points.length; index += 1) {
+    const from = points[index];
+    const to = points[(index + 1) % points.length];
+    createCampusTerritorySegment(from, to, "#facc15", 0.22, 5.6, 1.15, 41);
+    createCampusTerritorySegment(from, to, "#a16207", 0.82, 1.55, 1.42, 42);
+  }
 }
 
 function getCoordinateCenter(coords) {
@@ -3177,16 +4326,19 @@ function createNormalLabelElement(number) {
   return button;
 }
 
-function createFunctionalLabelElement(shortName, typeKey, interactive) {
+function createFunctionalLabelElement(shortName, displayMode, typeKey, interactive) {
+  const modeConfig = getBuildingDisplayModeConfig(displayMode);
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "scene-label is-dorm is-functional";
+  button.className = `scene-label is-dorm is-functional ${modeConfig.labelClass}`;
+  button.setAttribute("aria-label", `${modeConfig.label}: ${shortName}`);
   if (!interactive) {
     button.disabled = true;
     button.setAttribute("tabindex", "-1");
   }
 
   button.dataset.functionalType = typeKey;
+  button.dataset.displayMode = modeConfig.key;
 
   const face = document.createElement("span");
   face.className = "scene-label__face";
@@ -3348,10 +4500,25 @@ function apply2DView() {
   updateStatusText();
 }
 
+function applyBoundaryOverviewView() {
+  if (!sceneState) return;
+
+  updateOrthoFrustum(sceneState);
+  orthoCamera.zoom = 1;
+  orthoCamera.updateProjectionMatrix();
+  controls.target.copy(sceneState.center3D);
+  orthoCamera.position.copy(sceneState.top2DPosition);
+  orthoCamera.lookAt(sceneState.center3D);
+  controls.update();
+  labelsDirty = true;
+}
+
 function switchMode(mode) {
   if (!sceneState || isTransitioning || currentMode === mode) return;
-  if (mapToolState.active && mapToolState.mode === "boundary" && mode !== "2d") {
-    mapStatus.textContent = "圈地工具使用俯视 2D，请切回入口工具后再使用 3D。";
+  if (mapToolState.active && (mapToolState.mode === "boundary" || mapToolState.mode === "road") && mode !== "2d") {
+    mapStatus.textContent = mapToolState.mode === "road"
+      ? "道路工具使用俯视 2D，请切回入口工具后再使用 3D。"
+      : "圈地工具使用俯视 2D，请切回入口工具后再使用 3D。";
     return;
   }
 
@@ -3531,22 +4698,38 @@ function updateCityOverviewFade() {
 
 function createFallbackDetail(building) {
   const fc = building.functionalConfig;
+  const modeConfig = getBuildingDisplayModeConfig(building.displayMode);
   return {
     title: fc?.name || `Building ${building.displayNumber}`,
-    subtitle: fc?.type || "Functional building",
+    subtitle: fc?.type || modeConfig.fallbackSubtitle,
     summary:
-      "Placeholder detail. This building has already entered the functional building system, but its final detail content has not been written yet.",
+      `${modeConfig.label} placeholder detail. This building has already entered the ${modeConfig.label} display mode, but its final detail content has not been written yet.`,
     bullets: [
       `Display number: ${building.displayNumber}`,
       `Building id: ${fc?.buildingId || building.stableId}`,
+      `Display mode: ${modeConfig.key}`,
       `Type: ${fc?.type || "unknown"}`,
       "Replace this placeholder later with final content."
     ]
   };
 }
 
+function setBuildingDetailMode(building) {
+  const modeConfig = getBuildingDisplayModeConfig(building.displayMode);
+  detailPanel.classList.remove(...BUILDING_DETAIL_MODE_CLASSES);
+  detailPanel.classList.add(modeConfig.detailClass);
+
+  const kicker = detailPanel.querySelector(".scene-detail-kicker");
+  if (kicker) {
+    kicker.textContent = modeConfig.detailKicker;
+  }
+}
+
 function fillDetailContent(building) {
+  setBuildingDetailMode(building);
+
   if (
+    building.displayMode === "dorm" &&
     (guidedPreviewState.active || cityOverviewState.dismissed) &&
     renderGuidedDetailContent(building)
   ) {
@@ -3556,38 +4739,44 @@ function fillDetailContent(building) {
   setGuidedDetailActions(false);
   detailPanel.classList.remove("scene-panel-detail--guided");
   const fc = building.functionalConfig;
+  const modeConfig = getBuildingDisplayModeConfig(building.displayMode);
   const content = (fc && DETAIL_CONTENT[fc.buildingId]) || createFallbackDetail(building);
 
   detailTitle.textContent = content.title;
-  detailCode.textContent = `${building.stableId} · ${fc?.shortName || building.displayNumber}`;
+  detailCode.textContent = `${modeConfig.label} · ${building.stableId} · ${fc?.shortName || building.displayNumber}`;
 
   const bulletHtml = (content.bullets || [])
-    .map((item) => `<li>${item}</li>`)
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
 
   detailScroll.innerHTML = `
-    <p>${content.summary}</p>
+    <p>${escapeHtml(content.summary)}</p>
 
-    <div class="detail-placeholder-block">
-      <h4>Quick notes</h4>
+    <div class="detail-placeholder-block detail-placeholder-block--${modeConfig.key}">
+      <h4>${modeConfig.detailBlockTitle}</h4>
       <ul>${bulletHtml}</ul>
     </div>
 
-    <div class="detail-placeholder-block">
-      <h4>Expandable content</h4>
-      <p>
-        This block is intentionally structured so you can later replace it with type-specific material such as dorm comparisons, teaching building functions, retail notes, or route guidance.
-      </p>
-      <p>
-        Because detail content now comes from JSON rather than being hard-coded in the main scene file, future changes should mostly happen in config files instead of in rendering logic.
-      </p>
+    <div class="detail-placeholder-block detail-placeholder-block--${modeConfig.key}">
+      <h4>${modeConfig.frameworkTitle}</h4>
+      <p>${modeConfig.frameworkCopy}</p>
+      <p>当前框架入口：config/functional-buildings.json 的 displayMode 字段决定建筑进入哪一套 UI 和交互逻辑。</p>
     </div>
   `;
 
   detailScroll.scrollTop = 0;
 }
 
-function openFunctionalDetail(building) {
+function focusBuildingForCurrentContext(building) {
+  if (guidedPreviewState.active || cityOverviewState.dismissed) {
+    focusBuildingFromEntry(building);
+    return;
+  }
+
+  focusBuilding(building);
+}
+
+function openBuildingDetail(building) {
   if (!building?.functionalConfig?.interactive) return;
 
   selectedBuilding = building;
@@ -3599,10 +4788,50 @@ function openFunctionalDetail(building) {
   syncSceneAfterLayoutChange();
 }
 
+function openFunctionalDetail(building) {
+  openBuildingDetail(building);
+}
+
+function handleBuildingLabelInteraction(building) {
+  const functionalConfig = building?.functionalConfig;
+  if (!functionalConfig?.interactive) return;
+
+  if (cityOverviewState.active && !cityOverviewState.dismissed) {
+    return;
+  }
+
+  if (
+    guidedPreviewState.active &&
+    guidedPreviewState.entryBuildingId &&
+    functionalConfig.buildingId !== guidedPreviewState.entryBuildingId
+  ) {
+    return;
+  }
+
+  if (!selectedBuilding) {
+    lastBrowseViewState = captureCurrentViewState();
+  }
+
+  if (currentMode !== "3d") {
+    runModeTransition(() => {
+      apply3DView();
+      focusBuildingForCurrentContext(building);
+      openBuildingDetail(building);
+    });
+    return;
+  }
+
+  focusBuildingForCurrentContext(building);
+  openBuildingDetail(building);
+}
+
 function closeFunctionalDetail() {
   const viewState = lastBrowseViewState;
 
   selectedBuilding = null;
+  guidedPreviewState.navigationTargetMode = null;
+  guidedPreviewState.navigationCategoryViewActive = false;
+  clearGuidedNavigationRoutes();
   refreshBuildingStyles();
   setSidePanelState("overview");
   labelsDirty = true;
@@ -3714,21 +4943,31 @@ function refreshBuildingStyles() {
 
     if (fc && typeConfig) {
       building.mesh3D.material.color.set(
-        getCampusMutedColor(isSelected ? typeConfig.selectedColor : typeConfig.baseColor, insideCampus)
+        getBuildingVisualColor(
+          isSelected ? typeConfig.selectedColor : typeConfig.baseColor,
+          building,
+          insideCampus
+        )
       );
       building.mesh2D.material.color.set(
-        getCampusMutedColor(isSelected ? typeConfig.selectedColor : typeConfig.baseColor, insideCampus)
+        getBuildingVisualColor(
+          isSelected ? typeConfig.selectedColor : typeConfig.baseColor,
+          building,
+          insideCampus
+        )
       );
       building.edge3D.material.color.set(
-        getCampusMutedColor(
+        getBuildingVisualColor(
           isSelected ? typeConfig.selectedEdgeColor : typeConfig.edgeColor,
+          building,
           insideCampus,
           0.88
         )
       );
       building.edge2D.material.color.set(
-        getCampusMutedColor(
+        getBuildingVisualColor(
           isSelected ? typeConfig.selectedEdgeColor : typeConfig.edgeColor,
+          building,
           insideCampus,
           0.88
         )
@@ -3739,10 +4978,18 @@ function refreshBuildingStyles() {
         applyFunctionalLabelVisual(building.functionalLabelEl, typeConfig, !!isSelected);
       }
     } else {
-      building.mesh3D.material.color.set(getCampusMutedColor("#d6d5cf", insideCampus));
-      building.mesh2D.material.color.set(getCampusMutedColor("#d6d5cf", insideCampus));
-      building.edge3D.material.color.set(getCampusMutedColor("#bdbbb5", insideCampus, 0.88));
-      building.edge2D.material.color.set(getCampusMutedColor("#bdbbb5", insideCampus, 0.88));
+      building.mesh3D.material.color.set(
+        getBuildingVisualColor("#d6d5cf", building, insideCampus)
+      );
+      building.mesh2D.material.color.set(
+        getBuildingVisualColor("#d6d5cf", building, insideCampus)
+      );
+      building.edge3D.material.color.set(
+        getBuildingVisualColor("#bdbbb5", building, insideCampus, 0.88)
+      );
+      building.edge2D.material.color.set(
+        getBuildingVisualColor("#bdbbb5", building, insideCampus, 0.88)
+      );
     }
   }
 
@@ -4139,6 +5386,41 @@ function getTypeConfig(typeKey) {
   return BUILDING_TYPES[typeKey] || null;
 }
 
+function getBuildingDisplayMode(functionalConfig) {
+  if (!functionalConfig) return null;
+
+  const explicitMode = functionalConfig.displayMode || functionalConfig.mode;
+  if (explicitMode === "residence") return "dorm";
+  if (explicitMode === "function") return "functional";
+  if (BUILDING_DISPLAY_MODES[explicitMode]) return explicitMode;
+
+  if (
+    functionalConfig.type === "dorm" ||
+    String(functionalConfig.buildingId || "").startsWith("dorm_")
+  ) {
+    return "dorm";
+  }
+
+  return "functional";
+}
+
+function getBuildingDisplayModeConfig(displayMode) {
+  return BUILDING_DISPLAY_MODES[displayMode] || BUILDING_DISPLAY_MODES.functional;
+}
+
+function getBuildingStyleConfig(functionalConfig) {
+  if (!functionalConfig) return null;
+
+  const typeConfig = getTypeConfig(functionalConfig.type);
+  const modeConfig = getBuildingDisplayModeConfig(getBuildingDisplayMode(functionalConfig));
+
+  return {
+    ...(typeConfig || {}),
+    ...modeConfig.style,
+    displayMode: modeConfig.key
+  };
+}
+
 async function loadScene() {
   try {
     const [
@@ -4178,6 +5460,8 @@ async function loadScene() {
     campusBoundaryScenePoints = isLabMap
       ? []
       : getCampusBoundaryScenePoints("anu", bounds);
+    campusTerritoryScenePoints = getCampusBoundaryScenePoints("anu", bounds);
+    drawCampusTerritoryBoundary(campusTerritoryScenePoints);
     const rawBuildings = [];
     let skippedCount = 0;
 
@@ -4240,6 +5524,12 @@ async function loadScene() {
               center.y,
               bounds.centerX,
               bounds.centerY
+            ),
+            isInsideCampusTerritory: isSourcePointInsideCampusTerritory(
+              center.x,
+              center.y,
+              bounds.centerX,
+              bounds.centerY
             )
           });
         }
@@ -4267,7 +5557,8 @@ async function loadScene() {
 
       const stableId = `B${String(displayNumber).padStart(4, "0")}`;
       const functionalConfig = getFunctionalConfigForNumber(displayNumber);
-      const typeConfig = getTypeConfig(functionalConfig?.type);
+      const displayMode = getBuildingDisplayMode(functionalConfig);
+      const typeConfig = getBuildingStyleConfig(functionalConfig);
       const mergedItems = item.modelMergeFeatureIds
         .map((featureId) => rawBuildings.find((modelItem) => modelItem.featureId === featureId))
         .filter(Boolean);
@@ -4349,6 +5640,7 @@ async function loadScene() {
       if (functionalConfig && typeConfig) {
         functionalLabelEl = createFunctionalLabelElement(
           functionalConfig.shortName || String(displayNumber),
+          displayMode,
           functionalConfig.type,
           !!functionalConfig.interactive
         );
@@ -4363,6 +5655,7 @@ async function loadScene() {
       const building = {
         stableId,
         displayNumber,
+        displayMode,
         functionalConfig,
         typeConfig,
         mesh3D,
@@ -4375,6 +5668,7 @@ async function loadScene() {
         focusCenter,
         focusSize,
         isInsideCampusBoundary: item.isInsideCampusBoundary,
+        isInsideCampusTerritory: item.isInsideCampusTerritory,
         anchor3D: new THREE.Vector3(
           scenePos.x,
           height + (functionalConfig ? 10 : 7),
@@ -4389,40 +5683,7 @@ async function loadScene() {
 
       if (functionalLabelEl && functionalConfig?.interactive) {
         functionalLabelEl.addEventListener("click", () => {
-          if (cityOverviewState.active && !cityOverviewState.dismissed) {
-            return;
-          }
-
-          if (
-            guidedPreviewState.active &&
-            guidedPreviewState.entryBuildingId &&
-            functionalConfig.buildingId !== guidedPreviewState.entryBuildingId
-          ) {
-            return;
-          }
-
-          if (!selectedBuilding) {
-            lastBrowseViewState = captureCurrentViewState();
-          }
-
-          if (currentMode !== "3d") {
-            runModeTransition(() => {
-              apply3DView();
-              if (guidedPreviewState.active || cityOverviewState.dismissed) {
-                focusBuildingFromEntry(building);
-              } else {
-                focusBuilding(building);
-              }
-              openFunctionalDetail(building);
-            });
-          } else {
-            if (guidedPreviewState.active || cityOverviewState.dismissed) {
-              focusBuildingFromEntry(building);
-            } else {
-              focusBuilding(building);
-            }
-            openFunctionalDetail(building);
-          }
+          handleBuildingLabelInteraction(building);
         });
       }
 
@@ -4530,6 +5791,11 @@ function getFunctionalLabelScale(anchor) {
   return THREE.MathUtils.lerp(1.08, 0.5, eased);
 }
 
+function getOrthoVisibleSpan() {
+  const baseSpan = orthoCamera.top - orthoCamera.bottom;
+  return baseSpan / Math.max(orthoCamera.zoom || 1, 0.001);
+}
+
 function getNormalLabelScale(anchor) {
   if (currentMode === "3d") {
     const distance = activeCamera.position.distanceTo(anchor);
@@ -4546,7 +5812,10 @@ function getNormalLabelScale(anchor) {
     return THREE.MathUtils.lerp(0.9, 0.42, eased);
   }
 
-  const orthoSpan = orthoCamera.top - orthoCamera.bottom;
+  const boundaryLabelMode = isMapToolBoundaryLabelMode();
+  const orthoSpan = boundaryLabelMode
+    ? getOrthoVisibleSpan()
+    : orthoCamera.top - orthoCamera.bottom;
   const nearSpan = 420;
   const farSpan = 2600;
 
@@ -4557,6 +5826,10 @@ function getNormalLabelScale(anchor) {
   );
 
   const eased = t * t * (3 - 2 * t);
+  if (boundaryLabelMode) {
+    return THREE.MathUtils.lerp(1.45, 0.95, eased);
+  }
+
   return THREE.MathUtils.lerp(0.88, 0.48, eased);
 }
 
@@ -4567,8 +5840,39 @@ function placeLabel(el, x, y, scale) {
   el.style.scale = `${scale}`;
 }
 
+function updateEntranceRouteTimeLabels(width, height) {
+  for (const item of entranceRouteTimeLabels) {
+    if (!activeEntranceRouteLabelId || item.routeId !== activeEntranceRouteLabelId) {
+      item.el.style.display = "none";
+      continue;
+    }
+
+    const projected = item.anchor.clone().project(activeCamera);
+    const visible =
+      projected.z >= -1 &&
+      projected.z <= 1 &&
+      projected.x >= -1.1 &&
+      projected.x <= 1.1 &&
+      projected.y >= -1.1 &&
+      projected.y <= 1.1;
+
+    if (!visible) {
+      item.el.style.display = "none";
+      continue;
+    }
+
+    const x = (projected.x * 0.5 + 0.5) * width;
+    const y = (-projected.y * 0.5 + 0.5) * height;
+    item.el.style.display = "block";
+    item.el.style.left = `${x}px`;
+    item.el.style.top = `${y}px`;
+  }
+}
+
 function updateLabels(force = false) {
-  const modeKey = `${currentMode}-${showNormalLabels}-${selectedBuilding?.displayNumber || "none"}`;
+  const boundaryToolMode = isMapToolBoundaryMode();
+  const boundaryLabelMode = isMapToolBoundaryLabelMode();
+  const modeKey = `${currentMode}-${showNormalLabels}-${boundaryLabelMode}-${selectedBuilding?.displayNumber || "none"}`;
   if (!force && !labelsDirty && !cameraTween && modeKey === lastLabelMode) return;
 
   labelsDirty = false;
@@ -4577,8 +5881,15 @@ function updateLabels(force = false) {
   const width = container.clientWidth;
   const height = container.clientHeight;
 
+  updateEntranceRouteTimeLabels(width, height);
+
   for (const building of buildingObjects) {
     if (!building.functionalLabelEl) continue;
+
+    if (boundaryToolMode) {
+      building.functionalLabelEl.style.display = "none";
+      continue;
+    }
 
     if (
       guidedPreviewState.active &&
@@ -4612,7 +5923,7 @@ function updateLabels(force = false) {
     placeLabel(building.functionalLabelEl, x, y, scale);
   }
 
-  const developerMode = showNormalLabels;
+  const developerMode = boundaryToolMode ? boundaryLabelMode : showNormalLabels;
 
   if (!developerMode) {
     for (const building of buildingObjects) {
@@ -4622,9 +5933,15 @@ function updateLabels(force = false) {
   }
 
   let zoomAllowsLabels = true;
-  let maxLabels = currentMode === "2d" ? 220 : 72;
+  let maxLabels = boundaryLabelMode
+    ? buildingObjects.length
+    : currentMode === "2d"
+      ? 220
+      : 72;
 
-  if (currentMode === "2d") {
+  if (boundaryLabelMode) {
+    zoomAllowsLabels = true;
+  } else if (currentMode === "2d") {
     const orthoSpan = orthoCamera.top - orthoCamera.bottom;
     zoomAllowsLabels = orthoSpan < 2800;
   } else {
@@ -4642,12 +5959,12 @@ function updateLabels(force = false) {
   const candidates = [];
 
   for (const building of buildingObjects) {
-    if (building.hideNormalLabel) {
+    if (!boundaryLabelMode && building.hideNormalLabel) {
       building.normalLabelEl.style.display = "none";
       continue;
     }
 
-    if (building.functionalLabelEl) {
+    if (!boundaryLabelMode && building.functionalLabelEl) {
       building.normalLabelEl.style.display = "none";
       continue;
     }
@@ -4655,13 +5972,14 @@ function updateLabels(force = false) {
     const anchor = currentMode === "3d" ? building.anchor3D : building.anchor2D;
     const projected = anchor.clone().project(activeCamera);
 
+    const screenMargin = boundaryLabelMode ? 1.22 : 1.08;
     const visible =
       projected.z >= -1 &&
       projected.z <= 1 &&
-      projected.x >= -1.08 &&
-      projected.x <= 1.08 &&
-      projected.y >= -1.08 &&
-      projected.y <= 1.08;
+      projected.x >= -screenMargin &&
+      projected.x <= screenMargin &&
+      projected.y >= -screenMargin &&
+      projected.y <= screenMargin;
 
     if (!visible) {
       building.normalLabelEl.style.display = "none";
@@ -4682,21 +6000,23 @@ function updateLabels(force = false) {
     });
   }
 
-  candidates.sort((a, b) => {
-    const da = a.dx * a.dx + a.dy * a.dy;
-    const db = b.dx * b.dx + b.dy * b.dy;
-    return da - db;
-  });
+  if (!boundaryLabelMode) {
+    candidates.sort((a, b) => {
+      const da = a.dx * a.dx + a.dy * a.dy;
+      const db = b.dx * b.dx + b.dy * b.dy;
+      return da - db;
+    });
+  }
 
   const chosen = candidates.slice(0, maxLabels);
-  const chosenSet = new Set(chosen.map((item) => item.building.displayNumber));
+  const chosenSet = new Set(chosen.map((item) => item.building));
 
   for (const item of chosen) {
     placeLabel(item.building.normalLabelEl, item.x, item.y, item.scale);
   }
 
   for (const building of buildingObjects) {
-    if (!chosenSet.has(building.displayNumber)) {
+    if (!chosenSet.has(building)) {
       building.normalLabelEl.style.display = "none";
     }
   }
@@ -4709,6 +6029,8 @@ function updateLabels(force = false) {
 btn3D.addEventListener("click", () => switchMode("3d"));
 btn2D.addEventListener("click", () => switchMode("2d"));
 btnNumbers.addEventListener("click", () => {
+  if (isMapToolBoundaryMode()) return;
+
   showNormalLabels = !showNormalLabels;
   setNumbersButtonState();
   updateStatusText();
