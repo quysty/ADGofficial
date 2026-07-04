@@ -183,7 +183,7 @@ const pageParams = new URLSearchParams(window.location.search);
 const isBaseMap = pageParams.get("map") === "base";
 const isLabMap = !isBaseMap;
 const topoDataRoot = isBaseMap ? "topo" : "topo-lab";
-const DATA_CACHE_VERSION = "territory-sharpness-v1";
+const DATA_CACHE_VERSION = "territory-soft-boundary-v1";
 const CONFIG_CACHE_VERSION = DATA_CACHE_VERSION;
 const TOPO_CACHE_VERSION = DATA_CACHE_VERSION;
 if (pageParams.get("labels") === "off") {
@@ -3995,8 +3995,8 @@ function drawCampusTerritoryBoundary(points) {
   for (let index = 0; index < points.length; index += 1) {
     const from = points[index];
     const to = points[(index + 1) % points.length];
-    createCampusTerritorySegment(from, to, "#facc15", 0.22, 5.6, 1.15, 41);
-    createCampusTerritorySegment(from, to, "#a16207", 0.82, 1.55, 1.42, 42);
+    createCampusTerritorySegment(from, to, "#facc15", 0.1, 3.6, 1.12, 41);
+    createCampusTerritorySegment(from, to, "#a16207", 0.46, 0.95, 1.36, 42);
   }
 }
 
