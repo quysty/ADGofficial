@@ -1,5 +1,9 @@
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
+import {
+  applyBuildingLabelOverrides,
+  loadBuildingLabelOverrides
+} from "./src/backend/buildingOverrides.js";
 
 const container = document.querySelector("#map3dContainer");
 const mapStatus = document.querySelector("#mapStatus");
@@ -3518,6 +3522,7 @@ function escapeHtml(value) {
 }
 
 function formatRent(dorm) {
+  if (dorm?.rentText) return dorm.rentText;
   if (!dorm || dorm.pricePerWeek == null) return "Not listed";
   return `$${Number(dorm.pricePerWeek).toLocaleString()} / week`;
 }
@@ -5446,6 +5451,15 @@ async function loadScene() {
     DETAIL_CONTENT = detailContentData || {};
     DORM_ENTRANCES = dormEntrancesData || {};
     CAMPUS_BOUNDARIES = campusBoundaryData || {};
+
+    const buildingLabelOverrides = await loadBuildingLabelOverrides();
+    if (buildingLabelOverrides.rows.length) {
+      FUNCTIONAL_BUILDINGS = applyBuildingLabelOverrides(
+        FUNCTIONAL_BUILDINGS,
+        buildingLabelOverrides,
+        DORMS
+      );
+    }
 
     const features = buildingsGeoJson.features || [];
     if (!features.length) {
