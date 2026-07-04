@@ -105,6 +105,159 @@ const EDITABLE_FIELD_LABELS = {
   dormTradeOff: "Main trade-off"
 };
 
+const DORM_DETAIL_DEFAULTS = [
+  {
+    id: "lena",
+    buildingId: "dorm_lena",
+    name: "Lena Karmel Lodge",
+    shortName: "Lena",
+    tag: "QUIET / PRIVATE",
+    type: "Apartment-style residence",
+    location: "City-side / campus edge",
+    summary: "A strong option when the user prioritises privacy, personal space, and structured independent living.",
+    description: "A residence option currently represented as a quiet and private choice in the prototype recommendation logic.",
+    bestFor: "A strong option when the user prioritises privacy, personal space, and structured independent living.",
+    locationFeel: "Modern and practical, with a stronger sense of private routine than traditional hall life.",
+    tradeOff: "Can feel more independent and less socially automatic than some more communal residences.",
+    pricePerWeek: null
+  },
+  {
+    id: "warrumbul",
+    buildingId: "dorm_warrumbul",
+    name: "Warrumbul Lodge",
+    shortName: "Warrumbul",
+    tag: "CITY / ACCESS",
+    type: "Self-catered residence",
+    location: "Campus / city access",
+    summary: "Useful when the user wants practical location advantages and everyday movement convenience.",
+    description: "A residence option currently represented as a practical access-focused choice in the prototype recommendation logic.",
+    bestFor: "Useful when the user wants practical location advantages and everyday movement convenience.",
+    locationFeel: "Convenient, flexible, and easier for students who care about getting around efficiently.",
+    tradeOff: "Its strength is practicality rather than a highly distinctive hall-style atmosphere.",
+    pricePerWeek: null
+  },
+  {
+    id: "wright",
+    buildingId: "dorm_wright",
+    name: "Wright Hall",
+    shortName: "Wright",
+    tag: "RESIDENTIAL / EXPERIENCE",
+    type: "Residential hall",
+    location: "Residential campus setting",
+    summary: "Relevant when the user is comparing social atmosphere, view quality, shared spaces, and the meaning of residential life.",
+    description: "A residence option currently represented as a more residential and experience-oriented choice in the prototype recommendation logic.",
+    bestFor: "Relevant when the user is comparing social atmosphere, view quality, shared spaces, and the meaning of residential life.",
+    locationFeel: "More overtly residential, more social, and easier to read as a classic hall environment.",
+    tradeOff: "It may suit users less well if they strongly prefer private, apartment-like living.",
+    pricePerWeek: null
+  },
+  {
+    id: "kinloch",
+    buildingId: "dorm_kinloch",
+    name: "Kinloch Lodge",
+    shortName: "Kinloch",
+    tag: "CITY / SELF-CONTAINED",
+    type: "Apartment-style residence",
+    location: "Childers Street / city edge",
+    summary: "A practical option when the user wants self-contained living close to both campus routines and the city edge.",
+    description: "A lodge-style residence currently represented as a city-edge, self-contained option in the prototype recommendation logic.",
+    bestFor: "A practical option when the user wants self-contained living close to both campus routines and the city edge.",
+    locationFeel: "Urban, convenient, and more independent-feeling than a traditional residential hall.",
+    tradeOff: "May feel more functional and apartment-like, with less automatic hall-style community energy.",
+    pricePerWeek: null
+  },
+  {
+    id: "davey",
+    buildingId: "dorm_davey",
+    name: "Davey Lodge",
+    shortName: "Davey",
+    tag: "APARTMENT / SOCIAL",
+    type: "Self-catered apartment residence",
+    location: "Childers Street / city access",
+    summary: "Useful when the user wants apartment-style independence while still having shared spaces and campus-city convenience.",
+    description: "A self-catered lodge option currently represented as an apartment-style residence with practical access and shared common spaces.",
+    bestFor: "Useful when the user wants apartment-style independence while still having shared spaces and campus-city convenience.",
+    locationFeel: "Central, practical, and designed around self-catered apartments with common spaces for social interaction.",
+    tradeOff: "Its appeal is convenience and self-contained living rather than a classic catered college atmosphere.",
+    pricePerWeek: null
+  },
+  {
+    id: "toad",
+    buildingId: "dorm_toad",
+    name: "Toad Hall",
+    shortName: "Toad",
+    tag: "PLACEHOLDER / RESIDENCE",
+    type: "Residential hall",
+    location: "ANU campus",
+    summary: "Placeholder residence profile for Toad Hall.",
+    description: "Toad Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+    bestFor: "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+    locationFeel: "Location and living feel are pending detailed content review.",
+    tradeOff: "This profile is currently a functional placeholder and should be refined later.",
+    pricePerWeek: null
+  },
+  {
+    id: "fenner",
+    buildingId: "dorm_fenner",
+    name: "Fenner Hall",
+    shortName: "Fenner",
+    tag: "PLACEHOLDER / RESIDENCE",
+    type: "Residential hall",
+    location: "ANU campus",
+    summary: "Placeholder residence profile for Fenner Hall.",
+    description: "Fenner Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+    bestFor: "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+    locationFeel: "Location and living feel are pending detailed content review.",
+    tradeOff: "This profile is currently a functional placeholder and should be refined later.",
+    pricePerWeek: null
+  },
+  {
+    id: "bruce",
+    buildingId: "dorm_bruce",
+    name: "Bruce Hall",
+    shortName: "Bruce",
+    tag: "PLACEHOLDER / RESIDENCE",
+    type: "Residential hall",
+    location: "ANU campus",
+    summary: "Placeholder residence profile for Bruce Hall.",
+    description: "Bruce Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+    bestFor: "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+    locationFeel: "Location and living feel are pending detailed content review.",
+    tradeOff: "This profile is currently a functional placeholder and should be refined later.",
+    pricePerWeek: null
+  },
+  {
+    id: "ursula-laurus",
+    buildingId: "dorm_ursula_laurus",
+    name: "Ursula Hall Laurus Wing",
+    shortName: "Ursula",
+    tag: "PLACEHOLDER / RESIDENCE",
+    type: "Residential hall",
+    location: "ANU campus",
+    summary: "Placeholder residence profile for Ursula Hall Laurus Wing.",
+    description: "Ursula Hall Laurus Wing is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+    bestFor: "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+    locationFeel: "Location and living feel are pending detailed content review.",
+    tradeOff: "This profile is currently a functional placeholder and should be refined later.",
+    pricePerWeek: null
+  },
+  {
+    id: "burton-garran",
+    buildingId: "dorm_burton_garran",
+    name: "Burton & Garran Hall",
+    shortName: "B&G",
+    tag: "PLACEHOLDER / RESIDENCE",
+    type: "Residential hall",
+    location: "ANU campus",
+    summary: "Placeholder residence profile for Burton & Garran Hall.",
+    description: "Burton & Garran Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+    bestFor: "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+    locationFeel: "Location and living feel are pending detailed content review.",
+    tradeOff: "This profile is currently a functional placeholder and should be refined later.",
+    pricePerWeek: null
+  }
+];
+
 function setStatus(message, tone = "neutral") {
   els.status.textContent = message;
   els.status.dataset.tone = tone;
@@ -235,6 +388,32 @@ function setFieldValue(element, value) {
   element.value = value || "";
 }
 
+function getDefaultDormForRow(row) {
+  if (!row) return null;
+  const buildingId = row.buildingId || "";
+  const dormId = buildingId.replace(/^dorm_/, "");
+
+  return (
+    DORM_DETAIL_DEFAULTS.find(
+      (dorm) =>
+        dorm?.buildingId === buildingId ||
+        dorm?.mapFocus === buildingId ||
+        dorm?.id === dormId
+    ) || null
+  );
+}
+
+function firstText(...values) {
+  return values.find((value) => typeof value === "string" && value.trim()) || "";
+}
+
+function formatDefaultDormRent(dorm) {
+  if (!dorm) return "Not listed";
+  if (dorm.rentText) return dorm.rentText;
+  if (dorm.pricePerWeek == null) return "Not listed";
+  return `$${Number(dorm.pricePerWeek).toLocaleString()} / week`;
+}
+
 function getTypeForDisplayMode(displayMode) {
   return DISPLAY_MODE_TYPE_MAP[displayMode] || "academic";
 }
@@ -295,22 +474,29 @@ function syncBuildingGuardRules() {
 
 function fillBuildingForm(row) {
   const fallback = row || {};
+  const defaultDorm = getDefaultDormForRow(fallback);
   setFieldValue(els.buildingNumber, fallback.buildingNumber);
   setFieldValue(els.buildingId, fallback.buildingId);
   setFieldValue(els.displayMode, fallback.displayMode || "dorm");
   setFieldValue(els.typeKey, getTypeForDisplayMode(fallback.displayMode || "dorm"));
-  setFieldValue(els.displayName, fallback.name);
-  setFieldValue(els.shortName, fallback.shortName);
+  setFieldValue(els.displayName, firstText(fallback.name, defaultDorm?.name));
+  setFieldValue(els.shortName, firstText(fallback.shortName, defaultDorm?.shortName));
   if (els.labelEnabled) els.labelEnabled.checked = fallback.labelEnabled !== false;
   if (els.interactive) els.interactive.checked = !!fallback.interactive;
-  setFieldValue(els.dormTag, fallback.dorm?.tag);
-  setFieldValue(els.dormRent, fallback.dorm?.rentText || "Not listed");
-  setFieldValue(els.dormType, fallback.dorm?.type);
-  setFieldValue(els.dormLocation, fallback.dorm?.location);
-  setFieldValue(els.dormSummary, fallback.dorm?.summary);
-  setFieldValue(els.dormBestFor, fallback.dorm?.bestFor);
-  setFieldValue(els.dormLocationFeel, fallback.dorm?.locationFeel);
-  setFieldValue(els.dormTradeOff, fallback.dorm?.tradeOff);
+  setFieldValue(els.dormTag, firstText(fallback.dorm?.tag, defaultDorm?.tag));
+  setFieldValue(els.dormRent, firstText(fallback.dorm?.rentText, formatDefaultDormRent(defaultDorm)));
+  setFieldValue(els.dormType, firstText(fallback.dorm?.type, defaultDorm?.type));
+  setFieldValue(els.dormLocation, firstText(fallback.dorm?.location, defaultDorm?.location));
+  setFieldValue(
+    els.dormSummary,
+    firstText(fallback.dorm?.summary, defaultDorm?.summary, defaultDorm?.description)
+  );
+  setFieldValue(els.dormBestFor, firstText(fallback.dorm?.bestFor, defaultDorm?.bestFor));
+  setFieldValue(
+    els.dormLocationFeel,
+    firstText(fallback.dorm?.locationFeel, defaultDorm?.locationFeel)
+  );
+  setFieldValue(els.dormTradeOff, firstText(fallback.dorm?.tradeOff, defaultDorm?.tradeOff));
   syncBuildingGuardRules();
 }
 
