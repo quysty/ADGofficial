@@ -28,6 +28,7 @@ const isAdminPreview = Boolean(adminPreviewParam);
 const adminToolParam = pageParams.get("adminTool") || "";
 const adminToolModeParam = pageParams.get("adminToolMode") || "";
 const isAdminMapToolPreview = isAdminPreview && adminToolParam === "map-tools";
+const DATA_FETCH_OPTIONS = { cache: "no-cache" };
 
 if (isAdminPreview) {
   document.body.classList.add("is-admin-map-preview");
@@ -4406,7 +4407,7 @@ function syncSceneAfterLayoutChange() {
    ========================================================= */
 
 async function fetchJsonStrict(path) {
-  const response = await fetch(path);
+  const response = await fetch(path, DATA_FETCH_OPTIONS);
   if (!response.ok) {
     throw new Error(`Failed to load ${path}: HTTP ${response.status}`);
   }
@@ -4415,7 +4416,7 @@ async function fetchJsonStrict(path) {
 
 async function fetchGeoJsonSafe(path) {
   try {
-    const response = await fetch(path);
+    const response = await fetch(path, DATA_FETCH_OPTIONS);
     if (!response.ok) {
       console.warn(`Failed to load ${path}: HTTP ${response.status}`);
       return null;
@@ -4429,7 +4430,7 @@ async function fetchGeoJsonSafe(path) {
 
 async function fetchJsonSafe(path) {
   try {
-    const response = await fetch(path);
+    const response = await fetch(path, DATA_FETCH_OPTIONS);
     if (!response.ok) {
       console.warn(`Failed to load ${path}: HTTP ${response.status}`);
       return null;
