@@ -25,9 +25,16 @@ const detailScroll = document.querySelector("#detailScroll");
 const pageParams = new URLSearchParams(window.location.search);
 const adminPreviewParam = pageParams.get("adminPreview") || "";
 const isAdminPreview = Boolean(adminPreviewParam);
+const adminToolParam = pageParams.get("adminTool") || "";
+const adminToolModeParam = pageParams.get("adminToolMode") || "";
+const isAdminMapToolPreview = isAdminPreview && adminToolParam === "map-tools";
 
 if (isAdminPreview) {
   document.body.classList.add("is-admin-map-preview");
+}
+
+if (isAdminMapToolPreview) {
+  document.body.classList.add("is-admin-map-tool-preview");
 }
 
 if (
@@ -196,7 +203,7 @@ const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const isBaseMap = pageParams.get("map") === "base";
 const isLabMap = !isBaseMap;
 const topoDataRoot = isBaseMap ? "topo" : "topo-lab";
-const DATA_CACHE_VERSION = "territory-soft-boundary-v1";
+const DATA_CACHE_VERSION = "building-1786-footprint-v1";
 const CONFIG_CACHE_VERSION = DATA_CACHE_VERSION;
 const TOPO_CACHE_VERSION = DATA_CACHE_VERSION;
 if (pageParams.get("labels") === "off") {
@@ -221,7 +228,9 @@ const guidedPreviewState = {
   navigationCategoryViewActive: false
 };
 const isHomePathEntry = !guidedPreviewState.active && guidedPreviewState.from === "homePath";
-const isMapToolPage = document.body.dataset.page === "map-tool" || pageParams.get("tool") === "point";
+const isMapToolPage = document.body.dataset.page === "map-tool" ||
+  pageParams.get("tool") === "point" ||
+  isAdminMapToolPreview;
 const entranceToolParam = pageParams.get("entrance") || "";
 const boundaryToolParam = pageParams.get("boundary") || "";
 const MAP_TOOL_MAX_POINTS = 10;
@@ -341,13 +350,20 @@ function createMapBoundaryArea(index) {
   };
 }
 
+function normalizeMapToolMode(mode) {
+  return mode === "boundary" || mode === "road" || mode === "camera"
+    ? mode
+    : "entrance";
+}
+
 const mapToolState = {
   active: isMapToolPage,
-  mode: "entrance",
+  mode: normalizeMapToolMode(adminToolModeParam),
   bounds: null,
   panel: null,
   picks: [],
   entranceMode: "mouse",
+  boundaryMode: isAdminMapToolPreview ? "mouse" : "select",
   roadMode: "mouse",
   roadAction: "add",
   roadPoints: [],
@@ -903,6 +919,7 @@ function bindEntranceToolEvents() {
    ========================================================= */
 
 function createMapToolPanel() {
+  if (isAdminMapToolPreview) return;
   if (!mapToolState.active || mapToolState.panel) return;
 
   const panel = document.createElement("aside");
@@ -1549,6 +1566,115 @@ function getCurrentMapToolOutput() {
   return getMapToolOutput();
 }
 
+function getMapToolInputMode() {
+  if (mapToolState.mode === "boundary") return mapToolState.boundaryMode;
+  if (mapToolState.mode === "road") return mapToolState.roadMode;
+  return mapToolState.entranceMode;
+}
+
+function getMapToolStatusText() {
+  const isBoundaryMode = mapToolState.mode === "boundary";
+  const isRoadMode = mapToolState.mode === "road";
+  const isCameraMode = mapToolState.mode === "camera";
+
+  if (isBoundaryMode) {
+    const activeArea = getMapBoundaryActiveArea();
+    const labelText = mapToolState.boundaryLabelsEnabled ? "编号开" : "编号关";
+    const inputText = mapToolState.boundaryMode === "select" ? "圈地模式" : "鼠标模式";
+    if (activeArea.closed) {
+      return `${inputText}，${activeArea.label} 已闭合，${activeArea.points.length} 个边界点，${labelText}。`;
+    }
+    return `${inputText}，当前：${activeArea.label}，${activeArea.points.length} 个边界点，${labelText}。`;
+  }
+
+  if (isRoadMode) {
+    const roadModeText = mapToolState.roadMode === "select" ? "选点模式" : "鼠标模式";
+    return mapToolState.roadAction === "remove"
+      ? `${roadModeText}，待删除道路段 ${mapToolState.removedRoadSegments.length} 个；新增道路点 ${mapToolState.roadPoints.length} 个。`
+      : `${roadModeText}，新增道路点 ${mapToolState.roadPoints.length} 个；待删除道路段 ${mapToolState.removedRoadSegments.length} 个。`;
+  }
+
+  if (isCameraMode) {
+    return `视角模式，高度 ${Math.round(mapToolState.cameraHeight)}，俯仰 ${Math.round(mapToolState.cameraPitch)}°，网格${mapToolState.cameraGridEnabled ? "开" : "关"}。`;
+  }
+
+  if (!mapToolState.picks.length) {
+    return mapToolState.entranceMode === "select"
+      ? `选点模式，0 个点位，最多 ${MAP_TOOL_MAX_POINTS} 个。`
+      : "鼠标模式，0 个点位；当前不会记录入口。";
+  }
+
+  if (mapToolState.picks.length >= MAP_TOOL_MAX_POINTS) {
+    return `已记录 ${MAP_TOOL_MAX_POINTS} 个点位，已达到上限。`;
+  }
+
+  const modeText = mapToolState.entranceMode === "select" ? "选点模式" : "鼠标模式";
+  return `${modeText}，已记录 ${mapToolState.picks.length} 个点位，最后一个：点位 ${mapToolState.picks.length}。`;
+}
+
+function getMapToolPayload() {
+  const output = getCurrentMapToolOutput();
+  const activeArea = getMapBoundaryActiveArea();
+  const boundaryTotalPoints = getMapBoundaryTotalPoints();
+  const roadOutputTotal = mapToolState.roadPoints.length + mapToolState.removedRoadSegments.length;
+  const canDelete = mapToolState.mode === "boundary"
+    ? activeArea.points.length > 0
+    : mapToolState.mode === "road"
+      ? mapToolState.roadAction === "remove"
+        ? mapToolState.removedRoadSegments.length > 0
+        : mapToolState.roadPoints.length > 0
+      : mapToolState.mode === "camera"
+        ? false
+        : mapToolState.picks.length > 0;
+  const canClear = mapToolState.mode === "boundary"
+    ? activeArea.points.length > 0
+    : mapToolState.mode === "road"
+      ? mapToolState.roadAction === "remove"
+        ? mapToolState.removedRoadSegments.length > 0
+        : mapToolState.roadPoints.length > 0
+      : mapToolState.mode === "camera"
+        ? true
+        : mapToolState.picks.length > 0;
+
+  return {
+    mode: mapToolState.mode,
+    inputMode: getMapToolInputMode(),
+    entranceMode: mapToolState.entranceMode,
+    boundaryMode: mapToolState.boundaryMode,
+    roadMode: mapToolState.roadMode,
+    roadAction: mapToolState.roadAction,
+    developerLabelsEnabled: showNormalLabels,
+    boundaryLabelsEnabled: mapToolState.boundaryLabelsEnabled,
+    boundaryAreas: output?.areas || [],
+    activeArea: activeArea?.index || 1,
+    boundaryTotalPoints,
+    camera: mapToolState.mode === "camera"
+      ? {
+        gridEnabled: mapToolState.cameraGridEnabled,
+        pitchDegrees: Number(formatEntranceNumber(mapToolState.cameraPitch)),
+        height: Number(formatEntranceNumber(mapToolState.cameraHeight))
+      }
+      : null,
+    canDelete,
+    canClear,
+    status: getMapToolStatusText(),
+    output
+  };
+}
+
+function postAdminMapToolState() {
+  if (!isAdminMapToolPreview || window.parent === window) return;
+
+  window.parent.postMessage(
+    {
+      source: "anu-explore-preview",
+      type: "map-tool-state",
+      payload: getMapToolPayload()
+    },
+    window.location.origin
+  );
+}
+
 function updateMapToolPanel() {
   const isBoundaryMode = mapToolState.mode === "boundary";
   const isRoadMode = mapToolState.mode === "road";
@@ -1598,15 +1724,19 @@ function updateMapToolPanel() {
           : "入口工具";
   }
   if (entranceToggleButton) {
-    const activeInputMode = isRoadMode ? mapToolState.roadMode : mapToolState.entranceMode;
+    const activeInputMode = isBoundaryMode
+      ? mapToolState.boundaryMode
+      : isRoadMode
+        ? mapToolState.roadMode
+        : mapToolState.entranceMode;
     entranceToggleButton.textContent = activeInputMode === "select"
-      ? "选点模式"
+      ? isBoundaryMode ? "圈地模式" : "选点模式"
       : "鼠标模式";
     entranceToggleButton.classList.toggle(
       "is-active",
-      !isBoundaryMode && !isCameraMode && activeInputMode === "select"
+      !isCameraMode && activeInputMode === "select"
     );
-    entranceToggleButton.disabled = isBoundaryMode || isCameraMode;
+    entranceToggleButton.disabled = isCameraMode;
   }
   if (toggleButton) {
     toggleButton.textContent = isBoundaryMode ? "切回入口" : "切到圈地";
@@ -1622,7 +1752,9 @@ function updateMapToolPanel() {
   }
   if (hint) {
     hint.textContent = isBoundaryMode
-      ? "俯视 2D 圈地。右键添加当前面积的边界点；右键靠近第 1 点闭合。最多保留 3 个面积。"
+      ? mapToolState.boundaryMode === "select"
+        ? "圈地模式：俯视 2D，右键添加当前面积的边界点；右键靠近第 1 点闭合。最多保留 3 个面积。"
+        : "圈地鼠标模式：可以拖动、缩放和查看地图，不会新增边界点；需要圈地时切到圈地模式。"
       : isRoadMode
         ? mapToolState.roadMode === "select"
           ? mapToolState.roadAction === "remove"
@@ -1783,6 +1915,8 @@ function updateMapToolPanel() {
   mapToolState.panel?.querySelectorAll("[data-road-action]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.roadAction === mapToolState.roadAction);
   });
+
+  postAdminMapToolState();
 }
 
 async function copyMapToolOutputToClipboard(output, successText) {
@@ -2052,6 +2186,11 @@ function setMapRoadAction(action) {
 function toggleMapToolInputMode() {
   if (!mapToolState.active) return;
 
+  if (mapToolState.mode === "boundary") {
+    toggleMapBoundaryInputMode();
+    return;
+  }
+
   if (mapToolState.mode === "road") {
     toggleMapRoadInputMode();
     return;
@@ -2066,6 +2205,14 @@ function toggleMapEntranceInputMode() {
   mapToolState.entranceMode = mapToolState.entranceMode === "select" ? "mouse" : "select";
   mapToolState.pointerStart = null;
   refreshMapToolMarker();
+  updateMapToolPanel();
+}
+
+function toggleMapBoundaryInputMode() {
+  if (mapToolState.mode !== "boundary") return;
+
+  mapToolState.boundaryMode = mapToolState.boundaryMode === "select" ? "mouse" : "select";
+  mapToolState.boundaryPointerStart = null;
   updateMapToolPanel();
 }
 
@@ -2309,6 +2456,9 @@ function setMapToolMode(mode) {
   mapToolState.boundaryPointerStart = null;
   if (nextMode === "entrance") {
     mapToolState.entranceMode = "mouse";
+  }
+  if (nextMode === "boundary" && isAdminMapToolPreview) {
+    mapToolState.boundaryMode = "mouse";
   }
   if (nextMode === "road") {
     mapToolState.roadMode = "mouse";
@@ -2558,7 +2708,12 @@ function bindMapToolEvents() {
   }
 
   function shouldHandleBoundaryPointerEvent(event) {
-    return mapToolState.mode === "boundary" && event.button === 2 && isMapToolPointerOnMap(event);
+    return (
+      mapToolState.mode === "boundary" &&
+      mapToolState.boundaryMode === "select" &&
+      event.button === 2 &&
+      isMapToolPointerOnMap(event)
+    );
   }
 
   function shouldHandleRoadPointerEvent(event) {
@@ -2660,7 +2815,11 @@ function bindMapToolEvents() {
   }
 
   document.addEventListener("contextmenu", (event) => {
-    if (mapToolState.mode !== "boundary" || !isMapToolPointerOnMap(event)) return;
+    if (
+      mapToolState.mode !== "boundary" ||
+      mapToolState.boundaryMode !== "select" ||
+      !isMapToolPointerOnMap(event)
+    ) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -3829,6 +3988,15 @@ function setNumbersButtonState() {
   btnNumbers.title = "";
   btnNumbers.classList.toggle("is-active", showNormalLabels);
   btnNumbers.textContent = showNormalLabels ? "Developer On" : "Developer Off";
+}
+
+function setDeveloperLabelsEnabled(enabled) {
+  showNormalLabels = Boolean(enabled);
+  setNumbersButtonState();
+  updateStatusText();
+  labelsDirty = true;
+  updateLabels(true);
+  postAdminMapToolState();
 }
 
 function beginSwitchVisual() {
@@ -5660,6 +5828,11 @@ function handleAdminPreviewMessage(event) {
   const message = event.data || {};
   if (message.source !== "anu-admin") return;
 
+  if (message.type === "map-set-developer-labels") {
+    setDeveloperLabelsEnabled(!!message.enabled);
+    return;
+  }
+
   if (message.type === "get-buildings") {
     postAdminPreviewReady();
     return;
@@ -5680,6 +5853,75 @@ function handleAdminPreviewMessage(event) {
 
   if (message.type === "height-preview") {
     applyAdminHeightPreview(message.preview || {});
+    return;
+  }
+
+  if (!mapToolState.active) return;
+
+  if (message.type === "map-tool-set-mode") {
+    setMapToolMode(message.mode);
+    syncMapToolMode();
+    updateMapToolPanel();
+    return;
+  }
+
+  if (message.type === "map-tool-toggle-input") {
+    toggleMapToolInputMode();
+    return;
+  }
+
+  if (message.type === "map-tool-road-action") {
+    setMapRoadAction(message.action);
+    return;
+  }
+
+  if (message.type === "map-tool-boundary-area") {
+    setActiveMapBoundaryArea(Number(message.areaIndex));
+    return;
+  }
+
+  if (message.type === "map-tool-delete-boundary-area") {
+    deleteMapBoundaryArea(Number(message.areaIndex));
+    return;
+  }
+
+  if (message.type === "map-tool-toggle-boundary-labels") {
+    toggleMapBoundaryLabels();
+    return;
+  }
+
+  if (message.type === "map-tool-set-developer-labels") {
+    setDeveloperLabelsEnabled(!!message.enabled);
+    return;
+  }
+
+  if (message.type === "map-tool-camera-grid") {
+    setMapCameraGridEnabled(!!message.enabled);
+    return;
+  }
+
+  if (message.type === "map-tool-camera-pitch") {
+    setMapCameraPitch(message.value);
+    return;
+  }
+
+  if (message.type === "map-tool-camera-height") {
+    setMapCameraHeight(message.value);
+    return;
+  }
+
+  if (message.type === "map-tool-delete-last") {
+    deleteLastMapToolPoint();
+    return;
+  }
+
+  if (message.type === "map-tool-clear") {
+    clearMapToolPoints();
+    return;
+  }
+
+  if (message.type === "map-tool-get-state") {
+    updateMapToolPanel();
   }
 }
 
@@ -6829,10 +7071,7 @@ btn2D.addEventListener("click", () => switchMode("2d"));
 btnNumbers.addEventListener("click", () => {
   if (isMapToolBoundaryMode()) return;
 
-  showNormalLabels = !showNormalLabels;
-  setNumbersButtonState();
-  updateStatusText();
-  labelsDirty = true;
+  setDeveloperLabelsEnabled(!showNormalLabels);
 });
 btnReset.addEventListener("click", () => {
   if (guidedPreviewState.active && guidedPreviewState.entryBuildingId) {

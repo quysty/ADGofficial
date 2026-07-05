@@ -22,6 +22,30 @@ const ADMIN_OPERATION_LOG_COLUMNS =
   "id,created_at,actor_email,permission_level,action,entity_type,entity_id,target_table,status,summary,details";
 const MAX_HEIGHT_TARGETS = 5;
 const MAX_HEIGHT_MULTIPLIER = 10;
+const ADMIN_MAP_TOOL_FRAME = "admin-left-switches-v1";
+const NORMAL_MAP_FRAME = "admin-left-switches-v1";
+const ADMIN_MAP_TOOL_SECTIONS = {
+  "tool-entrance": {
+    mode: "entrance",
+    title: "入口工具",
+    hint: "鼠标模式下只浏览地图；切到选点模式后，点击 3D 地图记录入口坐标。"
+  },
+  "tool-boundary": {
+    mode: "boundary",
+    title: "圈地工具",
+    hint: "鼠标模式下只浏览地图；切到圈地模式后，右键添加边界点，靠近第 1 点右键闭合。"
+  },
+  "tool-road": {
+    mode: "road",
+    title: "道路工具",
+    hint: "鼠标模式下只浏览地图；切到选点模式后，可新增道路点或标记删除道路段。"
+  },
+  "tool-camera": {
+    mode: "camera",
+    title: "摄像机工具",
+    hint: "用于调试聚焦美术视角。焦点固定在地面，网格用于判断相机落点。"
+  }
+};
 
 const els = {
   status: document.querySelector("#adminStatus"),
@@ -31,12 +55,12 @@ const els = {
   avatarImage: document.querySelector("#adminAvatarImage"),
   avatarInitial: document.querySelector("#adminAvatarInitial"),
   accountMenu: document.querySelector("#adminAccountMenu"),
+  accountName: document.querySelector("#adminAccountName"),
   accountEmail: document.querySelector("#adminAccountEmail"),
   accountStatus: document.querySelector("#adminAccountStatus"),
   accountRole: document.querySelector("#adminAccountRole"),
   accountConnection: document.querySelector("#adminAccountConnection"),
   accountLogin: document.querySelector("#adminAccountLogin"),
-  refreshAccount: document.querySelector("#adminRefreshAccount"),
   configPanel: document.querySelector("#adminConfigPanel"),
   configText: document.querySelector("#adminConfigText"),
   loginPanel: document.querySelector("#adminLoginPanel"),
@@ -58,6 +82,7 @@ const els = {
   buildingPanel: document.querySelector("#adminBuildingPanel"),
   buildingReload: document.querySelector("#adminBuildingReload"),
   buildingStatus: document.querySelector("#adminBuildingStatus"),
+  dormDeveloperLabels: document.querySelector("#adminDormDeveloperLabels"),
   buildingGuard: document.querySelector("#adminBuildingGuard"),
   buildingForm: document.querySelector("#adminBuildingForm"),
   buildingSelect: document.querySelector("#adminBuildingSelect"),
@@ -82,6 +107,7 @@ const els = {
   heightPanel: document.querySelector("#adminHeightPanel"),
   heightReload: document.querySelector("#adminHeightReload"),
   heightStatus: document.querySelector("#adminHeightStatus"),
+  heightDeveloperLabels: document.querySelector("#adminHeightDeveloperLabels"),
   heightForm: document.querySelector("#adminHeightForm"),
   heightSave: document.querySelector("#adminHeightForm button[type='submit']"),
   heightBuildingSelect: document.querySelector("#adminHeightBuildingSelect"),
@@ -99,6 +125,28 @@ const els = {
   logRefresh: document.querySelector("#adminLogRefresh"),
   logStatus: document.querySelector("#adminLogStatus"),
   logList: document.querySelector("#adminLogList"),
+  mapToolTitle: document.querySelector("#adminMapToolTitle"),
+  mapToolStatus: document.querySelector("#adminMapToolStatus"),
+  mapToolHint: document.querySelector("#adminMapToolHint"),
+  mapToolDeveloperLabels: document.querySelector("#adminMapToolDeveloperLabels"),
+  mapToolInputBlock: document.querySelector("#adminMapToolInputBlock"),
+  mapToolInputModes: [...document.querySelectorAll("[data-admin-input-mode]")],
+  mapToolBoundaryControls: document.querySelector("#adminMapToolBoundaryControls"),
+  mapToolBoundaryAreas: document.querySelector("#adminMapToolBoundaryAreas"),
+  mapToolBoundaryLabels: document.querySelector("#adminMapToolBoundaryLabels"),
+  mapToolBoundaryCopyAll: document.querySelector("#adminMapToolBoundaryCopyAll"),
+  mapToolRoadControls: document.querySelector("#adminMapToolRoadControls"),
+  mapToolRoadActions: [...document.querySelectorAll("[data-admin-road-action]")],
+  mapToolCameraControls: document.querySelector("#adminMapToolCameraControls"),
+  mapToolCameraGrid: document.querySelector("#adminMapToolCameraGrid"),
+  mapToolCameraPitch: document.querySelector("#adminMapToolCameraPitch"),
+  mapToolCameraPitchValue: document.querySelector("#adminMapToolCameraPitchValue"),
+  mapToolCameraHeight: document.querySelector("#adminMapToolCameraHeight"),
+  mapToolCameraHeightValue: document.querySelector("#adminMapToolCameraHeightValue"),
+  mapToolOutput: document.querySelector("#adminMapToolOutput"),
+  mapToolCopy: document.querySelector("#adminMapToolCopy"),
+  mapToolDelete: document.querySelector("#adminMapToolDelete"),
+  mapToolClear: document.querySelector("#adminMapToolClear"),
   previewTitle: document.querySelector("#adminPreviewTitle"),
   previewStatus: document.querySelector("#adminPreviewStatus"),
   mapFrame: document.querySelector("#adminMapFrame")
@@ -119,7 +167,9 @@ const state = {
   pendingReloadBuildingNumber: "",
   pendingReloadHeightNumber: "",
   operationLogs: [],
-  mapReady: false
+  mapReady: false,
+  mapFrameMode: "normal",
+  mapTool: null
 };
 
 document.body.dataset.adminSection = state.activeSection;
@@ -141,6 +191,21 @@ const DORM_DEFAULTS = Array.isArray(window.DORM_DATA) ? window.DORM_DATA : [];
 
 function setHidden(element, hidden) {
   if (element) element.hidden = hidden;
+}
+
+function isMapToolSection(section = state.activeSection) {
+  return Object.prototype.hasOwnProperty.call(ADMIN_MAP_TOOL_SECTIONS, section);
+}
+
+function getMapToolConfig(section = state.activeSection) {
+  return ADMIN_MAP_TOOL_SECTIONS[section] || ADMIN_MAP_TOOL_SECTIONS["tool-entrance"];
+}
+
+function panelMatchesSection(panel, section) {
+  return String(panel?.dataset?.adminPanel || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .includes(section);
 }
 
 function setStatus(message, tone = "neutral") {
@@ -231,6 +296,7 @@ function updateAccountChrome() {
   els.avatarInitial.textContent = initial;
   els.avatarButton?.classList.toggle("has-admin-image", hasAdminAccess);
   setHidden(els.avatarImage, !hasAdminAccess);
+  if (els.accountName) els.accountName.textContent = name || "登录";
   els.accountEmail.textContent = email;
   els.accountRole.textContent = getAdminLevel();
   els.accountConnection.textContent = configStatus.ready ? "Supabase 正常" : "Supabase 未配置";
@@ -289,7 +355,7 @@ function renderLoggedOut() {
     item.classList.toggle("is-active", item.dataset.adminSection === state.activeSection);
   });
   els.panels.forEach((panel) => {
-    setHidden(panel, panel.dataset.adminPanel !== state.activeSection);
+    setHidden(panel, !panelMatchesSection(panel, state.activeSection));
   });
   setHidden(els.loginPanel, false);
   setHidden(els.otpForm, !pendingEmail);
@@ -350,21 +416,30 @@ function switchAdminSection(section) {
     item.classList.toggle("is-active", item.dataset.adminSection === section);
   });
   els.panels.forEach((panel) => {
-    setHidden(panel, panel.dataset.adminPanel !== section);
+    setHidden(panel, !panelMatchesSection(panel, section));
   });
 
   if (section === "home") {
     if (els.previewTitle) els.previewTitle.textContent = "预览首页";
+    ensureMapFrameMode("normal");
     return;
   } else if (section === "dorm") {
     if (els.previewTitle) els.previewTitle.textContent = "宿舍详情编辑";
   } else if (section === "logs") {
     if (els.previewTitle) els.previewTitle.textContent = "工程日志";
+    ensureMapFrameMode("normal");
     loadOperationLogs();
+    return;
+  } else if (isMapToolSection(section)) {
+    const config = getMapToolConfig(section);
+    if (els.previewTitle) els.previewTitle.textContent = config.title;
+    renderAdminMapToolShell();
+    ensureMapFrameMode("map-tool", config.mode);
     return;
   } else {
     if (els.previewTitle) els.previewTitle.textContent = "建筑高度管理";
   }
+  ensureMapFrameMode("normal");
   sendMapOverview();
 }
 
@@ -729,6 +804,99 @@ function postMapMessage(message) {
   );
 }
 
+function setAdminSwitch(button, enabled) {
+  if (!button) return;
+  const isActive = Boolean(enabled);
+  button.classList.toggle("is-active", isActive);
+  button.setAttribute("aria-pressed", String(isActive));
+}
+
+function getDeveloperLabelsButton(section = state.activeSection) {
+  if (section === "dorm") return els.dormDeveloperLabels;
+  if (section === "height") return els.heightDeveloperLabels;
+  if (isMapToolSection(section)) return els.mapToolDeveloperLabels;
+  return null;
+}
+
+function getDeveloperLabelsEnabled(section = state.activeSection) {
+  const button = getDeveloperLabelsButton(section);
+  return button ? button.getAttribute("aria-pressed") === "true" : true;
+}
+
+function postDeveloperLabelsEnabled(section = state.activeSection) {
+  const button = getDeveloperLabelsButton(section);
+  if (!button) return;
+  postMapMessage({
+    type: "map-set-developer-labels",
+    enabled: getDeveloperLabelsEnabled(section)
+  });
+}
+
+function toggleDeveloperLabels(button) {
+  const enabled = button.getAttribute("aria-pressed") !== "true";
+  setAdminSwitch(button, enabled);
+  postMapMessage({
+    type: "map-set-developer-labels",
+    enabled
+  });
+}
+
+function getNormalMapPreviewUrl() {
+  return new URL(`explore.html?adminPreview=overview&mode=guided&frame=${NORMAL_MAP_FRAME}`, window.location.href);
+}
+
+function getMapToolPreviewUrl(mode) {
+  const url = new URL("explore.html", window.location.href);
+  url.searchParams.set("adminPreview", "map-tool");
+  url.searchParams.set("adminTool", "map-tools");
+  url.searchParams.set("adminToolMode", mode || "entrance");
+  url.searchParams.set("frame", ADMIN_MAP_TOOL_FRAME);
+  return url;
+}
+
+function sameFrameUrl(nextUrl) {
+  if (!els.mapFrame?.src) return false;
+  const currentUrl = new URL(els.mapFrame.src, window.location.href);
+  if (
+    currentUrl.searchParams.get("adminTool") === "map-tools" &&
+    nextUrl.searchParams.get("adminTool") === "map-tools" &&
+    currentUrl.searchParams.get("frame") === nextUrl.searchParams.get("frame")
+  ) {
+    return true;
+  }
+
+  return currentUrl.pathname === nextUrl.pathname &&
+    currentUrl.searchParams.get("adminTool") === nextUrl.searchParams.get("adminTool") &&
+    currentUrl.searchParams.get("adminToolMode") === nextUrl.searchParams.get("adminToolMode") &&
+    currentUrl.searchParams.get("frame") === nextUrl.searchParams.get("frame");
+}
+
+function setMapFrameUrl(nextUrl, mode) {
+  if (!els.mapFrame) return;
+  if (sameFrameUrl(nextUrl)) {
+    state.mapFrameMode = mode;
+    return;
+  }
+
+  state.mapReady = false;
+  state.mapFrameMode = mode;
+  state.mapTool = null;
+  if (els.previewStatus) els.previewStatus.textContent = "正在载入地图...";
+  els.mapFrame.src = nextUrl.toString();
+}
+
+function ensureMapFrameMode(mode, toolMode = "") {
+  if (!els.mapFrame) return;
+
+  if (mode === "map-tool") {
+    setMapFrameUrl(getMapToolPreviewUrl(toolMode), "map-tool");
+    if (state.mapReady) sendAdminMapToolMode();
+    return;
+  }
+
+  setMapFrameUrl(getNormalMapPreviewUrl(), "normal");
+}
+
 function reloadMapPreview(reason = "manual") {
   if (!els.mapFrame) return;
 
@@ -743,7 +911,7 @@ function reloadMapPreview(reason = "manual") {
 }
 
 function sendMapOverview() {
-  if (!state.mapReady) return;
+  if (!state.mapReady || isMapToolSection()) return;
   postMapMessage({
     type: "overview-preview",
     mode: state.activeSection
@@ -770,6 +938,7 @@ function sendDormPreview() {
       tradeOff: values.dormTradeOff
     }
   });
+  postDeveloperLabelsEnabled("dorm");
 }
 
 function sendHeightPreview() {
@@ -784,6 +953,182 @@ function sendHeightPreview() {
       copyFromBuildingNumber: cleanText(els.heightCopyFrom.value)
     }
   });
+  postDeveloperLabelsEnabled("height");
+}
+
+function sendAdminMapToolMode() {
+  if (!state.mapReady || !isMapToolSection()) return;
+  const config = getMapToolConfig();
+  postMapMessage({
+    type: "map-tool-set-mode",
+    mode: config.mode
+  });
+  postDeveloperLabelsEnabled(state.activeSection);
+}
+
+function renderAdminMapToolShell() {
+  const config = getMapToolConfig();
+  if (els.mapToolTitle) els.mapToolTitle.textContent = config.title;
+  if (els.mapToolHint) els.mapToolHint.textContent = config.hint;
+  renderAdminMapToolState(state.mapTool?.mode === config.mode ? state.mapTool : null);
+}
+
+function setAdminMapToolStatus(message, tone = "neutral") {
+  if (!els.mapToolStatus) return;
+  els.mapToolStatus.textContent = message;
+  els.mapToolStatus.dataset.tone = tone;
+}
+
+function getAdminMapToolOutputText(payload = state.mapTool) {
+  if (!payload?.output) return "";
+  return JSON.stringify(payload.output, null, 2);
+}
+
+function renderBoundaryRows(areas = [], activeArea = 1) {
+  if (!els.mapToolBoundaryAreas) return;
+  els.mapToolBoundaryAreas.replaceChildren();
+
+  areas.forEach((area) => {
+    const row = document.createElement("div");
+    row.className = "admin-map-tool-boundary-row";
+    row.classList.toggle("is-active", Number(area.index) === Number(activeArea));
+
+    const select = document.createElement("button");
+    select.type = "button";
+    select.textContent = area.closed
+      ? `${area.label} 已闭合`
+      : `${area.label} (${area.totalPoints || 0})`;
+    select.addEventListener("click", () => {
+      postMapMessage({
+        type: "map-tool-boundary-area",
+        areaIndex: Number(area.index) - 1
+      });
+    });
+
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.textContent = "复制";
+    copy.disabled = !area.totalPoints;
+    copy.addEventListener("click", () => copyAdminText(JSON.stringify(area, null, 2), "已复制当前面积。"));
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.textContent = "删除";
+    del.disabled = !area.totalPoints;
+    del.addEventListener("click", () => {
+      postMapMessage({
+        type: "map-tool-delete-boundary-area",
+        areaIndex: Number(area.index) - 1
+      });
+    });
+
+    row.append(select, copy, del);
+    els.mapToolBoundaryAreas.appendChild(row);
+  });
+}
+
+function renderAdminMapToolState(payload) {
+  const config = getMapToolConfig();
+  const mode = payload?.mode || config.mode;
+  const isBoundary = mode === "boundary";
+  const isRoad = mode === "road";
+  const isCamera = mode === "camera";
+  const outputText = getAdminMapToolOutputText(payload);
+  const hasOutput = Boolean(outputText);
+  const inputMode = isBoundary
+    ? payload?.boundaryMode || "mouse"
+    : isRoad
+      ? payload?.roadMode || "mouse"
+      : payload?.entranceMode || "mouse";
+
+  setHidden(els.mapToolInputBlock, isCamera);
+  setHidden(els.mapToolBoundaryControls, !isBoundary);
+  setHidden(els.mapToolRoadControls, !isRoad);
+  setHidden(els.mapToolCameraControls, !isCamera);
+
+  els.mapToolInputModes.forEach((button) => {
+    const isActive = button.dataset.adminInputMode === inputMode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  if (els.mapToolOutput) {
+    els.mapToolOutput.textContent = outputText || "等待地图工具载入...";
+  }
+
+  if (els.mapToolCopy) {
+    els.mapToolCopy.disabled = !hasOutput;
+    els.mapToolCopy.textContent = isBoundary
+      ? "复制当前"
+      : isRoad
+        ? "复制道路"
+        : isCamera
+          ? "复制视角"
+          : "复制 JSON";
+  }
+
+  if (els.mapToolDelete) {
+    els.mapToolDelete.disabled = isCamera || !payload?.canDelete;
+    els.mapToolDelete.textContent = isBoundary
+      ? "删除上一点"
+      : isRoad && payload?.roadAction === "remove"
+        ? "撤销删段"
+        : "删除上一个";
+  }
+
+  if (els.mapToolClear) {
+    els.mapToolClear.disabled = isCamera ? false : !payload?.canClear;
+    els.mapToolClear.textContent = isCamera ? "重置视角" : "清空";
+  }
+
+  if (els.mapToolBoundaryLabels) {
+    els.mapToolBoundaryLabels.textContent = payload?.boundaryLabelsEnabled
+      ? "建筑编号：开"
+      : "建筑编号：关";
+    els.mapToolBoundaryLabels.classList.toggle("is-active", !!payload?.boundaryLabelsEnabled);
+  }
+
+  if (els.mapToolBoundaryCopyAll) {
+    els.mapToolBoundaryCopyAll.disabled = !payload?.boundaryTotalPoints;
+  }
+
+  if (els.mapToolDeveloperLabels) {
+    setAdminSwitch(els.mapToolDeveloperLabels, !!payload?.developerLabelsEnabled);
+  }
+
+  els.mapToolRoadActions.forEach((button) => {
+    const isActive = button.dataset.adminRoadAction === (payload?.roadAction || "add");
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  if (isBoundary) {
+    renderBoundaryRows(payload?.boundaryAreas || [], payload?.activeArea || 1);
+  }
+
+  if (isCamera) {
+    if (els.mapToolCameraGrid) {
+      setAdminSwitch(els.mapToolCameraGrid, !!payload?.camera?.gridEnabled);
+    }
+    if (els.mapToolCameraPitch) els.mapToolCameraPitch.value = String(payload?.camera?.pitchDegrees || 48);
+    if (els.mapToolCameraPitchValue) els.mapToolCameraPitchValue.textContent = `${Math.round(payload?.camera?.pitchDegrees || 48)}°`;
+    if (els.mapToolCameraHeight) els.mapToolCameraHeight.value = String(payload?.camera?.height || 980);
+    if (els.mapToolCameraHeightValue) els.mapToolCameraHeightValue.textContent = String(Math.round(payload?.camera?.height || 980));
+  }
+
+  setAdminMapToolStatus(payload?.status || "等待右侧地图工具载入...", payload ? "success" : "neutral");
+}
+
+async function copyAdminText(text, successMessage = "已复制。") {
+  if (!text) return;
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+    await navigator.clipboard.writeText(text);
+    setAdminMapToolStatus(successMessage, "success");
+  } catch (error) {
+    console.warn("Admin clipboard copy failed:", error);
+    setAdminMapToolStatus("复制被浏览器拦截，请手动选择复制板内容。", "warning");
+  }
 }
 
 async function loadAdminProfile() {
@@ -1075,16 +1420,6 @@ async function handleAccountLogin() {
     renderLoggedOut();
   }
   focusLoginPanel();
-}
-
-async function handleRefreshAccount() {
-  setButtonBusy(els.refreshAccount, true, "刷新中...");
-  try {
-    await refreshAdminState();
-    updateAccountChrome();
-  } finally {
-    setButtonBusy(els.refreshAccount, false);
-  }
 }
 
 async function handleBuildingSelectChange() {
@@ -1483,7 +1818,9 @@ function handleMapMessage(event) {
     state.mapReady = true;
     els.previewStatus.textContent = "Map ready";
     setHeightCatalog(message.buildings || []);
-    if (state.activeSection === "dorm" && state.dormPreviewActive) {
+    if (isMapToolSection()) {
+      sendAdminMapToolMode();
+    } else if (state.activeSection === "dorm" && state.dormPreviewActive) {
       sendDormPreview();
     } else if (state.activeSection === "height" && state.heightPreviewActive) {
       sendHeightPreview();
@@ -1513,6 +1850,12 @@ function handleMapMessage(event) {
       if (!state.heightCatalog.some((item) => item.buildingNumber === buildingNumber)) return;
       selectHeightBuilding(buildingNumber, { preview: true });
     }
+    return;
+  }
+
+  if (message.type === "map-tool-state") {
+    state.mapTool = message.payload || null;
+    renderAdminMapToolState(state.mapTool);
   }
 }
 
@@ -1535,7 +1878,6 @@ els.passwordForm?.addEventListener("submit", handlePasswordLogin);
 els.loginForm?.addEventListener("submit", handleLogin);
 els.otpForm?.addEventListener("submit", handleVerifyOtp);
 els.accountLogin?.addEventListener("click", handleAccountLogin);
-els.refreshAccount?.addEventListener("click", handleRefreshAccount);
 els.signOut?.addEventListener("click", handleSignOut);
 els.navItems.forEach((item) => {
   item.addEventListener("click", () => switchAdminSection(item.dataset.adminSection));
@@ -1560,6 +1902,62 @@ els.buildingForm?.addEventListener("submit", handleSaveBuilding);
 els.rollbackBuilding?.addEventListener("click", handleRollbackBuilding);
 els.publishDorm?.addEventListener("click", handlePublishDorm);
 els.logRefresh?.addEventListener("click", loadOperationLogs);
+els.mapToolInputModes.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextMode = button.dataset.adminInputMode;
+    const currentMode = button.getAttribute("aria-pressed") === "true" ? nextMode : null;
+    if (currentMode) return;
+    postMapMessage({ type: "map-tool-toggle-input" });
+  });
+});
+els.mapToolRoadActions.forEach((button) => {
+  button.addEventListener("click", () => {
+    postMapMessage({
+      type: "map-tool-road-action",
+      action: button.dataset.adminRoadAction
+    });
+  });
+});
+els.mapToolBoundaryLabels?.addEventListener("click", () => {
+  postMapMessage({ type: "map-tool-toggle-boundary-labels" });
+});
+els.mapToolBoundaryCopyAll?.addEventListener("click", () => {
+  const areas = state.mapTool?.output?.areas || [];
+  const filledAreas = areas.filter((area) => area.totalPoints > 0);
+  copyAdminText(JSON.stringify(filledAreas, null, 2), "已复制全部圈地面积。");
+});
+[els.dormDeveloperLabels, els.heightDeveloperLabels, els.mapToolDeveloperLabels].forEach((button) => {
+  button?.addEventListener("click", () => toggleDeveloperLabels(button));
+});
+els.mapToolCameraGrid?.addEventListener("click", () => {
+  const enabled = els.mapToolCameraGrid.getAttribute("aria-pressed") !== "true";
+  setAdminSwitch(els.mapToolCameraGrid, enabled);
+  postMapMessage({
+    type: "map-tool-camera-grid",
+    enabled
+  });
+});
+els.mapToolCameraPitch?.addEventListener("input", () => {
+  postMapMessage({
+    type: "map-tool-camera-pitch",
+    value: els.mapToolCameraPitch.value
+  });
+});
+els.mapToolCameraHeight?.addEventListener("input", () => {
+  postMapMessage({
+    type: "map-tool-camera-height",
+    value: els.mapToolCameraHeight.value
+  });
+});
+els.mapToolCopy?.addEventListener("click", () => {
+  copyAdminText(getAdminMapToolOutputText(), "已复制地图工具 JSON。");
+});
+els.mapToolDelete?.addEventListener("click", () => {
+  postMapMessage({ type: "map-tool-delete-last" });
+});
+els.mapToolClear?.addEventListener("click", () => {
+  postMapMessage({ type: "map-tool-clear" });
+});
 [
   els.displayName,
   els.shortName,

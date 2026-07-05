@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Workbench | ANU Explore</title>
-  <link rel="stylesheet" href="style.css?v=admin-log-v1" />
+  <link rel="stylesheet" href="style.css?v=admin-left-switches-v1" />
 </head>
 <body data-page="admin">
   <main class="admin-workbench">
@@ -20,14 +20,20 @@
           <img id="adminAvatarImage" class="admin-avatar-image" src="assets/images/clevel-avatar.jpeg" alt="" hidden />
           <span id="adminAvatarInitial">A</span>
         </button>
+        <span class="admin-avatar-tooltip" aria-hidden="true">Account settings</span>
         <div id="adminAccountMenu" class="admin-account-menu" role="menu" hidden>
-          <p class="admin-kicker">ACCOUNT</p>
-          <strong id="adminAccountEmail">未登录</strong>
-          <span id="adminAccountStatus" class="admin-account-status">需要登录</span>
+          <div class="admin-account-menu__identity">
+            <strong id="adminAccountName">登录</strong>
+            <span id="adminAccountEmail">未登录</span>
+          </div>
           <dl class="admin-account-meta">
             <div>
               <dt>权限等级</dt>
               <dd id="adminAccountRole">No access</dd>
+            </div>
+            <div>
+              <dt>权限状态</dt>
+              <dd id="adminAccountStatus" class="admin-account-status">需要登录</dd>
             </div>
             <div>
               <dt>连接状态</dt>
@@ -38,11 +44,8 @@
             <button id="adminAccountLogin" class="admin-button admin-button--ghost" type="button">
               前往登录
             </button>
-            <button id="adminRefreshAccount" class="admin-button admin-button--ghost" type="button">
-              刷新权限
-            </button>
             <button id="adminSignOut" class="admin-button admin-button--danger" type="button" hidden>
-              退出登录
+              Log out
             </button>
           </div>
         </div>
@@ -104,6 +107,7 @@
           </span>
           <strong>预览首页</strong>
         </button>
+        <div class="admin-nav-divider" aria-hidden="true"></div>
         <button class="admin-nav-item" type="button" data-admin-section="dorm" title="宿舍详情编辑" aria-label="宿舍详情编辑">
           <span class="admin-nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
@@ -128,6 +132,47 @@
           </span>
           <strong>建筑高度管理</strong>
         </button>
+        <div class="admin-nav-divider" aria-hidden="true"></div>
+        <button class="admin-nav-item" type="button" data-admin-section="tool-entrance" title="入口工具" aria-label="入口工具">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 21s6-5.1 6-11a6 6 0 0 0-12 0c0 5.9 6 11 6 11z" />
+              <circle cx="12" cy="10" r="2" />
+            </svg>
+          </span>
+          <strong>入口工具</strong>
+        </button>
+        <button class="admin-nav-item" type="button" data-admin-section="tool-boundary" title="圈地工具" aria-label="圈地工具">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M5 8.5 12 4l7 4.5v7L12 20l-7-4.5z" />
+              <path d="M5 8.5 12 13l7-4.5" />
+              <path d="M12 13v7" />
+            </svg>
+          </span>
+          <strong>圈地工具</strong>
+        </button>
+        <button class="admin-nav-item" type="button" data-admin-section="tool-road" title="道路工具" aria-label="道路工具">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 19c4-8 4-14 8-14s4 6 8 14" />
+              <path d="M12 5v4" />
+              <path d="M12 13v3" />
+              <path d="M12 20v1" />
+            </svg>
+          </span>
+          <strong>道路工具</strong>
+        </button>
+        <button class="admin-nav-item" type="button" data-admin-section="tool-camera" title="摄像机工具" aria-label="摄像机工具">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 8h4l2-3h4l2 3h4v11H4z" />
+              <circle cx="12" cy="13.5" r="3.5" />
+            </svg>
+          </span>
+          <strong>摄像机工具</strong>
+        </button>
+        <div class="admin-nav-divider" aria-hidden="true"></div>
         <button class="admin-nav-item" type="button" data-admin-section="logs" title="工程日志" aria-label="工程日志">
           <span class="admin-nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
@@ -152,6 +197,15 @@
           </div>
 
           <p id="adminBuildingStatus" class="admin-copy">正在读取宿舍详情...</p>
+
+          <div class="admin-map-tool-block admin-switch-block">
+            <div class="admin-switch-row">
+              <span>地图标号</span>
+              <button id="adminDormDeveloperLabels" class="admin-pill-switch is-active" type="button" aria-pressed="true">
+                <span class="admin-pill-switch__knob" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
 
           <form id="adminBuildingForm" class="admin-form">
             <label class="admin-field">
@@ -249,6 +303,15 @@
 
           <p id="adminHeightStatus" class="admin-copy">等待地图预览载入建筑清单...</p>
 
+          <div class="admin-map-tool-block admin-switch-block">
+            <div class="admin-switch-row">
+              <span>地图标号</span>
+              <button id="adminHeightDeveloperLabels" class="admin-pill-switch is-active" type="button" aria-pressed="true">
+                <span class="admin-pill-switch__knob" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+
           <form id="adminHeightForm" class="admin-form">
             <div class="admin-grid">
               <label class="admin-field">
@@ -304,6 +367,113 @@
           </form>
         </section>
 
+        <section
+          id="adminMapToolPanel"
+          class="admin-tool-panel admin-map-tool-panel"
+          data-admin-panel="tool-entrance tool-boundary tool-road tool-camera"
+          hidden
+        >
+          <div class="admin-tool-panel__head">
+            <div>
+              <p class="admin-kicker">MAP TOOLS</p>
+              <h2 id="adminMapToolTitle">入口工具</h2>
+            </div>
+          </div>
+
+          <p id="adminMapToolStatus" class="admin-copy">等待地图工具载入...</p>
+
+          <p id="adminMapToolHint" class="admin-copy admin-map-tool-hint">
+            鼠标模式下只浏览地图；切到选点模式后才会记录坐标。
+          </p>
+
+          <div class="admin-map-tool-block admin-switch-block">
+            <div class="admin-switch-row">
+              <span>开发者标号</span>
+              <button id="adminMapToolDeveloperLabels" class="admin-pill-switch" type="button" aria-pressed="false">
+                <span class="admin-pill-switch__knob" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+
+          <div id="adminMapToolInputBlock" class="admin-map-tool-block admin-choice-block">
+            <div class="admin-choice-row" role="radiogroup" aria-label="地图点击模式">
+              <span class="admin-choice-title">交互模式</span>
+              <div class="admin-choice-options">
+                <button class="admin-choice-button is-active" type="button" data-admin-input-mode="mouse" aria-pressed="true">
+                  <span class="admin-choice-mark" aria-hidden="true"></span>
+                  <span>鼠标模式</span>
+                </button>
+                <button class="admin-choice-button" type="button" data-admin-input-mode="select" aria-pressed="false">
+                  <span class="admin-choice-mark" aria-hidden="true"></span>
+                  <span>选点模式</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="adminMapToolBoundaryControls" class="admin-map-tool-block" hidden>
+            <div id="adminMapToolBoundaryAreas" class="admin-map-tool-boundary-areas"></div>
+            <div class="admin-actions">
+              <button id="adminMapToolBoundaryLabels" class="admin-button admin-button--ghost" type="button">
+                建筑编号：关
+              </button>
+              <button id="adminMapToolBoundaryCopyAll" class="admin-button admin-button--ghost" type="button">
+                一起复制
+              </button>
+            </div>
+          </div>
+
+          <div id="adminMapToolRoadControls" class="admin-map-tool-block admin-choice-block" hidden>
+            <div class="admin-choice-row" role="radiogroup" aria-label="道路操作">
+              <span class="admin-choice-title">道路操作</span>
+              <div class="admin-choice-options">
+                <button class="admin-choice-button is-active" type="button" data-admin-road-action="add" aria-pressed="true">
+                  <span class="admin-choice-mark" aria-hidden="true"></span>
+                  <span>新增道路</span>
+                </button>
+                <button class="admin-choice-button" type="button" data-admin-road-action="remove" aria-pressed="false">
+                  <span class="admin-choice-mark" aria-hidden="true"></span>
+                  <span>删除道路</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="adminMapToolCameraControls" class="admin-map-tool-block" hidden>
+            <div class="admin-switch-row">
+              <span>显示地图网格</span>
+              <button id="adminMapToolCameraGrid" class="admin-pill-switch" type="button" aria-pressed="false">
+                <span class="admin-pill-switch__knob" aria-hidden="true"></span>
+              </button>
+            </div>
+            <label class="admin-field admin-range-field">
+              <span>俯仰角度 <strong id="adminMapToolCameraPitchValue">48°</strong></span>
+              <input id="adminMapToolCameraPitch" type="range" min="18" max="76" step="1" value="48" />
+            </label>
+            <label class="admin-field admin-range-field">
+              <span>相机高度 <strong id="adminMapToolCameraHeightValue">980</strong></span>
+              <input id="adminMapToolCameraHeight" type="range" min="240" max="2200" step="20" value="980" />
+            </label>
+          </div>
+
+          <label class="admin-field admin-map-tool-output-field">
+            <span>复制板</span>
+            <pre id="adminMapToolOutput" class="admin-map-tool-output">等待地图工具载入...</pre>
+          </label>
+
+          <div class="admin-actions">
+            <button id="adminMapToolCopy" class="admin-button" type="button">
+              复制 JSON
+            </button>
+            <button id="adminMapToolDelete" class="admin-button admin-button--ghost" type="button">
+              删除上一个
+            </button>
+            <button id="adminMapToolClear" class="admin-button admin-button--danger" type="button">
+              清空
+            </button>
+          </div>
+        </section>
+
         <section id="adminLogsPanel" class="admin-tool-panel admin-tool-panel--logs" data-admin-panel="logs" hidden>
           <div class="admin-tool-panel__head">
             <div>
@@ -330,7 +500,7 @@
         <iframe
           id="adminMapFrame"
           title="ANU Explore admin map preview"
-          src="explore.html?adminPreview=overview&mode=guided&frame=admin-preview-v3"
+          src="explore.html?adminPreview=overview&mode=guided&frame=admin-left-switches-v1"
         ></iframe>
       </section>
 
@@ -339,6 +509,6 @@
   </main>
 
   <script src="src/data/dorms.js?v=new-dorm-placeholders-v1"></script>
-  <script type="module" src="admin-workbench.js?v=admin-log-v1"></script>
+  <script type="module" src="admin-workbench.js?v=admin-left-switches-v1"></script>
 </body>
 </html>
