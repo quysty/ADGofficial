@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Workbench | ANU Explore</title>
-  <link rel="stylesheet" href="style.css?v=admin-workbench-v3" />
+  <link rel="stylesheet" href="style.css?v=admin-log-v1" />
 </head>
 <body data-page="admin">
   <main class="admin-workbench">
@@ -16,16 +16,35 @@
         <strong id="adminPublishState">Draft workspace</strong>
       </div>
       <div class="admin-account">
-        <button id="adminAvatarButton" class="admin-avatar-button" type="button" aria-expanded="false">
+        <button id="adminAvatarButton" class="admin-avatar-button" type="button" aria-expanded="false" aria-label="打开账号菜单">
+          <img id="adminAvatarImage" class="admin-avatar-image" src="assets/images/clevel-avatar.jpeg" alt="" hidden />
           <span id="adminAvatarInitial">A</span>
         </button>
-        <div id="adminAccountMenu" class="admin-account-menu" hidden>
+        <div id="adminAccountMenu" class="admin-account-menu" role="menu" hidden>
           <p class="admin-kicker">ACCOUNT</p>
-          <strong id="adminAccountEmail">Not signed in</strong>
-          <span id="adminAccountRole">Permission: Clevel</span>
-          <button id="adminSignOut" class="admin-button admin-button--ghost" type="button">
-            Sign out
-          </button>
+          <strong id="adminAccountEmail">未登录</strong>
+          <span id="adminAccountStatus" class="admin-account-status">需要登录</span>
+          <dl class="admin-account-meta">
+            <div>
+              <dt>权限等级</dt>
+              <dd id="adminAccountRole">No access</dd>
+            </div>
+            <div>
+              <dt>连接状态</dt>
+              <dd id="adminAccountConnection">检查中</dd>
+            </div>
+          </dl>
+          <div class="admin-account-actions">
+            <button id="adminAccountLogin" class="admin-button admin-button--ghost" type="button">
+              前往登录
+            </button>
+            <button id="adminRefreshAccount" class="admin-button admin-button--ghost" type="button">
+              刷新权限
+            </button>
+            <button id="adminSignOut" class="admin-button admin-button--danger" type="button" hidden>
+              退出登录
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -109,6 +128,16 @@
           </span>
           <strong>建筑高度管理</strong>
         </button>
+        <button class="admin-nav-item" type="button" data-admin-section="logs" title="工程日志" aria-label="工程日志">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 5h6l2 2h8v12H4z" />
+              <path d="M8 12h8" />
+              <path d="M8 16h5" />
+            </svg>
+          </span>
+          <strong>工程日志</strong>
+        </button>
       </nav>
 
       <aside class="admin-control-column">
@@ -120,9 +149,6 @@
               <p class="admin-kicker">RESIDENCE CONTENT</p>
               <h2>宿舍详情编辑</h2>
             </div>
-            <button id="adminBuildingReload" class="admin-button admin-button--ghost" type="button">
-              重新载入
-            </button>
           </div>
 
           <p id="adminBuildingStatus" class="admin-copy">正在读取宿舍详情...</p>
@@ -219,18 +245,21 @@
               <p class="admin-kicker">BUILDING HEIGHT</p>
               <h2>建筑高度管理</h2>
             </div>
-            <button id="adminHeightReload" class="admin-button admin-button--ghost" type="button">
-              重新载入
-            </button>
           </div>
 
           <p id="adminHeightStatus" class="admin-copy">等待地图预览载入建筑清单...</p>
 
           <form id="adminHeightForm" class="admin-form">
-            <label class="admin-field">
-              <span>主建筑</span>
-              <select id="adminHeightBuildingSelect"></select>
-            </label>
+            <div class="admin-grid">
+              <label class="admin-field">
+                <span>主建筑</span>
+                <select id="adminHeightBuildingSelect"></select>
+              </label>
+              <label class="admin-field">
+                <span>手动楼号</span>
+                <input id="adminHeightBuildingNumber" type="text" inputmode="numeric" autocomplete="off" />
+              </label>
+            </div>
 
             <div class="admin-grid">
               <label class="admin-field">
@@ -274,6 +303,25 @@
             </div>
           </form>
         </section>
+
+        <section id="adminLogsPanel" class="admin-tool-panel admin-tool-panel--logs" data-admin-panel="logs" hidden>
+          <div class="admin-tool-panel__head">
+            <div>
+              <p class="admin-kicker">DATABASE FOLDER</p>
+              <h2>工程日志</h2>
+            </div>
+            <button id="adminLogRefresh" class="admin-button admin-button--ghost" type="button">
+              刷新日志
+            </button>
+          </div>
+
+          <p id="adminLogStatus" class="admin-copy">正在读取数据库操作记录...</p>
+          <div class="admin-log-folder">
+            <span>数据库文件夹</span>
+            <strong>admin_operation_logs</strong>
+          </div>
+          <div id="adminLogList" class="admin-log-list" aria-live="polite"></div>
+        </section>
       </aside>
 
       <section class="admin-map-stage">
@@ -285,10 +333,12 @@
           src="explore.html?adminPreview=overview&mode=guided&frame=admin-preview-v3"
         ></iframe>
       </section>
+
+      <footer class="admin-bottom-dock" aria-label="Admin bottom menu"></footer>
     </section>
   </main>
 
   <script src="src/data/dorms.js?v=new-dorm-placeholders-v1"></script>
-  <script type="module" src="admin-workbench.js?v=admin-workbench-v3"></script>
+  <script type="module" src="admin-workbench.js?v=admin-log-v1"></script>
 </body>
 </html>

@@ -17,6 +17,9 @@ import {
 
 const PENDING_EMAIL_KEY = "anu_explore_admin_pending_email";
 const BUILDING_LABEL_HISTORY_TABLE = "building_label_override_history";
+const ADMIN_OPERATION_LOG_TABLE = "admin_operation_logs";
+const ADMIN_OPERATION_LOG_COLUMNS =
+  "id,created_at,actor_email,permission_level,action,entity_type,entity_id,target_table,status,summary,details";
 const MAX_HEIGHT_TARGETS = 5;
 const MAX_HEIGHT_MULTIPLIER = 10;
 
@@ -25,10 +28,15 @@ const els = {
   publishState: document.querySelector("#adminPublishState"),
   userName: document.querySelector("#adminUserName"),
   avatarButton: document.querySelector("#adminAvatarButton"),
+  avatarImage: document.querySelector("#adminAvatarImage"),
   avatarInitial: document.querySelector("#adminAvatarInitial"),
   accountMenu: document.querySelector("#adminAccountMenu"),
   accountEmail: document.querySelector("#adminAccountEmail"),
+  accountStatus: document.querySelector("#adminAccountStatus"),
   accountRole: document.querySelector("#adminAccountRole"),
+  accountConnection: document.querySelector("#adminAccountConnection"),
+  accountLogin: document.querySelector("#adminAccountLogin"),
+  refreshAccount: document.querySelector("#adminRefreshAccount"),
   configPanel: document.querySelector("#adminConfigPanel"),
   configText: document.querySelector("#adminConfigText"),
   loginPanel: document.querySelector("#adminLoginPanel"),
@@ -77,6 +85,7 @@ const els = {
   heightForm: document.querySelector("#adminHeightForm"),
   heightSave: document.querySelector("#adminHeightForm button[type='submit']"),
   heightBuildingSelect: document.querySelector("#adminHeightBuildingSelect"),
+  heightBuildingNumber: document.querySelector("#adminHeightBuildingNumber"),
   heightMultiplier: document.querySelector("#adminHeightMultiplier"),
   heightCopyFrom: document.querySelector("#adminHeightCopyFrom"),
   heightTargets: [...document.querySelectorAll(".admin-height-target")],
@@ -87,6 +96,9 @@ const els = {
   previewHeight: document.querySelector("#adminPreviewHeight"),
   publishHeight: document.querySelector("#adminPublishHeight"),
   rollbackHeight: document.querySelector("#adminRollbackHeight"),
+  logRefresh: document.querySelector("#adminLogRefresh"),
+  logStatus: document.querySelector("#adminLogStatus"),
+  logList: document.querySelector("#adminLogList"),
   previewTitle: document.querySelector("#adminPreviewTitle"),
   previewStatus: document.querySelector("#adminPreviewStatus"),
   mapFrame: document.querySelector("#adminMapFrame")
@@ -106,6 +118,7 @@ const state = {
   heightPreviewActive: false,
   pendingReloadBuildingNumber: "",
   pendingReloadHeightNumber: "",
+  operationLogs: [],
   mapReady: false
 };
 
@@ -151,6 +164,12 @@ function setHeightStatus(message, tone = "neutral") {
   els.heightStatus.dataset.tone = tone;
 }
 
+function setLogStatus(message, tone = "neutral") {
+  if (!els.logStatus) return;
+  els.logStatus.textContent = message;
+  els.logStatus.dataset.tone = tone;
+}
+
 function setButtonBusy(button, busy, busyLabel = "处理中...") {
   if (!button) return;
   if (busy) {
@@ -170,6 +189,19 @@ function cleanText(value) {
   return String(value || "").trim();
 }
 
+function formatLogTime(value) {
+  if (!value) return "unknown";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(date);
+}
+
 function getPendingEmail() {
   return window.sessionStorage.getItem(PENDING_EMAIL_KEY) || "";
 }
@@ -187,14 +219,45 @@ function getAdminLevel() {
 }
 
 function updateAccountChrome() {
-  const email = state.session?.user?.email || "Not signed in";
-  const name = email.includes("@") ? email.split("@")[0] : email;
+  const signedIn = Boolean(state.session?.user);
+  const hasAdminAccess = Boolean(state.adminProfile);
+  const configStatus = getSupabaseConfigStatus();
+  const email = state.session?.user?.email || "未登录";
+  const name = signedIn && email.includes("@") ? email.split("@")[0] : "登录";
   const initial = (name || "A").slice(0, 1).toUpperCase();
 
+  document.body.classList.toggle("is-admin-authenticated", hasAdminAccess);
   els.userName.textContent = name || "Admin";
   els.avatarInitial.textContent = initial;
+  els.avatarButton?.classList.toggle("has-admin-image", hasAdminAccess);
+  setHidden(els.avatarImage, !hasAdminAccess);
   els.accountEmail.textContent = email;
-  els.accountRole.textContent = `Permission: ${getAdminLevel()}`;
+  els.accountRole.textContent = getAdminLevel();
+  els.accountConnection.textContent = configStatus.ready ? "Supabase 正常" : "Supabase 未配置";
+  els.accountStatus.textContent = !signedIn
+    ? "需要登录后才能维护后台"
+    : hasAdminAccess
+      ? "管理员权限已启用"
+      : "已登录，但未获得管理员权限";
+  els.accountStatus.dataset.tone = !signedIn
+    ? "neutral"
+    : hasAdminAccess
+      ? "success"
+      : "warning";
+  els.accountLogin.textContent = signedIn ? "切换账号" : "前往登录";
+  setHidden(els.signOut, !signedIn);
+}
+
+function setAccountMenuOpen(open) {
+  setHidden(els.accountMenu, !open);
+  els.avatarButton?.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+function focusLoginPanel() {
+  setAccountMenuOpen(false);
+  setHidden(els.loginPanel, false);
+  els.loginPanel?.scrollIntoView({ block: "start", behavior: "smooth" });
+  window.setTimeout(() => els.email?.focus(), 120);
 }
 
 function renderConfig() {
@@ -210,12 +273,24 @@ function renderConfig() {
   if (!configStatus.hasUrl) missing.push("Project URL");
   if (!configStatus.hasPublishableKey) missing.push("publishable key");
   els.configText.textContent = `Missing ${missing.join(" and ")} in src/backend/supabase-config.js.`;
+  updateAccountChrome();
   setStatus("Supabase config is incomplete.", "warning");
   return false;
 }
 
 function renderLoggedOut() {
   const pendingEmail = getPendingEmail();
+  state.activeSection = "home";
+  state.dormPreviewActive = false;
+  state.heightPreviewActive = false;
+  state.mapReady = false;
+  document.body.dataset.adminSection = state.activeSection;
+  els.navItems.forEach((item) => {
+    item.classList.toggle("is-active", item.dataset.adminSection === state.activeSection);
+  });
+  els.panels.forEach((panel) => {
+    setHidden(panel, panel.dataset.adminPanel !== state.activeSection);
+  });
   setHidden(els.loginPanel, false);
   setHidden(els.otpForm, !pendingEmail);
   setHidden(els.sessionPanel, true);
@@ -280,8 +355,13 @@ function switchAdminSection(section) {
 
   if (section === "home") {
     if (els.previewTitle) els.previewTitle.textContent = "预览首页";
+    return;
   } else if (section === "dorm") {
     if (els.previewTitle) els.previewTitle.textContent = "宿舍详情编辑";
+  } else if (section === "logs") {
+    if (els.previewTitle) els.previewTitle.textContent = "工程日志";
+    loadOperationLogs();
+    return;
   } else {
     if (els.previewTitle) els.previewTitle.textContent = "建筑高度管理";
   }
@@ -495,12 +575,27 @@ function formatHeightNumber(value) {
   return `${parsed.toFixed(1).replace(/\.0$/, "")}`;
 }
 
+function getMeaningfulBuildingName(item) {
+  const number = cleanText(item?.buildingNumber);
+  const genericName = `building ${number}`.trim();
+  return [item?.name, item?.shortName]
+    .map(cleanText)
+    .find((name) => {
+      const normalized = name.toLowerCase();
+      return name && normalized !== number.toLowerCase() && normalized !== genericName && normalized !== "building";
+    }) || "";
+}
+
 function createBuildingOption(item, emptyLabel = "不复制") {
   const option = document.createElement("option");
   option.value = item?.buildingNumber || "";
-  option.textContent = item
-    ? `${item.name || "Building"} · ${item.buildingNumber}`
-    : emptyLabel;
+  if (!item) {
+    option.textContent = emptyLabel;
+    return option;
+  }
+
+  const name = getMeaningfulBuildingName(item);
+  option.textContent = name ? `${item.buildingNumber} · ${name}` : String(item.buildingNumber || "");
   return option;
 }
 
@@ -529,9 +624,29 @@ function renderHeightOptions() {
   }
   state.pendingReloadHeightNumber = "";
 
-  els.heightBuildingSelect.value = state.selectedHeightNumber;
-  if (els.heightTargets[0]) els.heightTargets[0].value = state.selectedHeightNumber;
+  syncHeightBuildingInputs();
   renderHeightForm();
+}
+
+function syncHeightBuildingInputs() {
+  if (els.heightBuildingSelect) els.heightBuildingSelect.value = state.selectedHeightNumber;
+  if (els.heightBuildingNumber) els.heightBuildingNumber.value = state.selectedHeightNumber;
+  if (els.heightTargets[0]) els.heightTargets[0].value = state.selectedHeightNumber;
+}
+
+function selectHeightBuilding(buildingNumber, options = {}) {
+  const nextBuildingNumber = cleanText(buildingNumber);
+  if (
+    !nextBuildingNumber ||
+    !state.heightCatalog.some((item) => item.buildingNumber === nextBuildingNumber)
+  ) {
+    return false;
+  }
+
+  state.selectedHeightNumber = nextBuildingNumber;
+  syncHeightBuildingInputs();
+  renderHeightForm({ preview: !!options.preview });
+  return true;
 }
 
 function renderHeightForm(options = {}) {
@@ -725,6 +840,123 @@ async function loadHeightRows() {
   state.heightRows = (data || []).map(normalizeBuildingHeightOverrideRow);
 }
 
+function renderOperationLogs() {
+  if (!els.logList) return;
+  els.logList.replaceChildren();
+
+  if (!state.operationLogs.length) {
+    const empty = document.createElement("p");
+    empty.className = "admin-log-empty";
+    empty.textContent = "暂无数据库操作记录。";
+    els.logList.appendChild(empty);
+    return;
+  }
+
+  state.operationLogs.forEach((log) => {
+    const item = document.createElement("article");
+    item.className = "admin-log-item";
+
+    const head = document.createElement("div");
+    head.className = "admin-log-item__head";
+
+    const title = document.createElement("strong");
+    title.textContent = log.summary || log.action || "数据库操作";
+
+    const time = document.createElement("time");
+    time.dateTime = log.created_at || "";
+    time.textContent = formatLogTime(log.created_at);
+
+    head.append(title, time);
+
+    const meta = document.createElement("p");
+    meta.className = "admin-log-item__meta";
+    meta.textContent = [
+      log.actor_email || "unknown user",
+      log.permission_level || "Clevel",
+      log.target_table || "database",
+      [log.entity_type, log.entity_id].filter(Boolean).join(": ")
+    ].filter(Boolean).join(" / ");
+
+    const details = document.createElement("details");
+    details.className = "admin-log-item__details";
+    const summary = document.createElement("summary");
+    summary.textContent = "查看详情";
+    const code = document.createElement("pre");
+    code.textContent = JSON.stringify(log.details || {}, null, 2);
+    details.append(summary, code);
+
+    item.append(head, meta, details);
+    els.logList.appendChild(item);
+  });
+}
+
+async function loadOperationLogs() {
+  state.operationLogs = [];
+  if (!state.client || !state.adminProfile) return;
+  setLogStatus("正在读取工程日志...", "neutral");
+
+  const { data, error } = await state.client
+    .from(ADMIN_OPERATION_LOG_TABLE)
+    .select(ADMIN_OPERATION_LOG_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (error) {
+    console.warn("Admin operation logs unavailable:", error);
+    setLogStatus(
+      `工程日志表还不可用：请先运行 supabase/patch-admin-operation-logs.sql。${error.message}`,
+      "warning"
+    );
+    renderOperationLogs();
+    return;
+  }
+
+  state.operationLogs = data || [];
+  setLogStatus(`已读取 ${state.operationLogs.length} 条数据库操作记录。`, "success");
+  renderOperationLogs();
+}
+
+async function logAdminOperation({
+  action,
+  entityType,
+  entityId = "",
+  targetTable = "",
+  summary,
+  details = {},
+  status = "success"
+}) {
+  if (!state.client || !state.session || !state.adminProfile) return;
+
+  const payload = {
+    actor_user_id: state.session.user.id,
+    actor_email: state.session.user.email || "unknown",
+    permission_level: getAdminLevel(),
+    action,
+    entity_type: entityType,
+    entity_id: entityId,
+    target_table: targetTable,
+    status,
+    summary,
+    details
+  };
+
+  const { error } = await state.client.from(ADMIN_OPERATION_LOG_TABLE).insert(payload);
+  if (error) {
+    console.warn("Admin operation log failed:", error);
+    if (state.activeSection === "logs") {
+      setLogStatus(
+        `工程日志写入失败：请确认已运行 supabase/patch-admin-operation-logs.sql。${error.message}`,
+        "warning"
+      );
+    }
+    return;
+  }
+
+  if (state.activeSection === "logs") {
+    await loadOperationLogs();
+  }
+}
+
 async function refreshAdminState() {
   if (!renderConfig()) return;
 
@@ -832,7 +1064,27 @@ async function handleSignOut() {
   state.session = null;
   state.adminProfile = null;
   setPendingEmail("");
+  setAccountMenuOpen(false);
   renderLoggedOut();
+}
+
+async function handleAccountLogin() {
+  if (state.session && state.client) {
+    await handleSignOut();
+  } else {
+    renderLoggedOut();
+  }
+  focusLoginPanel();
+}
+
+async function handleRefreshAccount() {
+  setButtonBusy(els.refreshAccount, true, "刷新中...");
+  try {
+    await refreshAdminState();
+    updateAccountChrome();
+  } finally {
+    setButtonBusy(els.refreshAccount, false);
+  }
 }
 
 async function handleBuildingSelectChange() {
@@ -889,6 +1141,18 @@ async function handleSaveBuilding(event) {
   state.selectedBuildingNumber = payload.building_number;
   await loadBuildingRows();
   renderBuildingOptions();
+  await logAdminOperation({
+    action: "save_dorm_detail",
+    entityType: "dorm",
+    entityId: payload.building_number,
+    targetTable: BUILDING_LABEL_OVERRIDES_TABLE,
+    summary: `保存宿舍详情：${values.name || values.buildingNumber}`,
+    details: {
+      buildingNumber: values.buildingNumber,
+      name: values.name,
+      changes
+    }
+  });
   setBuildingStatus("已保存到数据库。官网刷新后会读取宿舍文字更新。", "success");
 }
 
@@ -942,6 +1206,18 @@ async function handleRollbackBuilding() {
   state.selectedBuildingNumber = buildingNumber;
   await loadBuildingRows();
   renderBuildingOptions();
+  await logAdminOperation({
+    action: "rollback_dorm_detail",
+    entityType: "dorm",
+    entityId: buildingNumber,
+    targetTable: BUILDING_LABEL_OVERRIDES_TABLE,
+    summary: `回退宿舍详情：${els.displayName.value || buildingNumber}`,
+    details: {
+      buildingNumber,
+      restoredFrom: data.created_at || null,
+      historyAction: data.action || null
+    }
+  });
   setBuildingStatus("已回退当前宿舍。", "success");
 }
 
@@ -1020,6 +1296,21 @@ async function writeHeightRows(mode, triggerButton = null) {
     await loadHeightRows();
     renderHeightForm({ preview: state.heightPreviewActive });
     const draftCount = getDraftHeightRows().length;
+    await logAdminOperation({
+      action: mode === "publish" ? "publish_building_height" : "save_building_height_draft",
+      entityType: "building_height",
+      entityId: targets.join(","),
+      targetTable: BUILDING_HEIGHT_OVERRIDES_TABLE,
+      summary: mode === "publish"
+        ? `手动发布建筑高度：${targets.join(", ")}`
+        : `保存建筑高度草稿：${targets.join(", ")}`,
+      details: {
+        mode,
+        targets,
+        multiplier: Number(els.heightMultiplier.value) || 1,
+        copyFromBuildingNumber: cleanText(els.heightCopyFrom.value)
+      }
+    });
     setHeightStatus(
       mode === "publish"
         ? "已手动发布。官网刷新后会读取新的建筑高度。"
@@ -1080,6 +1371,17 @@ async function publishAllHeightDrafts() {
 
     await loadHeightRows();
     renderHeightForm({ preview: state.heightPreviewActive });
+    await logAdminOperation({
+      action: "publish_all_building_height_drafts",
+      entityType: "building_height",
+      entityId: labels,
+      targetTable: BUILDING_HEIGHT_OVERRIDES_TABLE,
+      summary: `统一发布 ${payloads.length} 个高度草稿`,
+      details: {
+        buildingNumbers: draftRows.map((row) => row.buildingNumber),
+        total: payloads.length
+      }
+    });
     setHeightStatus(`已统一发布 ${payloads.length} 个高度草稿。官网刷新后会读取最新高度。`, "success");
   } finally {
     setButtonBusy(els.publishHeight, false);
@@ -1139,6 +1441,18 @@ async function handleRollbackHeight() {
 
     await loadHeightRows();
     renderHeightForm();
+    await logAdminOperation({
+      action: "rollback_building_height",
+      entityType: "building_height",
+      entityId: buildingNumber,
+      targetTable: BUILDING_HEIGHT_OVERRIDES_TABLE,
+      summary: `回退建筑高度：${buildingNumber}`,
+      details: {
+        buildingNumber,
+        restoredFrom: data.created_at || null,
+        historyAction: data.action || null
+      }
+    });
     setHeightStatus("已回退当前建筑高度。", "success");
   } finally {
     setButtonBusy(els.rollbackHeight, false);
@@ -1197,10 +1511,7 @@ function handleMapMessage(event) {
 
     if (state.activeSection === "height") {
       if (!state.heightCatalog.some((item) => item.buildingNumber === buildingNumber)) return;
-      state.selectedHeightNumber = buildingNumber;
-      els.heightBuildingSelect.value = buildingNumber;
-      els.heightTargets[0].value = buildingNumber;
-      renderHeightForm({ preview: true });
+      selectHeightBuilding(buildingNumber, { preview: true });
     }
   }
 }
@@ -1210,13 +1521,21 @@ function requestMapBuildings() {
 }
 
 els.avatarButton?.addEventListener("click", () => {
-  const nextHidden = !els.accountMenu.hidden;
-  setHidden(els.accountMenu, nextHidden);
-  els.avatarButton.setAttribute("aria-expanded", nextHidden ? "false" : "true");
+  setAccountMenuOpen(els.accountMenu.hidden);
+});
+document.addEventListener("click", (event) => {
+  if (els.accountMenu?.hidden) return;
+  if (els.avatarButton?.contains(event.target) || els.accountMenu?.contains(event.target)) return;
+  setAccountMenuOpen(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") setAccountMenuOpen(false);
 });
 els.passwordForm?.addEventListener("submit", handlePasswordLogin);
 els.loginForm?.addEventListener("submit", handleLogin);
 els.otpForm?.addEventListener("submit", handleVerifyOtp);
+els.accountLogin?.addEventListener("click", handleAccountLogin);
+els.refreshAccount?.addEventListener("click", handleRefreshAccount);
 els.signOut?.addEventListener("click", handleSignOut);
 els.navItems.forEach((item) => {
   item.addEventListener("click", () => switchAdminSection(item.dataset.adminSection));
@@ -1240,6 +1559,7 @@ els.buildingReload?.addEventListener("click", handleReloadBuildings);
 els.buildingForm?.addEventListener("submit", handleSaveBuilding);
 els.rollbackBuilding?.addEventListener("click", handleRollbackBuilding);
 els.publishDorm?.addEventListener("click", handlePublishDorm);
+els.logRefresh?.addEventListener("click", loadOperationLogs);
 [
   els.displayName,
   els.shortName,
@@ -1253,9 +1573,20 @@ els.publishDorm?.addEventListener("click", handlePublishDorm);
   els.dormTradeOff
 ].forEach((field) => field?.addEventListener("input", sendDormPreview));
 els.heightBuildingSelect?.addEventListener("change", () => {
-  state.selectedHeightNumber = els.heightBuildingSelect.value;
-  els.heightTargets[0].value = state.selectedHeightNumber;
-  renderHeightForm({ preview: true });
+  selectHeightBuilding(els.heightBuildingSelect.value, { preview: true });
+});
+els.heightBuildingNumber?.addEventListener("input", () => {
+  selectHeightBuilding(els.heightBuildingNumber.value, { preview: true });
+});
+els.heightBuildingNumber?.addEventListener("change", () => {
+  const buildingNumber = cleanText(els.heightBuildingNumber.value);
+  if (!buildingNumber) {
+    syncHeightBuildingInputs();
+    return;
+  }
+  if (!selectHeightBuilding(buildingNumber, { preview: true })) {
+    setHeightStatus(`没有找到 ${buildingNumber} 号建筑。`, "warning");
+  }
 });
 els.heightMultiplier?.addEventListener("input", () => {
   state.heightPreviewActive = true;
