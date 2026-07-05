@@ -22,8 +22,11 @@ const ADMIN_OPERATION_LOG_COLUMNS =
   "id,created_at,actor_email,permission_level,action,entity_type,entity_id,target_table,status,summary,details";
 const MAX_HEIGHT_TARGETS = 5;
 const MAX_HEIGHT_MULTIPLIER = 10;
-const ADMIN_MAP_TOOL_FRAME = "admin-left-switches-v1";
-const NORMAL_MAP_FRAME = "admin-left-switches-v1";
+const SITE_PAGES_CONFIG_PATH = "config/site-pages.json";
+const FUNCTIONAL_BUILDINGS_CONFIG_PATH = "config/functional-buildings.json";
+const ADMIN_MAP_TOOL_FRAME = "site-pages-overview-v1";
+const NORMAL_MAP_FRAME = "site-pages-overview-v1";
+const ADMIN_THEME_STORAGE_KEY = "anu_explore_admin_theme";
 const ADMIN_MAP_TOOL_SECTIONS = {
   "tool-entrance": {
     mode: "entrance",
@@ -51,6 +54,7 @@ const els = {
   status: document.querySelector("#adminStatus"),
   publishState: document.querySelector("#adminPublishState"),
   userName: document.querySelector("#adminUserName"),
+  themeChoices: [...document.querySelectorAll("[data-admin-theme-choice]")],
   avatarButton: document.querySelector("#adminAvatarButton"),
   avatarImage: document.querySelector("#adminAvatarImage"),
   avatarInitial: document.querySelector("#adminAvatarInitial"),
@@ -79,6 +83,15 @@ const els = {
   sideNav: document.querySelector(".admin-side-nav"),
   navItems: [...document.querySelectorAll("[data-admin-section]")],
   panels: [...document.querySelectorAll("[data-admin-panel]")],
+  homeProjectName: document.querySelector("#adminHomeProjectName"),
+  homePublicUrl: document.querySelector("#adminHomePublicUrl"),
+  homeCopyUrl: document.querySelector("#adminHomeCopyUrl"),
+  homePublicPages: document.querySelector("#adminHomePublicPages"),
+  homeNavPages: document.querySelector("#adminHomeNavPages"),
+  homeHiddenPages: document.querySelector("#adminHomeHiddenPages"),
+  homeRegistryState: document.querySelector("#adminHomeRegistryState"),
+  homeRegistryMeta: document.querySelector("#adminHomeRegistryMeta"),
+  homePageList: document.querySelector("#adminHomePageList"),
   buildingPanel: document.querySelector("#adminBuildingPanel"),
   buildingReload: document.querySelector("#adminBuildingReload"),
   buildingStatus: document.querySelector("#adminBuildingStatus"),
@@ -128,6 +141,7 @@ const els = {
   mapToolTitle: document.querySelector("#adminMapToolTitle"),
   mapToolStatus: document.querySelector("#adminMapToolStatus"),
   mapToolHint: document.querySelector("#adminMapToolHint"),
+  mapToolDeveloperLabelBlock: document.querySelector("#adminMapToolDeveloperLabelBlock"),
   mapToolDeveloperLabels: document.querySelector("#adminMapToolDeveloperLabels"),
   mapToolInputBlock: document.querySelector("#adminMapToolInputBlock"),
   mapToolInputModes: [...document.querySelectorAll("[data-admin-input-mode]")],
@@ -169,7 +183,12 @@ const state = {
   operationLogs: [],
   mapReady: false,
   mapFrameMode: "normal",
-  mapTool: null
+  mapTool: null,
+  sitePages: [],
+  sitePageProject: {
+    projectName: "ANU Explore Project",
+    publicUrl: "https://www.anuexplore.com"
+  }
 };
 
 document.body.dataset.adminSection = state.activeSection;
@@ -189,8 +208,162 @@ const EDITABLE_FIELD_LABELS = {
 
 const DORM_DEFAULTS = Array.isArray(window.DORM_DATA) ? window.DORM_DATA : [];
 
+async function loadFunctionalBuildingConfig() {
+  try {
+    const response = await fetch(`${FUNCTIONAL_BUILDINGS_CONFIG_PATH}?v=${Date.now()}`, {
+      cache: "no-store"
+    });
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return await response.json();
+  } catch (error) {
+    console.warn("Functional building config could not be loaded:", error);
+    return {};
+  }
+}
+
+function isEditableDormConfig(config) {
+  if (!config) return false;
+  const displayMode = config.displayMode || config.mode;
+  const buildingId = cleanText(config.buildingId);
+  const isDorm =
+    displayMode === "dorm" ||
+    displayMode === "residence" ||
+    config.type === "dorm" ||
+    buildingId.startsWith("dorm_");
+  return isDorm && config.showFunctionalLabel !== false && !config.groupPrimaryBuildingNumber;
+}
+
+function findDormDefaultForBuildingId(buildingId) {
+  const id = cleanText(buildingId);
+  const dormId = id.replace(/^dorm_/, "");
+  return DORM_DEFAULTS.find(
+    (dorm) => dorm?.buildingId === id || dorm?.mapFocus === id || dorm?.id === dormId
+  ) || null;
+}
+
+function createStaticDormRow(buildingNumber, config) {
+  const number = String(buildingNumber);
+  const memberNumbers = Array.isArray(config.memberBuildingNumbers)
+    ? [...new Set(config.memberBuildingNumbers.map(String).filter(Boolean))]
+    : [number];
+  const buildingNumbers = memberNumbers.includes(number)
+    ? memberNumbers
+    : [number, ...memberNumbers];
+  const defaultDorm = findDormDefaultForBuildingId(config.buildingId);
+
+  return {
+    buildingNumber: number,
+    buildingNumbers,
+    buildingNumberLabel: buildingNumbers.length > 1 ? buildingNumbers.join(", ") : number,
+    buildingId: cleanText(config.buildingId),
+    displayMode: "dorm",
+    type: "dorm",
+    name: firstText(config.name, defaultDorm?.name),
+    shortName: firstText(config.shortName, defaultDorm?.shortName),
+    interactive: config.interactive !== false,
+    labelEnabled: config.showFunctionalLabel !== false,
+    dorm: {
+      tag: firstText(defaultDorm?.tag),
+      rentText: formatDefaultDormRent(defaultDorm),
+      type: firstText(defaultDorm?.type, "Residential hall"),
+      location: firstText(defaultDorm?.location, "ANU campus"),
+      summary: firstText(defaultDorm?.summary, defaultDorm?.description),
+      description: firstText(defaultDorm?.description, defaultDorm?.summary),
+      bestFor: firstText(defaultDorm?.bestFor),
+      locationFeel: firstText(defaultDorm?.locationFeel),
+      tradeOff: firstText(defaultDorm?.tradeOff)
+    },
+    isStaticBaseline: true
+  };
+}
+
+async function loadStaticDormRows() {
+  const config = await loadFunctionalBuildingConfig();
+  return Object.entries(config)
+    .filter(([, item]) => isEditableDormConfig(item))
+    .map(([buildingNumber, item]) => createStaticDormRow(buildingNumber, item));
+}
+
+function mergeDormRow(baseRow, databaseRow) {
+  if (!baseRow) {
+    return {
+      ...databaseRow,
+      buildingNumbers: [databaseRow.buildingNumber],
+      buildingNumberLabel: databaseRow.buildingNumber
+    };
+  }
+
+  return {
+    ...baseRow,
+    ...databaseRow,
+    buildingNumbers: baseRow.buildingNumbers || [baseRow.buildingNumber],
+    buildingNumberLabel: baseRow.buildingNumberLabel || databaseRow.buildingNumber,
+    name: firstText(databaseRow.name, baseRow.name),
+    shortName: firstText(databaseRow.shortName, baseRow.shortName),
+    dorm: {
+      tag: firstText(databaseRow.dorm?.tag, baseRow.dorm?.tag),
+      rentText: firstText(databaseRow.dorm?.rentText, baseRow.dorm?.rentText),
+      type: firstText(databaseRow.dorm?.type, baseRow.dorm?.type),
+      location: firstText(databaseRow.dorm?.location, baseRow.dorm?.location),
+      summary: firstText(databaseRow.dorm?.summary, baseRow.dorm?.summary),
+      description: firstText(databaseRow.dorm?.description, baseRow.dorm?.description),
+      bestFor: firstText(databaseRow.dorm?.bestFor, baseRow.dorm?.bestFor),
+      locationFeel: firstText(databaseRow.dorm?.locationFeel, baseRow.dorm?.locationFeel),
+      tradeOff: firstText(databaseRow.dorm?.tradeOff, baseRow.dorm?.tradeOff)
+    },
+    isStaticBaseline: baseRow.isStaticBaseline
+  };
+}
+
+function sortDormRows(a, b) {
+  const aNumber = Number(a.buildingNumber);
+  const bNumber = Number(b.buildingNumber);
+  if (Number.isFinite(aNumber) && Number.isFinite(bNumber)) return aNumber - bNumber;
+  return String(a.buildingNumber).localeCompare(String(b.buildingNumber));
+}
+
+function mergeStaticAndDatabaseDormRows(staticRows, databaseRows) {
+  const rowsByNumber = new Map();
+  staticRows.forEach((row) => rowsByNumber.set(row.buildingNumber, row));
+
+  databaseRows.forEach((row) => {
+    if (!row.buildingNumber || row.displayMode !== "dorm") return;
+    const baseRow = rowsByNumber.get(row.buildingNumber);
+    rowsByNumber.set(row.buildingNumber, mergeDormRow(baseRow, row));
+  });
+
+  return [...rowsByNumber.values()]
+    .filter((row) => row.buildingNumber && row.displayMode === "dorm")
+    .sort(sortDormRows);
+}
+
 function setHidden(element, hidden) {
   if (element) element.hidden = hidden;
+}
+
+function getSavedAdminTheme() {
+  try {
+    return localStorage.getItem(ADMIN_THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+function setAdminTheme(theme) {
+  const nextTheme = theme === "dark" ? "dark" : "light";
+  document.body.dataset.adminTheme = nextTheme;
+  document.documentElement.dataset.adminTheme = nextTheme;
+  try {
+    localStorage.setItem(ADMIN_THEME_STORAGE_KEY, nextTheme);
+  } catch {
+    // Local storage can be unavailable in strict browser modes; the page still works.
+  }
+
+  els.themeChoices.forEach((button) => {
+    const isActive = button.dataset.adminThemeChoice === nextTheme;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-current", String(isActive));
+  });
 }
 
 function isMapToolSection(section = state.activeSection) {
@@ -227,6 +400,104 @@ function setBuildingStatus(message, tone = "neutral") {
 function setHeightStatus(message, tone = "neutral") {
   els.heightStatus.textContent = message;
   els.heightStatus.dataset.tone = tone;
+}
+
+function getPublicSitePages() {
+  return state.sitePages.filter((page) => page.status !== "hidden");
+}
+
+function getNavigationSitePages() {
+  return state.sitePages.filter(
+    (page) => page.status !== "hidden" && page.showInNavigation !== false
+  );
+}
+
+function getHiddenSitePages() {
+  return state.sitePages.filter(
+    (page) => page.status === "hidden" || page.showInNavigation === false
+  );
+}
+
+function renderSitePagesOverview() {
+  const publicPages = getPublicSitePages();
+  const navPages = getNavigationSitePages();
+  const hiddenPages = getHiddenSitePages();
+  const projectName = state.sitePageProject.projectName || "ANU Explore Project";
+  const publicUrl = state.sitePageProject.publicUrl || "https://www.anuexplore.com";
+
+  if (els.homeProjectName) els.homeProjectName.textContent = projectName;
+  if (els.homePublicUrl) els.homePublicUrl.textContent = publicUrl;
+  if (els.homePublicPages) {
+    els.homePublicPages.textContent = `${publicPages.length} independent pages`;
+  }
+  if (els.homeNavPages) {
+    els.homeNavPages.textContent = `${navPages.length} shown`;
+  }
+  if (els.homeHiddenPages) {
+    els.homeHiddenPages.textContent = `${hiddenPages.length} hidden`;
+  }
+  if (els.homeRegistryState) {
+    els.homeRegistryState.textContent = state.sitePages.length ? "Ready" : "Missing";
+  }
+  if (els.homeRegistryMeta) {
+    els.homeRegistryMeta.textContent = state.sitePages.length
+      ? `${state.sitePages.length} registered, ${publicPages.length} public, ${hiddenPages.length} hidden`
+      : "page registry not loaded";
+  }
+
+  if (!els.homePageList) return;
+  els.homePageList.innerHTML = "";
+
+  const pages = state.sitePages.length ? state.sitePages : [
+    {
+      key: "missing",
+      label: "Page registry not loaded",
+      href: SITE_PAGES_CONFIG_PATH,
+      status: "warning",
+      role: "config"
+    }
+  ];
+
+  pages.forEach((page) => {
+    const row = document.createElement("article");
+    row.className = "admin-home-page-row";
+    row.dataset.status = page.status || "public";
+
+    const statusText = page.status === "hidden"
+      ? "Hidden"
+      : page.showInNavigation === false
+        ? "Unlisted"
+        : "Public";
+    const url = new URL(page.href || "#", window.location.href);
+
+    row.innerHTML = `
+      <div>
+        <strong>${page.label || page.key || "Untitled page"}</strong>
+        <span>${page.href || "-"}</span>
+      </div>
+      <small>${page.role || "page"}</small>
+      <em>${statusText}</em>
+      <a href="${url.toString()}" target="_blank" rel="noreferrer">Open</a>
+    `;
+    els.homePageList.appendChild(row);
+  });
+}
+
+async function loadSitePagesOverview() {
+  try {
+    const response = await fetch(SITE_PAGES_CONFIG_PATH, { cache: "no-cache" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    state.sitePageProject = {
+      projectName: data.projectName || state.sitePageProject.projectName,
+      publicUrl: data.publicUrl || state.sitePageProject.publicUrl
+    };
+    state.sitePages = Array.isArray(data.pages) ? data.pages : [];
+  } catch (error) {
+    console.warn("Failed to load site pages overview:", error);
+    state.sitePages = [];
+  }
+  renderSitePagesOverview();
 }
 
 function setLogStatus(message, tone = "neutral") {
@@ -485,7 +756,7 @@ function syncBuildingGuardRules() {
 function fillBuildingForm(row, options = {}) {
   const fallback = row || {};
   const defaultDorm = getDefaultDormForRow(fallback);
-  setFieldValue(els.buildingNumber, fallback.buildingNumber);
+  setFieldValue(els.buildingNumber, fallback.buildingNumberLabel || fallback.buildingNumber);
   setFieldValue(els.buildingId, fallback.buildingId);
   setFieldValue(els.displayMode, "dorm");
   setFieldValue(els.typeKey, "dorm");
@@ -541,7 +812,9 @@ function renderBuildingOptions() {
   state.buildingRows.forEach((row) => {
     const option = document.createElement("option");
     option.value = row.buildingNumber;
-    option.textContent = `${row.name || row.shortName || row.buildingId} · ${row.buildingNumber}`;
+    option.textContent = `${row.name || row.shortName || row.buildingId} · ${
+      row.buildingNumberLabel || row.buildingNumber
+    }`;
     els.buildingSelect.appendChild(option);
   });
 
@@ -814,13 +1087,14 @@ function setAdminSwitch(button, enabled) {
 function getDeveloperLabelsButton(section = state.activeSection) {
   if (section === "dorm") return els.dormDeveloperLabels;
   if (section === "height") return els.heightDeveloperLabels;
+  if (section === "tool-boundary") return null;
   if (isMapToolSection(section)) return els.mapToolDeveloperLabels;
   return null;
 }
 
 function getDeveloperLabelsEnabled(section = state.activeSection) {
   const button = getDeveloperLabelsButton(section);
-  return button ? button.getAttribute("aria-pressed") === "true" : true;
+  return button ? button.getAttribute("aria-pressed") === "true" : false;
 }
 
 function postDeveloperLabelsEnabled(section = state.activeSection) {
@@ -916,6 +1190,7 @@ function sendMapOverview() {
     type: "overview-preview",
     mode: state.activeSection
   });
+  postDeveloperLabelsEnabled(state.activeSection);
 }
 
 function sendDormPreview() {
@@ -970,6 +1245,9 @@ function renderAdminMapToolShell() {
   const config = getMapToolConfig();
   if (els.mapToolTitle) els.mapToolTitle.textContent = config.title;
   if (els.mapToolHint) els.mapToolHint.textContent = config.hint;
+  const usesDeveloperLabels = config.mode !== "boundary";
+  setHidden(els.mapToolDeveloperLabelBlock, !usesDeveloperLabels);
+  if (!usesDeveloperLabels) setAdminSwitch(els.mapToolDeveloperLabels, false);
   renderAdminMapToolState(state.mapTool?.mode === config.mode ? state.mapTool : null);
 }
 
@@ -1092,7 +1370,7 @@ function renderAdminMapToolState(payload) {
     els.mapToolBoundaryCopyAll.disabled = !payload?.boundaryTotalPoints;
   }
 
-  if (els.mapToolDeveloperLabels) {
+  if (els.mapToolDeveloperLabels && !isBoundary) {
     setAdminSwitch(els.mapToolDeveloperLabels, !!payload?.developerLabelsEnabled);
   }
 
@@ -1153,6 +1431,7 @@ async function loadBuildingRows() {
   state.buildingRows = [];
   if (!state.client || !state.adminProfile) return;
 
+  const staticRows = await loadStaticDormRows();
   const { data, error } = await state.client
     .from(BUILDING_LABEL_OVERRIDES_TABLE)
     .select(BUILDING_LABEL_OVERRIDE_COLUMNS)
@@ -1160,12 +1439,14 @@ async function loadBuildingRows() {
 
   if (error) {
     setBuildingStatus(`Could not load building labels: ${error.message}`, "error");
+    state.buildingRows = staticRows;
     return;
   }
 
-  state.buildingRows = (data || [])
+  const databaseRows = (data || [])
     .map(normalizeBuildingOverrideRow)
     .filter((row) => row.buildingNumber && row.displayMode === "dorm");
+  state.buildingRows = mergeStaticAndDatabaseDormRows(staticRows, databaseRows);
 }
 
 async function loadHeightRows() {
@@ -1879,6 +2160,23 @@ els.loginForm?.addEventListener("submit", handleLogin);
 els.otpForm?.addEventListener("submit", handleVerifyOtp);
 els.accountLogin?.addEventListener("click", handleAccountLogin);
 els.signOut?.addEventListener("click", handleSignOut);
+els.themeChoices.forEach((button) => {
+  button.addEventListener("click", () => {
+    setAdminTheme(button.dataset.adminThemeChoice);
+  });
+});
+els.homeCopyUrl?.addEventListener("click", async () => {
+  const url = state.sitePageProject.publicUrl || els.homePublicUrl?.textContent || "";
+  if (!url) return;
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+    await navigator.clipboard.writeText(url);
+    setStatus("官网链接已复制", "success");
+  } catch (error) {
+    console.warn("Homepage URL copy failed:", error);
+    setStatus("复制被浏览器拦截，请手动选择官网链接。", "warning");
+  }
+});
 els.navItems.forEach((item) => {
   item.addEventListener("click", () => switchAdminSection(item.dataset.adminSection));
 });
@@ -2018,5 +2316,7 @@ els.rollbackHeight?.addEventListener("click", handleRollbackHeight);
 els.mapFrame?.addEventListener("load", requestMapBuildings);
 window.addEventListener("message", handleMapMessage);
 
+setAdminTheme(getSavedAdminTheme());
 renderConfig();
+loadSitePagesOverview();
 refreshAdminState();

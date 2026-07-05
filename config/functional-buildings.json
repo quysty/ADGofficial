@@ -79,6 +79,141 @@
     "shortName": "B&G",
     "interactive": true
   },
+  "1113": {
+    "buildingId": "dorm_yukeembruk",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Yukeembruk",
+    "shortName": "Yukeembruk",
+    "interactive": true
+  },
+  "892": {
+    "buildingId": "dorm_wamburn",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Wamburn Hall",
+    "shortName": "Wamburn",
+    "interactive": true
+  },
+  "585": {
+    "buildingId": "dorm_bruce_packed_wing",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Bruce Hall Packed Wing",
+    "shortName": "Bruce Packed",
+    "interactive": true
+  },
+  "986": {
+    "buildingId": "dorm_ursula_main_wing",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Ursula Hall Main Wing",
+    "shortName": "Ursula Main",
+    "interactive": true
+  },
+  "1330": {
+    "buildingId": "dorm_graduate_house",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Graduate House",
+    "shortName": "Graduate",
+    "interactive": true
+  },
+  "1030": {
+    "buildingId": "dorm_john_xxiii",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "John XXIII College",
+    "shortName": "John XXIII",
+    "interactive": true
+  },
+  "1032": {
+    "buildingId": "dorm_burgman",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burgman College",
+    "shortName": "Burgman",
+    "interactive": true,
+    "memberBuildingNumbers": ["1032", "1036", "1043", "1054", "1062", "1067", "1080", "1104"],
+    "labelAnchor": "group-visual-center"
+  },
+  "1036": {
+    "buildingId": "dorm_burgman",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burgman College",
+    "shortName": "Burgman",
+    "interactive": false,
+    "showFunctionalLabel": false,
+    "hideNormalLabel": true,
+    "groupPrimaryBuildingNumber": "1032"
+  },
+  "1043": {
+    "buildingId": "dorm_burgman",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burgman College",
+    "shortName": "Burgman",
+    "interactive": false,
+    "showFunctionalLabel": false,
+    "hideNormalLabel": true,
+    "groupPrimaryBuildingNumber": "1032"
+  },
+  "1054": {
+    "buildingId": "dorm_burgman",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burgman College",
+    "shortName": "Burgman",
+    "interactive": false,
+    "showFunctionalLabel": false,
+    "hideNormalLabel": true,
+    "groupPrimaryBuildingNumber": "1032"
+  },
+  "1062": {
+    "buildingId": "dorm_burgman",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burgman College",
+    "shortName": "Burgman",
+    "interactive": false,
+    "showFunctionalLabel": false,
+    "hideNormalLabel": true,
+    "groupPrimaryBuildingNumber": "1032"
+  },
+  "1067": {
+    "buildingId": "dorm_burgman",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burgman College",
+    "shortName": "Burgman",
+    "interactive": false,
+    "showFunctionalLabel": false,
+    "hideNormalLabel": true,
+    "groupPrimaryBuildingNumber": "1032"
+  },
+  "1080": {
+    "buildingId": "dorm_burgman",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burgman College",
+    "shortName": "Burgman",
+    "interactive": false,
+    "showFunctionalLabel": false,
+    "hideNormalLabel": true,
+    "groupPrimaryBuildingNumber": "1032"
+  },
+  "1104": {
+    "buildingId": "dorm_burgman",
+    "displayMode": "dorm",
+    "type": "dorm",
+    "name": "Burgman College",
+    "shortName": "Burgman",
+    "interactive": false,
+    "showFunctionalLabel": false,
+    "hideNormalLabel": true,
+    "groupPrimaryBuildingNumber": "1032"
+  },
 
   "928": {
     "buildingId": "academic_928",

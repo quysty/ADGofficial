@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Workbench | ANU Explore</title>
-  <link rel="stylesheet" href="style.css?v=public-cache-fix-v1" />
+  <link rel="stylesheet" href="style.css?v=admin-theme-labels-v1" />
 </head>
-<body data-page="admin">
+<body data-page="admin" data-admin-theme="light">
   <main class="admin-workbench">
     <header class="admin-topbar">
       <div class="admin-brand-mark" aria-hidden="true">A</div>
@@ -40,6 +40,17 @@
               <dd id="adminAccountConnection">检查中</dd>
             </div>
           </dl>
+          <div class="admin-account-theme" role="group" aria-label="Theme">
+            <p>Theme</p>
+            <button class="admin-account-theme-option is-active" type="button" data-admin-theme-choice="light" aria-current="true">
+              <span class="admin-account-theme-dot" aria-hidden="true"></span>
+              <span>浅色</span>
+            </button>
+            <button class="admin-account-theme-option" type="button" data-admin-theme-choice="dark" aria-current="false">
+              <span class="admin-account-theme-dot" aria-hidden="true"></span>
+              <span>深色</span>
+            </button>
+          </div>
           <div class="admin-account-actions">
             <button id="adminAccountLogin" class="admin-button admin-button--ghost" type="button">
               前往登录
@@ -186,7 +197,137 @@
       </nav>
 
       <aside class="admin-control-column">
-        <section id="adminHomePanel" class="admin-tool-panel admin-tool-panel--empty" data-admin-panel="home"></section>
+        <section id="adminHomePanel" class="admin-tool-panel admin-tool-panel--empty admin-home-overview" data-admin-panel="home">
+          <div class="admin-home-shell">
+            <section class="admin-home-hero" aria-label="Project overview">
+              <div class="admin-home-project">
+                <p class="admin-home-kicker">PROJECT OVERVIEW</p>
+                <h1 id="adminHomeProjectName">ANU Explore Project</h1>
+                <div class="admin-home-url">
+                  <span id="adminHomePublicUrl">https://www.anuexplore.com</span>
+                  <button id="adminHomeCopyUrl" type="button">Copy</button>
+                </div>
+
+                <div class="admin-home-stats">
+                  <article class="admin-home-stat admin-home-stat--primary">
+                    <span class="admin-home-stat__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M4 5h16v14H4z" />
+                        <path d="M8 9h8" />
+                        <path d="M8 13h5" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p>OFFICIAL PAGES</p>
+                      <strong id="adminHomePublicPages">0 public pages</strong>
+                    </div>
+                  </article>
+                  <article class="admin-home-stat">
+                    <span class="admin-home-stat__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 12h14" />
+                        <path d="M12 5v14" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p>NAVIGATION</p>
+                      <strong id="adminHomeNavPages">0 shown</strong>
+                    </div>
+                  </article>
+                  <article class="admin-home-stat">
+                    <span class="admin-home-stat__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 7h14" />
+                        <path d="M8 12h8" />
+                        <path d="M10 17h4" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p>HIDDEN</p>
+                      <strong id="adminHomeHiddenPages">0 hidden</strong>
+                    </div>
+                  </article>
+                  <article class="admin-home-stat">
+                    <span class="admin-home-stat__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M6 18V6h12v12z" />
+                        <path d="M9 9h6v6H9z" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p>REGISTRY</p>
+                      <strong id="adminHomeRegistryState">Loading</strong>
+                    </div>
+                  </article>
+                </div>
+              </div>
+
+              <div class="admin-home-database" aria-label="Site registry">
+                <div class="admin-home-database-card">
+                  <span class="admin-home-database-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M5 7c0-2 14-2 14 0v10c0 2-14 2-14 0z" />
+                      <path d="M5 7c0 2 14 2 14 0" />
+                      <path d="M5 12c0 2 14 2 14 0" />
+                    </svg>
+                  </span>
+                  <div>
+                    <strong>Site Page Registry</strong>
+                    <span>config/site-pages.json</span>
+                    <small id="adminHomeRegistryMeta">waiting for page registry</small>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="admin-home-connect" aria-label="Workbench modules">
+              <div class="admin-home-section-title">
+                <span aria-hidden="true">::</span>
+                <h2>Get connected</h2>
+              </div>
+              <div class="admin-home-module-grid">
+                <article>
+                  <span>▧</span>
+                  <strong>Pages</strong>
+                  <small>Official site registry</small>
+                </article>
+                <article>
+                  <span>⌁</span>
+                  <strong>Admin</strong>
+                  <small>Protected workbench</small>
+                </article>
+                <article>
+                  <span>◫</span>
+                  <strong>Supabase</strong>
+                  <small>Database connection</small>
+                </article>
+                <article>
+                  <span>⌬</span>
+                  <strong>GitHub Pages</strong>
+                  <small>Public deployment</small>
+                </article>
+                <article>
+                  <span>◇</span>
+                  <strong>Map Data</strong>
+                  <small>Buildings and navigation</small>
+                </article>
+                <article>
+                  <span>☰</span>
+                  <strong>Logs</strong>
+                  <small>Database operation history</small>
+                </article>
+              </div>
+            </section>
+
+            <section class="admin-home-pages" aria-label="Official pages">
+              <div class="admin-home-section-title">
+                <span aria-hidden="true">::</span>
+                <h2>Official pages</h2>
+              </div>
+              <div id="adminHomePageList" class="admin-home-page-list"></div>
+            </section>
+          </div>
+        </section>
 
         <section id="adminBuildingPanel" class="admin-tool-panel" data-admin-panel="dorm" hidden>
           <div class="admin-tool-panel__head">
@@ -200,8 +341,8 @@
 
           <div class="admin-map-tool-block admin-switch-block">
             <div class="admin-switch-row">
-              <span>地图标号</span>
-              <button id="adminDormDeveloperLabels" class="admin-pill-switch is-active" type="button" aria-pressed="true">
+              <span>建筑标号</span>
+              <button id="adminDormDeveloperLabels" class="admin-pill-switch" type="button" aria-pressed="false">
                 <span class="admin-pill-switch__knob" aria-hidden="true"></span>
               </button>
             </div>
@@ -305,8 +446,8 @@
 
           <div class="admin-map-tool-block admin-switch-block">
             <div class="admin-switch-row">
-              <span>地图标号</span>
-              <button id="adminHeightDeveloperLabels" class="admin-pill-switch is-active" type="button" aria-pressed="true">
+              <span>建筑标号</span>
+              <button id="adminHeightDeveloperLabels" class="admin-pill-switch" type="button" aria-pressed="false">
                 <span class="admin-pill-switch__knob" aria-hidden="true"></span>
               </button>
             </div>
@@ -386,9 +527,9 @@
             鼠标模式下只浏览地图；切到选点模式后才会记录坐标。
           </p>
 
-          <div class="admin-map-tool-block admin-switch-block">
+          <div id="adminMapToolDeveloperLabelBlock" class="admin-map-tool-block admin-switch-block">
             <div class="admin-switch-row">
-              <span>开发者标号</span>
+              <span>建筑标号</span>
               <button id="adminMapToolDeveloperLabels" class="admin-pill-switch" type="button" aria-pressed="false">
                 <span class="admin-pill-switch__knob" aria-hidden="true"></span>
               </button>
@@ -500,7 +641,7 @@
         <iframe
           id="adminMapFrame"
           title="ANU Explore admin map preview"
-          src="explore.html?adminPreview=overview&mode=guided&frame=public-cache-fix-v1"
+          src="explore.html?adminPreview=overview&mode=guided&frame=site-pages-overview-v1"
         ></iframe>
       </section>
 
@@ -508,7 +649,7 @@
     </section>
   </main>
 
-  <script src="src/data/dorms.js?v=public-cache-fix-v1"></script>
-  <script type="module" src="admin-workbench.js?v=public-cache-fix-v1"></script>
+  <script src="src/data/dorms.js?v=dorm-residences-burgman-v1"></script>
+  <script type="module" src="admin-workbench.js?v=admin-theme-labels-v1"></script>
 </body>
 </html>

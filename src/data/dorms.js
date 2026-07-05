@@ -414,6 +414,244 @@
       cons: [
         "Detailed room, rent, and lifestyle notes are not written yet"
       ]
+    },
+    {
+      id: "yukeembruk",
+      buildingId: "dorm_yukeembruk",
+      mapFocus: "dorm_yukeembruk",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Yukeembruk",
+      shortName: "Yukeembruk",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6336.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Yukeembruk.",
+      description:
+        "Yukeembruk is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "wamburn",
+      buildingId: "dorm_wamburn",
+      mapFocus: "dorm_wamburn",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Wamburn Hall",
+      shortName: "Wamburn",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6845.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Wamburn Hall.",
+      description:
+        "Wamburn Hall is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "bruce-packed-wing",
+      buildingId: "dorm_bruce_packed_wing",
+      mapFocus: "dorm_bruce_packed_wing",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Bruce Hall Packed Wing",
+      shortName: "Bruce Packed",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6944.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Bruce Hall Packed Wing.",
+      description:
+        "Bruce Hall Packed Wing is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "ursula-main-wing",
+      buildingId: "dorm_ursula_main_wing",
+      mapFocus: "dorm_ursula_main_wing",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Ursula Hall Main Wing",
+      shortName: "Ursula Main",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_7082.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Ursula Hall Main Wing.",
+      description:
+        "Ursula Hall Main Wing is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "graduate-house",
+      buildingId: "dorm_graduate_house",
+      mapFocus: "dorm_graduate_house",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Graduate House",
+      shortName: "Graduate",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6288.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Graduate House.",
+      description:
+        "Graduate House is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "john-xxiii",
+      buildingId: "dorm_john_xxiii",
+      mapFocus: "dorm_john_xxiii",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "John XXIII College",
+      shortName: "John XXIII",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6336.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for John XXIII College.",
+      description:
+        "John XXIII College is now linked to the Explore map as a usable dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Ready for later residence-specific content"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
+    },
+    {
+      id: "burgman",
+      buildingId: "dorm_burgman",
+      mapFocus: "dorm_burgman",
+      isHomeCandidate: false,
+      isInformationVisible: true,
+      isMapLinked: true,
+      name: "Burgman College",
+      shortName: "Burgman",
+      tag: "PLACEHOLDER / RESIDENCE",
+      image: "assets/images/IMG_6845.jpeg",
+      pricePerWeek: null,
+      type: "Residential hall",
+      location: "ANU campus",
+      distance: null,
+      tags: ["placeholder", "residence", "map-linked", "multi-building"],
+      bestFor:
+        "Placeholder profile for future dorm comparison, map navigation, and residence detail content.",
+      locationFeel:
+        "Location and living feel are pending detailed content review.",
+      tradeOff:
+        "This profile is currently a functional placeholder and should be refined later.",
+      summary:
+        "Placeholder residence profile for Burgman College.",
+      description:
+        "Burgman College is now linked to the Explore map as a unified multi-building dorm label. Detailed residence content is pending.",
+      pros: [
+        "Map label and dorm detail flow are enabled",
+        "Multiple Burgman buildings are grouped under one dorm entry"
+      ],
+      cons: [
+        "Detailed room, rent, and lifestyle notes are not written yet"
+      ]
     }
   ];
 })();

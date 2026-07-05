@@ -204,7 +204,7 @@ const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const isBaseMap = pageParams.get("map") === "base";
 const isLabMap = !isBaseMap;
 const topoDataRoot = isBaseMap ? "topo" : "topo-lab";
-const DATA_CACHE_VERSION = "building-1786-footprint-v1";
+const DATA_CACHE_VERSION = "dorm-residences-burgman-v1";
 const CONFIG_CACHE_VERSION = DATA_CACHE_VERSION;
 const TOPO_CACHE_VERSION = DATA_CACHE_VERSION;
 if (pageParams.get("labels") === "off") {
@@ -6380,6 +6380,72 @@ function getFunctionalConfigForNumber(displayNumber) {
   return FUNCTIONAL_BUILDINGS[String(displayNumber)] || null;
 }
 
+function shouldShowFunctionalBuildingLabel(functionalConfig) {
+  return !!functionalConfig && functionalConfig.showFunctionalLabel !== false;
+}
+
+function shouldHideNormalBuildingLabel(item, functionalConfig) {
+  return !!(
+    item.modelHideNormalLabel ||
+    functionalConfig?.hideNormalLabel === true ||
+    functionalConfig?.showFunctionalLabel === false
+  );
+}
+
+function getFunctionalGroupNumbers(functionalConfig, fallbackNumber) {
+  const memberNumbers = Array.isArray(functionalConfig?.memberBuildingNumbers)
+    ? functionalConfig.memberBuildingNumbers
+    : [];
+  return [...new Set([fallbackNumber, ...memberNumbers].map(String).filter(Boolean))];
+}
+
+function applyFunctionalBuildingGroups() {
+  const byNumber = new Map(
+    buildingObjects.map((building) => [String(building.displayNumber), building])
+  );
+
+  buildingObjects.forEach((building) => {
+    const groupNumbers = getFunctionalGroupNumbers(
+      building.functionalConfig,
+      building.displayNumber
+    );
+    if (groupNumbers.length <= 1) return;
+
+    const members = groupNumbers
+      .map((number) => byNumber.get(String(number)))
+      .filter(Boolean);
+    if (!members.length) return;
+
+    const groupBox = new THREE.Box3();
+    members.forEach((member) => {
+      const memberBox = new THREE.Box3().setFromCenterAndSize(
+        member.focusCenter,
+        member.focusSize
+      );
+      groupBox.union(memberBox);
+      if (member !== building) {
+        member.hideNormalLabel = true;
+        member.functionalGroupPrimary = building;
+      }
+    });
+
+    if (groupBox.isEmpty()) return;
+
+    const groupCenter = groupBox.getCenter(new THREE.Vector3());
+    const groupSize = groupBox.getSize(new THREE.Vector3());
+    const maxHeight = Math.max(
+      ...members.map((member) => Number(member.currentHeight) || 0),
+      Number(building.currentHeight) || 0
+    );
+
+    building.functionalGroupMembers = members;
+    building.focusCenter = groupCenter;
+    building.focusSize = groupSize;
+    building.anchor3D = new THREE.Vector3(groupCenter.x, maxHeight + 10, groupCenter.z);
+    building.anchor2D = new THREE.Vector3(groupCenter.x, 4.6, groupCenter.z);
+  });
+}
+
 function getTypeConfig(typeKey) {
   if (!typeKey) return null;
   return BUILDING_TYPES[typeKey] || null;
@@ -6655,7 +6721,7 @@ async function loadScene() {
       const normalLabelEl = createNormalLabelElement(displayNumber);
 
       let functionalLabelEl = null;
-      if (functionalConfig && typeConfig) {
+      if (shouldShowFunctionalBuildingLabel(functionalConfig) && typeConfig) {
         functionalLabelEl = createFunctionalLabelElement(
           functionalConfig.shortName || String(displayNumber),
           displayMode,
@@ -6684,7 +6750,7 @@ async function loadScene() {
         edge2D,
         normalLabelEl,
         functionalLabelEl,
-        hideNormalLabel: item.modelHideNormalLabel,
+        hideNormalLabel: shouldHideNormalBuildingLabel(item, functionalConfig),
         focusCenter,
         focusSize,
         isInsideCampusBoundary: item.isInsideCampusBoundary,
@@ -6709,6 +6775,8 @@ async function loadScene() {
 
       buildingObjects.push(building);
     });
+
+    applyFunctionalBuildingGroups();
 
     if (buildingObjects.length === 0) {
       throw new Error("No polygon could be rendered.");
