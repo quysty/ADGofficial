@@ -176,5 +176,41 @@
     ],
     "snapRoadType": "Footway",
     "snapDistanceMeters": 8.725
+  },
+  "dorm_fenner": {
+    "entrance": [
+      692921.414,
+      6094169.661
+    ],
+    "snap": [
+      692924.872,
+      6094174.025
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 5.568
+  },
+  "dorm_bruce": {
+    "entrance": [
+      692543.611,
+      6094457.018
+    ],
+    "snap": [
+      692547.177,
+      6094454.192
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 4.55
+  },
+  "dorm_ursula_laurus": {
+    "entrance": [
+      692229.259,
+      6094061.041
+    ],
+    "snap": [
+      692241.157,
+      6094076.054
+    ],
+    "snapRoadType": "Footway",
+    "snapDistanceMeters": 19.156
   }
 }

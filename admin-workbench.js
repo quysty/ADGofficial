@@ -153,6 +153,7 @@ const els = {
   mapToolRoadActions: [...document.querySelectorAll("[data-admin-road-action]")],
   mapToolCameraControls: document.querySelector("#adminMapToolCameraControls"),
   mapToolCameraGrid: document.querySelector("#adminMapToolCameraGrid"),
+  mapToolCameraPitchModes: [...document.querySelectorAll("[data-admin-camera-pitch-mode]")],
   mapToolCameraPitch: document.querySelector("#adminMapToolCameraPitch"),
   mapToolCameraPitchValue: document.querySelector("#adminMapToolCameraPitchValue"),
   mapToolCameraHeight: document.querySelector("#adminMapToolCameraHeight"),
@@ -1084,6 +1085,31 @@ function setAdminSwitch(button, enabled) {
   button.setAttribute("aria-pressed", String(isActive));
 }
 
+function setAdminChoice(buttons, activeValue, datasetKey) {
+  buttons.forEach((button) => {
+    const isActive = button.dataset[datasetKey] === activeValue;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function setAdminRangeValue(input, value) {
+  if (!input) return;
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return;
+
+  const min = Number(input.min);
+  const max = Number(input.max);
+  if (Number.isFinite(min) && numericValue < min) {
+    input.min = String(Math.floor(numericValue));
+  }
+  if (Number.isFinite(max) && numericValue > max) {
+    input.max = String(Math.ceil(numericValue));
+  }
+
+  input.value = String(numericValue);
+}
+
 function getDeveloperLabelsButton(section = state.activeSection) {
   if (section === "dorm") return els.dormDeveloperLabels;
   if (section === "height") return els.heightDeveloperLabels;
@@ -1388,10 +1414,18 @@ function renderAdminMapToolState(payload) {
     if (els.mapToolCameraGrid) {
       setAdminSwitch(els.mapToolCameraGrid, !!payload?.camera?.gridEnabled);
     }
-    if (els.mapToolCameraPitch) els.mapToolCameraPitch.value = String(payload?.camera?.pitchDegrees || 48);
-    if (els.mapToolCameraPitchValue) els.mapToolCameraPitchValue.textContent = `${Math.round(payload?.camera?.pitchDegrees || 48)}°`;
-    if (els.mapToolCameraHeight) els.mapToolCameraHeight.value = String(payload?.camera?.height || 980);
-    if (els.mapToolCameraHeightValue) els.mapToolCameraHeightValue.textContent = String(Math.round(payload?.camera?.height || 980));
+    const pitchMode = payload?.camera?.pitchMode === "focus" ? "focus" : "camera";
+    const pitchDegrees = Number(payload?.camera?.pitchDegrees ?? 48);
+    const cameraHeight = Number(payload?.camera?.height ?? 980);
+    setAdminChoice(els.mapToolCameraPitchModes, pitchMode, "adminCameraPitchMode");
+    setAdminRangeValue(els.mapToolCameraPitch, pitchDegrees);
+    if (els.mapToolCameraPitchValue) {
+      els.mapToolCameraPitchValue.textContent = `${Math.round(pitchDegrees)}°`;
+    }
+    setAdminRangeValue(els.mapToolCameraHeight, cameraHeight);
+    if (els.mapToolCameraHeightValue) {
+      els.mapToolCameraHeightValue.textContent = String(Math.round(cameraHeight));
+    }
   }
 
   setAdminMapToolStatus(payload?.status || "等待右侧地图工具载入...", payload ? "success" : "neutral");
@@ -2233,6 +2267,16 @@ els.mapToolCameraGrid?.addEventListener("click", () => {
   postMapMessage({
     type: "map-tool-camera-grid",
     enabled
+  });
+});
+els.mapToolCameraPitchModes.forEach((button) => {
+  button.addEventListener("click", () => {
+    const mode = button.dataset.adminCameraPitchMode === "focus" ? "focus" : "camera";
+    setAdminChoice(els.mapToolCameraPitchModes, mode, "adminCameraPitchMode");
+    postMapMessage({
+      type: "map-tool-camera-pitch-mode",
+      mode
+    });
   });
 });
 els.mapToolCameraPitch?.addEventListener("input", () => {

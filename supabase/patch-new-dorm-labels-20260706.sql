@@ -163,17 +163,27 @@ set
   building_id = excluded.building_id,
   display_mode = excluded.display_mode,
   type_key = excluded.type_key,
-  display_name = excluded.display_name,
-  short_name = excluded.short_name,
   interactive = excluded.interactive,
   label_enabled = excluded.label_enabled,
-  dorm_tag = excluded.dorm_tag,
-  dorm_rent_text = excluded.dorm_rent_text,
-  dorm_type = excluded.dorm_type,
-  dorm_location = excluded.dorm_location,
-  dorm_summary = excluded.dorm_summary,
-  dorm_description = excluded.dorm_description,
-  dorm_best_for = excluded.dorm_best_for,
-  dorm_location_feel = excluded.dorm_location_feel,
-  dorm_trade_off = excluded.dorm_trade_off,
-  updated_at = now();
+  display_name = coalesce(public.building_label_overrides.display_name, excluded.display_name),
+  short_name = coalesce(public.building_label_overrides.short_name, excluded.short_name),
+  dorm_tag = coalesce(public.building_label_overrides.dorm_tag, excluded.dorm_tag),
+  dorm_rent_text = coalesce(public.building_label_overrides.dorm_rent_text, excluded.dorm_rent_text),
+  dorm_type = coalesce(public.building_label_overrides.dorm_type, excluded.dorm_type),
+  dorm_location = coalesce(public.building_label_overrides.dorm_location, excluded.dorm_location),
+  dorm_summary = coalesce(public.building_label_overrides.dorm_summary, excluded.dorm_summary),
+  dorm_description = coalesce(public.building_label_overrides.dorm_description, excluded.dorm_description),
+  dorm_best_for = coalesce(public.building_label_overrides.dorm_best_for, excluded.dorm_best_for),
+  dorm_location_feel = coalesce(public.building_label_overrides.dorm_location_feel, excluded.dorm_location_feel),
+  dorm_trade_off = coalesce(public.building_label_overrides.dorm_trade_off, excluded.dorm_trade_off);
+
+select
+  building_number,
+  building_id,
+  display_name,
+  short_name,
+  interactive,
+  label_enabled
+from public.building_label_overrides
+where building_number in ('1113', '892', '585', '986', '1330', '1030', '1032')
+order by building_number;

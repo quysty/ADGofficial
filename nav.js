@@ -1,14 +1,15 @@
 const siteNavRoot = document.querySelector("#site-nav-root");
 const currentPage = document.body.dataset.page;
 
-const navItems = [
+const fallbackNavItems = [
   { key: "home", label: "hero逻辑页（首页）", href: "index.html?home=1" },
   { key: "explore", label: "地图开发者版本", href: "explore.html" },
   { key: "information", label: "Information", href: "information.html" },
   { key: "question", label: "Question", href: "question.html" }
 ];
 
-siteNavRoot.innerHTML = `
+function renderNav(navItems) {
+  siteNavRoot.innerHTML = `
   <button class="menu-trigger" aria-label="Open navigation">
     <span></span>
     <span></span>
@@ -37,23 +38,46 @@ siteNavRoot.innerHTML = `
   </aside>
 `;
 
-const menuTrigger = document.querySelector(".menu-trigger");
-const drawer = document.querySelector(".drawer");
-const drawerOverlay = document.querySelector(".drawer-overlay");
-const drawerClose = document.querySelector(".drawer-close");
+  const menuTrigger = document.querySelector(".menu-trigger");
+  const drawer = document.querySelector(".drawer");
+  const drawerOverlay = document.querySelector(".drawer-overlay");
+  const drawerClose = document.querySelector(".drawer-close");
 
-function openDrawer() {
-  drawer.classList.add("open");
-  drawerOverlay.classList.add("show");
-  document.body.classList.add("drawer-open");
+  function openDrawer() {
+    drawer.classList.add("open");
+    drawerOverlay.classList.add("show");
+    document.body.classList.add("drawer-open");
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove("open");
+    drawerOverlay.classList.remove("show");
+    document.body.classList.remove("drawer-open");
+  }
+
+  menuTrigger.addEventListener("click", openDrawer);
+  drawerClose.addEventListener("click", closeDrawer);
+  drawerOverlay.addEventListener("click", closeDrawer);
 }
 
-function closeDrawer() {
-  drawer.classList.remove("open");
-  drawerOverlay.classList.remove("show");
-  document.body.classList.remove("drawer-open");
+async function loadNavItems() {
+  try {
+    const response = await fetch("config/site-pages.json", { cache: "no-cache" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const pages = Array.isArray(data.pages) ? data.pages : [];
+    const navItems = pages
+      .filter((page) => page.showInNavigation !== false && page.status !== "hidden")
+      .map((page) => ({
+        key: page.key,
+        label: page.label,
+        href: page.href
+      }));
+    return navItems.length ? navItems : fallbackNavItems;
+  } catch (error) {
+    console.warn("Failed to load site pages config. Using fallback navigation.", error);
+    return fallbackNavItems;
+  }
 }
 
-menuTrigger.addEventListener("click", openDrawer);
-drawerClose.addEventListener("click", closeDrawer);
-drawerOverlay.addEventListener("click", closeDrawer);
+loadNavItems().then(renderNav);

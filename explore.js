@@ -242,8 +242,10 @@ const MAP_CAMERA_DEFAULT_PITCH = 48;
 const MAP_CAMERA_DEFAULT_HEIGHT = 980;
 const MAP_CAMERA_MIN_PITCH = 18;
 const MAP_CAMERA_MAX_PITCH = 76;
-const MAP_CAMERA_MIN_HEIGHT = 240;
+const MAP_CAMERA_MIN_HEIGHT = 0;
 const MAP_CAMERA_MAX_HEIGHT = 2800;
+const MAP_CAMERA_PITCH_MODE_CAMERA = "camera";
+const MAP_CAMERA_PITCH_MODE_FOCUS = "focus";
 const BUILDING_DISPLAY_MODES = {
   dorm: {
     key: "dorm",
@@ -375,6 +377,7 @@ const mapToolState = {
   cameraFocusMarker: null,
   cameraPitch: MAP_CAMERA_DEFAULT_PITCH,
   cameraHeight: MAP_CAMERA_DEFAULT_HEIGHT,
+  cameraPitchMode: MAP_CAMERA_PITCH_MODE_CAMERA,
   cameraPanelSyncedAt: 0,
   pointerStart: null,
   roadPointerStart: null,
@@ -963,13 +966,17 @@ function createMapToolPanel() {
         <input class="map-tool-camera-grid" type="checkbox" />
         <span>地图网格</span>
       </label>
+      <div class="map-tool-camera-mode" aria-label="俯仰控制模式">
+        <button class="map-tool-camera-mode-button is-active" type="button" data-camera-pitch-mode="camera" aria-pressed="true">定相机</button>
+        <button class="map-tool-camera-mode-button" type="button" data-camera-pitch-mode="focus" aria-pressed="false">定焦点</button>
+      </div>
       <label class="map-tool-camera-field">
         <span>俯仰角度 <strong class="map-tool-camera-pitch-value">48°</strong></span>
         <input class="map-tool-camera-pitch" type="range" min="${MAP_CAMERA_MIN_PITCH}" max="${MAP_CAMERA_MAX_PITCH}" step="1" value="${MAP_CAMERA_DEFAULT_PITCH}" />
       </label>
       <label class="map-tool-camera-field">
         <span>相机高度 <strong class="map-tool-camera-height-value">980</strong></span>
-        <input class="map-tool-camera-height" type="range" min="${MAP_CAMERA_MIN_HEIGHT}" max="${MAP_CAMERA_MAX_HEIGHT}" step="20" value="${MAP_CAMERA_DEFAULT_HEIGHT}" />
+        <input class="map-tool-camera-height" type="range" min="${MAP_CAMERA_MIN_HEIGHT}" max="${MAP_CAMERA_MAX_HEIGHT}" step="10" value="${MAP_CAMERA_DEFAULT_HEIGHT}" />
       </label>
     </div>
     <pre class="entrance-tool-panel__output map-tool-panel__output">暂无点位。</pre>
@@ -1030,6 +1037,14 @@ function createMapToolPanel() {
   panel.querySelector(".map-tool-camera-grid")?.addEventListener("change", (event) => {
     event.stopPropagation();
     setMapCameraGridEnabled(event.currentTarget.checked);
+  });
+
+  panel.querySelectorAll("[data-camera-pitch-mode]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setMapCameraPitchMode(button.dataset.cameraPitchMode);
+    });
   });
 
   panel.querySelector(".map-tool-camera-pitch")?.addEventListener("input", (event) => {
@@ -1132,6 +1147,12 @@ function clampMapCameraHeight(value) {
   );
 }
 
+function normalizeMapCameraPitchMode(mode) {
+  return mode === MAP_CAMERA_PITCH_MODE_FOCUS
+    ? MAP_CAMERA_PITCH_MODE_FOCUS
+    : MAP_CAMERA_PITCH_MODE_CAMERA;
+}
+
 function getMapCameraGroundY() {
   return 0;
 }
@@ -1150,6 +1171,19 @@ function getMapCameraHorizontalDirection(resetDirection = false) {
   }
 
   return new THREE.Vector3(0.64, 0, 0.77).normalize();
+}
+
+function getMapCameraPitchFromCurrentView() {
+  if (!activeCamera?.position || !controls?.target) return mapToolState.cameraPitch;
+
+  const offset = activeCamera.position.clone().sub(controls.target);
+  const horizontalDistance = Math.hypot(offset.x, offset.z);
+  const height = Math.max(activeCamera.position.y - getMapCameraGroundY(), 0);
+  if (horizontalDistance < 0.001) return MAP_CAMERA_MAX_PITCH;
+
+  return clampMapCameraPitch(
+    THREE.MathUtils.radToDeg(Math.atan2(height, horizontalDistance))
+  );
 }
 
 function getMapCameraPositionFromTarget(target, resetDirection = false) {
@@ -1267,9 +1301,13 @@ function syncMapCameraFocusMarker() {
 function syncMapCameraStateFromControls(options = {}) {
   if (!isMapToolCameraMode()) return;
 
+  if (controls?.target) {
+    controls.target.y = getMapCameraGroundY();
+  }
   mapToolState.cameraHeight = Math.round(clampMapCameraHeight(
     perspectiveCamera.position.y - getMapCameraGroundY()
   ));
+  mapToolState.cameraPitch = Math.round(getMapCameraPitchFromCurrentView());
   syncMapCameraFocusMarker();
 
   if (options.updatePanel) {
@@ -1300,12 +1338,22 @@ function applyMapCameraToolView(options = {}) {
     apply3DView();
   }
 
+  const pitchMode = normalizeMapCameraPitchMode(options.pitchMode || mapToolState.cameraPitchMode);
   let position = perspectiveCamera.position.clone();
   let target = null;
 
   if (options.resetPosition === true) {
     target = getMapCameraDefaultTarget();
     position = getMapCameraPositionFromTarget(target, true);
+  } else if (pitchMode === MAP_CAMERA_PITCH_MODE_FOCUS) {
+    target = controls?.target ? controls.target.clone() : getMapCameraDefaultTarget();
+    target.y = getMapCameraGroundY();
+    if (!options.applyHeight) {
+      mapToolState.cameraHeight = Math.round(clampMapCameraHeight(
+        position.y - getMapCameraGroundY()
+      ));
+    }
+    position = getMapCameraPositionFromTarget(target, options.resetDirection === true);
   } else {
     if (options.applyHeight === true) {
       position.y = getMapCameraGroundY() + clampMapCameraHeight(mapToolState.cameraHeight);
@@ -1321,6 +1369,7 @@ function applyMapCameraToolView(options = {}) {
   mapToolState.cameraHeight = Math.round(clampMapCameraHeight(
     perspectiveCamera.position.y - getMapCameraGroundY()
   ));
+  mapToolState.cameraPitch = Math.round(getMapCameraPitchFromCurrentView());
   labelsDirty = true;
   updateLabels(true);
   syncMapCameraGrid();
@@ -1329,6 +1378,7 @@ function applyMapCameraToolView(options = {}) {
 function resetMapCameraTool() {
   mapToolState.cameraPitch = MAP_CAMERA_DEFAULT_PITCH;
   mapToolState.cameraHeight = MAP_CAMERA_DEFAULT_HEIGHT;
+  mapToolState.cameraPitchMode = MAP_CAMERA_PITCH_MODE_CAMERA;
   applyMapCameraToolView({ resetDirection: true, resetPosition: true });
   updateMapToolPanel();
 }
@@ -1339,15 +1389,30 @@ function setMapCameraGridEnabled(enabled) {
   updateMapToolPanel();
 }
 
+function setMapCameraPitchMode(mode) {
+  mapToolState.cameraPitchMode = normalizeMapCameraPitchMode(mode);
+  if (isMapToolCameraMode()) {
+    applyMapCameraToolView({ pitchMode: mapToolState.cameraPitchMode });
+  }
+  updateMapToolPanel();
+}
+
 function setMapCameraPitch(value) {
   mapToolState.cameraPitch = clampMapCameraPitch(value);
-  if (isMapToolCameraMode()) applyMapCameraToolView();
+  if (isMapToolCameraMode()) {
+    applyMapCameraToolView({ pitchMode: mapToolState.cameraPitchMode });
+  }
   updateMapToolPanel();
 }
 
 function setMapCameraHeight(value) {
   mapToolState.cameraHeight = clampMapCameraHeight(value);
-  if (isMapToolCameraMode()) applyMapCameraToolView({ applyHeight: true });
+  if (isMapToolCameraMode()) {
+    applyMapCameraToolView({
+      applyHeight: true,
+      pitchMode: mapToolState.cameraPitchMode
+    });
+  }
   updateMapToolPanel();
 }
 
@@ -1387,6 +1452,7 @@ function getMapCameraOutput() {
   return {
     tool: "camera-view",
     mode: "focus-art-camera",
+    pitchMode: mapToolState.cameraPitchMode,
     gridEnabled: mapToolState.cameraGridEnabled,
     pitchDegrees: Number(formatEntranceNumber(mapToolState.cameraPitch)),
     sideAngleDegrees: orbitAngles.sideAngleDegrees,
@@ -1596,7 +1662,10 @@ function getMapToolStatusText() {
   }
 
   if (isCameraMode) {
-    return `视角模式，高度 ${Math.round(mapToolState.cameraHeight)}，俯仰 ${Math.round(mapToolState.cameraPitch)}°，网格${mapToolState.cameraGridEnabled ? "开" : "关"}。`;
+    const pitchModeText = mapToolState.cameraPitchMode === MAP_CAMERA_PITCH_MODE_FOCUS
+      ? "定焦点"
+      : "定相机";
+    return `视角模式，${pitchModeText}，高度 ${Math.round(mapToolState.cameraHeight)}，俯仰 ${Math.round(mapToolState.cameraPitch)}°，网格${mapToolState.cameraGridEnabled ? "开" : "关"}。`;
   }
 
   if (!mapToolState.picks.length) {
@@ -1652,6 +1721,7 @@ function getMapToolPayload() {
     camera: mapToolState.mode === "camera"
       ? {
         gridEnabled: mapToolState.cameraGridEnabled,
+        pitchMode: mapToolState.cameraPitchMode,
         pitchDegrees: Number(formatEntranceNumber(mapToolState.cameraPitch)),
         height: Number(formatEntranceNumber(mapToolState.cameraHeight))
       }
@@ -1699,6 +1769,7 @@ function updateMapToolPanel() {
   const cameraHeightInput = mapToolState.panel?.querySelector(".map-tool-camera-height");
   const cameraPitchValue = mapToolState.panel?.querySelector(".map-tool-camera-pitch-value");
   const cameraHeightValue = mapToolState.panel?.querySelector(".map-tool-camera-height-value");
+  const cameraPitchModeButtons = mapToolState.panel?.querySelectorAll("[data-camera-pitch-mode]") || [];
   const boundaryLabelButton = mapToolState.panel?.querySelector(".map-tool-boundary-label-toggle");
   const copyAllButton = mapToolState.panel?.querySelector(".map-tool-boundary-copy-all");
   const activeArea = getMapBoundaryActiveArea();
@@ -1781,6 +1852,11 @@ function updateMapToolPanel() {
   if (cameraGridInput) {
     cameraGridInput.checked = mapToolState.cameraGridEnabled;
   }
+  cameraPitchModeButtons.forEach((button) => {
+    const isActive = button.dataset.cameraPitchMode === mapToolState.cameraPitchMode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
   if (cameraPitchInput) {
     cameraPitchInput.value = String(mapToolState.cameraPitch);
   }
@@ -1826,7 +1902,10 @@ function updateMapToolPanel() {
           ? `${roadModeText}，已记录 ${MAP_ROAD_MAX_POINTS} 个道路点，已达到上限。`
           : `${roadModeText}，新增道路点 ${mapToolState.roadPoints.length} 个；待删除道路段 ${mapToolState.removedRoadSegments.length} 个。`;
     } else if (isCameraMode) {
-      status.textContent = `视角模式，高度 ${Math.round(mapToolState.cameraHeight)}，俯仰 ${Math.round(mapToolState.cameraPitch)}°，网格${mapToolState.cameraGridEnabled ? "开" : "关"}。`;
+      const pitchModeText = mapToolState.cameraPitchMode === MAP_CAMERA_PITCH_MODE_FOCUS
+        ? "定焦点"
+        : "定相机";
+      status.textContent = `视角模式，${pitchModeText}，高度 ${Math.round(mapToolState.cameraHeight)}，俯仰 ${Math.round(mapToolState.cameraPitch)}°，网格${mapToolState.cameraGridEnabled ? "开" : "关"}。`;
     } else if (!mapToolState.picks.length) {
       status.textContent = mapToolState.entranceMode === "select"
         ? `选点模式，0 个点位，最多 ${MAP_TOOL_MAX_POINTS} 个。`
@@ -5898,6 +5977,11 @@ function handleAdminPreviewMessage(event) {
 
   if (message.type === "map-tool-camera-grid") {
     setMapCameraGridEnabled(!!message.enabled);
+    return;
+  }
+
+  if (message.type === "map-tool-camera-pitch-mode") {
+    setMapCameraPitchMode(message.mode);
     return;
   }
 

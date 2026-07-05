@@ -587,13 +587,26 @@
                 <span class="admin-pill-switch__knob" aria-hidden="true"></span>
               </button>
             </div>
+            <div class="admin-choice-row admin-camera-pitch-mode" role="radiogroup" aria-label="俯仰控制模式">
+              <span class="admin-choice-title">俯仰模式</span>
+              <div class="admin-choice-options">
+                <button class="admin-choice-button is-active" type="button" data-admin-camera-pitch-mode="camera" aria-pressed="true">
+                  <span class="admin-choice-mark" aria-hidden="true"></span>
+                  <span>定相机</span>
+                </button>
+                <button class="admin-choice-button" type="button" data-admin-camera-pitch-mode="focus" aria-pressed="false">
+                  <span class="admin-choice-mark" aria-hidden="true"></span>
+                  <span>定焦点</span>
+                </button>
+              </div>
+            </div>
             <label class="admin-field admin-range-field">
               <span>俯仰角度 <strong id="adminMapToolCameraPitchValue">48°</strong></span>
               <input id="adminMapToolCameraPitch" type="range" min="18" max="76" step="1" value="48" />
             </label>
             <label class="admin-field admin-range-field">
               <span>相机高度 <strong id="adminMapToolCameraHeightValue">980</strong></span>
-              <input id="adminMapToolCameraHeight" type="range" min="240" max="2200" step="20" value="980" />
+              <input id="adminMapToolCameraHeight" type="range" min="0" max="2800" step="10" value="980" />
             </label>
           </div>
 
