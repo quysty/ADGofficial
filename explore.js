@@ -4,6 +4,7 @@ import {
   applyBuildingLabelOverrides,
   loadBuildingLabelOverrides
 } from "./src/backend/buildingOverrides.js";
+import { loadBuildingHeightOverrides } from "./src/backend/buildingHeights.js";
 
 const container = document.querySelector("#map3dContainer");
 const mapStatus = document.querySelector("#mapStatus");
@@ -21,6 +22,13 @@ const detailPanel = document.querySelector("#detailPanel");
 const detailTitle = document.querySelector("#detailTitle");
 const detailCode = document.querySelector("#detailCode");
 const detailScroll = document.querySelector("#detailScroll");
+const pageParams = new URLSearchParams(window.location.search);
+const adminPreviewParam = pageParams.get("adminPreview") || "";
+const isAdminPreview = Boolean(adminPreviewParam);
+
+if (isAdminPreview) {
+  document.body.classList.add("is-admin-map-preview");
+}
 
 if (
   !container ||
@@ -101,6 +109,7 @@ const selectedBuildingBeam = new THREE.Group();
 const entranceToolMarker = new THREE.Group();
 const mapToolMarkerGroup = new THREE.Group();
 const mapToolRoadGroup = new THREE.Group();
+const mapToolCameraGroup = new THREE.Group();
 const entranceNavigationGroup = new THREE.Group();
 const entranceRouteGroup = new THREE.Group();
 const boundaryToolGroup = new THREE.Group();
@@ -118,6 +127,7 @@ scene.add(selectedBuildingBeam);
 scene.add(entranceToolMarker);
 scene.add(mapToolMarkerGroup);
 scene.add(mapToolRoadGroup);
+scene.add(mapToolCameraGroup);
 scene.add(entranceNavigationGroup);
 scene.add(entranceRouteGroup);
 scene.add(boundaryToolShapeGroup);
@@ -183,7 +193,6 @@ const DORMS = Array.isArray(window.DORM_DATA) ? window.DORM_DATA : [];
 const raycaster = new THREE.Raycaster();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
-const pageParams = new URLSearchParams(window.location.search);
 const isBaseMap = pageParams.get("map") === "base";
 const isLabMap = !isBaseMap;
 const topoDataRoot = isBaseMap ? "topo" : "topo-lab";
@@ -219,6 +228,12 @@ const MAP_TOOL_MAX_POINTS = 10;
 const MAP_ROAD_MAX_POINTS = 40;
 const MAP_BOUNDARY_MAX_AREAS = 3;
 const MAP_BOUNDARY_AREA_COLORS = ["#2f8cff", "#f59e0b", "#10b981"];
+const MAP_CAMERA_DEFAULT_PITCH = 48;
+const MAP_CAMERA_DEFAULT_HEIGHT = 980;
+const MAP_CAMERA_MIN_PITCH = 18;
+const MAP_CAMERA_MAX_PITCH = 76;
+const MAP_CAMERA_MIN_HEIGHT = 240;
+const MAP_CAMERA_MAX_HEIGHT = 2800;
 const BUILDING_DISPLAY_MODES = {
   dorm: {
     key: "dorm",
@@ -338,6 +353,12 @@ const mapToolState = {
   roadPoints: [],
   removedRoadSegments: [],
   boundaryLabelsEnabled: false,
+  cameraGridEnabled: false,
+  cameraGrid: null,
+  cameraFocusMarker: null,
+  cameraPitch: MAP_CAMERA_DEFAULT_PITCH,
+  cameraHeight: MAP_CAMERA_DEFAULT_HEIGHT,
+  cameraPanelSyncedAt: 0,
   pointerStart: null,
   roadPointerStart: null,
   boundaryPointerStart: null,
@@ -902,6 +923,7 @@ function createMapToolPanel() {
         <button class="map-tool-panel__entrance-toggle" type="button">鼠标模式</button>
         <button class="map-tool-panel__mode-toggle" type="button">切到圈地</button>
         <button class="map-tool-panel__road-toggle" type="button">切到道路</button>
+        <button class="map-tool-panel__camera-toggle" type="button">摄像机</button>
       </div>
     </div>
     <p class="entrance-tool-panel__hint map-tool-panel__hint">点击地图记录坐标；拖动地图不会记录。蓝色入口标记仅用于参考，不触发连线。</p>
@@ -917,6 +939,20 @@ function createMapToolPanel() {
         <button class="map-tool-road-action is-active" type="button" data-road-action="add">新增道路</button>
         <button class="map-tool-road-action" type="button" data-road-action="remove">删除道路</button>
       </div>
+    </div>
+    <div class="map-tool-camera-controls" hidden>
+      <label class="map-tool-camera-check">
+        <input class="map-tool-camera-grid" type="checkbox" />
+        <span>地图网格</span>
+      </label>
+      <label class="map-tool-camera-field">
+        <span>俯仰角度 <strong class="map-tool-camera-pitch-value">48°</strong></span>
+        <input class="map-tool-camera-pitch" type="range" min="${MAP_CAMERA_MIN_PITCH}" max="${MAP_CAMERA_MAX_PITCH}" step="1" value="${MAP_CAMERA_DEFAULT_PITCH}" />
+      </label>
+      <label class="map-tool-camera-field">
+        <span>相机高度 <strong class="map-tool-camera-height-value">980</strong></span>
+        <input class="map-tool-camera-height" type="range" min="${MAP_CAMERA_MIN_HEIGHT}" max="${MAP_CAMERA_MAX_HEIGHT}" step="20" value="${MAP_CAMERA_DEFAULT_HEIGHT}" />
+      </label>
     </div>
     <pre class="entrance-tool-panel__output map-tool-panel__output">暂无点位。</pre>
     <div class="map-tool-panel__actions">
@@ -965,6 +1001,27 @@ function createMapToolPanel() {
     event.preventDefault();
     event.stopPropagation();
     setMapToolMode(mapToolState.mode === "road" ? "entrance" : "road");
+  });
+
+  panel.querySelector(".map-tool-panel__camera-toggle")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMapToolMode(mapToolState.mode === "camera" ? "entrance" : "camera");
+  });
+
+  panel.querySelector(".map-tool-camera-grid")?.addEventListener("change", (event) => {
+    event.stopPropagation();
+    setMapCameraGridEnabled(event.currentTarget.checked);
+  });
+
+  panel.querySelector(".map-tool-camera-pitch")?.addEventListener("input", (event) => {
+    event.stopPropagation();
+    setMapCameraPitch(event.currentTarget.value);
+  });
+
+  panel.querySelector(".map-tool-camera-height")?.addEventListener("input", (event) => {
+    event.stopPropagation();
+    setMapCameraHeight(event.currentTarget.value);
   });
 
   panel.querySelectorAll("[data-road-action]").forEach((button) => {
@@ -1036,6 +1093,304 @@ function getMapToolOutput() {
     totalPoints: mapToolState.picks.length,
     maxPoints: MAP_TOOL_MAX_POINTS,
     points: mapToolState.picks
+  };
+}
+
+function clampMapCameraPitch(value) {
+  const parsed = Number(value);
+  return THREE.MathUtils.clamp(
+    Number.isFinite(parsed) ? parsed : MAP_CAMERA_DEFAULT_PITCH,
+    MAP_CAMERA_MIN_PITCH,
+    MAP_CAMERA_MAX_PITCH
+  );
+}
+
+function clampMapCameraHeight(value) {
+  const parsed = Number(value);
+  return THREE.MathUtils.clamp(
+    Number.isFinite(parsed) ? parsed : MAP_CAMERA_DEFAULT_HEIGHT,
+    MAP_CAMERA_MIN_HEIGHT,
+    MAP_CAMERA_MAX_HEIGHT
+  );
+}
+
+function getMapCameraGroundY() {
+  return 0;
+}
+
+function getMapCameraDefaultTarget() {
+  const target = sceneState?.center3D ? sceneState.center3D.clone() : new THREE.Vector3();
+  target.y = getMapCameraGroundY();
+  return target;
+}
+
+function getMapCameraHorizontalDirection(resetDirection = false) {
+  if (!resetDirection && activeCamera?.position && controls?.target) {
+    const offset = activeCamera.position.clone().sub(controls.target);
+    offset.y = 0;
+    if (offset.lengthSq() > 1) return offset.normalize();
+  }
+
+  return new THREE.Vector3(0.64, 0, 0.77).normalize();
+}
+
+function getMapCameraPositionFromTarget(target, resetDirection = false) {
+  const pitch = THREE.MathUtils.degToRad(clampMapCameraPitch(mapToolState.cameraPitch));
+  const height = clampMapCameraHeight(mapToolState.cameraHeight);
+  const horizontalDistance = height / Math.max(Math.tan(pitch), 0.001);
+  const direction = getMapCameraHorizontalDirection(resetDirection);
+
+  return target
+    .clone()
+    .addScaledVector(direction, horizontalDistance)
+    .setY(target.y + height);
+}
+
+function getMapCameraFocusFromPosition(position, resetDirection = false) {
+  const pitch = THREE.MathUtils.degToRad(clampMapCameraPitch(mapToolState.cameraPitch));
+  const groundY = getMapCameraGroundY();
+  const height = Math.max(position.y - groundY, 1);
+  const horizontalDistance = height / Math.max(Math.tan(pitch), 0.001);
+  const direction = getMapCameraHorizontalDirection(resetDirection);
+
+  return new THREE.Vector3(position.x, groundY, position.z)
+    .addScaledVector(direction, -horizontalDistance);
+}
+
+function ensureMapCameraGrid() {
+  if (mapToolState.cameraGrid || !sceneState) return;
+
+  const baseSize = Math.max(sceneState.size.x, sceneState.size.z, 800);
+  const gridSize = Math.ceil((baseSize * 1.34) / 100) * 100;
+  const divisions = Math.max(80, Math.min(220, Math.round(gridSize / 18)));
+  const grid = new THREE.GridHelper(gridSize, divisions, 0x111827, 0xb8a66f);
+  grid.name = "map-tool-camera-grid";
+  grid.position.copy(sceneState.center3D);
+  grid.position.y = getMapCameraGroundY() + 0.12;
+  grid.renderOrder = 72;
+  grid.material.transparent = true;
+  grid.material.opacity = 0.42;
+  grid.material.depthWrite = false;
+
+  mapToolState.cameraGrid = grid;
+  mapToolCameraGroup.add(grid);
+}
+
+function ensureMapCameraFocusMarker() {
+  if (mapToolState.cameraFocusMarker) return;
+
+  const marker = new THREE.Group();
+  marker.name = "map-tool-camera-focus";
+  marker.renderOrder = 98;
+
+  const stone = new THREE.Mesh(
+    new THREE.SphereGeometry(7.2, 28, 14),
+    new THREE.MeshBasicMaterial({
+      color: "#111827",
+      transparent: true,
+      opacity: 0.92,
+      depthTest: false,
+      depthWrite: false
+    })
+  );
+  stone.name = "map-tool-camera-focus-stone";
+  stone.scale.y = 0.12;
+  stone.position.y = 0.95;
+  stone.renderOrder = 99;
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(16, 1.05, 12, 72),
+    new THREE.MeshBasicMaterial({
+      color: "#facc15",
+      transparent: true,
+      opacity: 0.92,
+      depthTest: false,
+      depthWrite: false
+    })
+  );
+  ring.name = "map-tool-camera-focus-ring";
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.16;
+  ring.renderOrder = 98;
+
+  const crossGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-26, 0.2, 0),
+    new THREE.Vector3(26, 0.2, 0),
+    new THREE.Vector3(0, 0.2, -26),
+    new THREE.Vector3(0, 0.2, 26)
+  ]);
+  const cross = new THREE.LineSegments(
+    crossGeometry,
+    new THREE.LineBasicMaterial({
+      color: "#111827",
+      transparent: true,
+      opacity: 0.76,
+      depthTest: false,
+      depthWrite: false
+    })
+  );
+  cross.name = "map-tool-camera-focus-cross";
+  cross.renderOrder = 97;
+
+  marker.add(ring, cross, stone);
+  mapToolState.cameraFocusMarker = marker;
+  mapToolCameraGroup.add(marker);
+}
+
+function syncMapCameraFocusMarker() {
+  ensureMapCameraFocusMarker();
+  if (!mapToolState.cameraFocusMarker) return;
+
+  const target = controls.target || getMapCameraDefaultTarget();
+  mapToolState.cameraFocusMarker.position.set(target.x, getMapCameraGroundY(), target.z);
+  mapToolState.cameraFocusMarker.visible = isMapToolCameraMode();
+}
+
+function syncMapCameraStateFromControls(options = {}) {
+  if (!isMapToolCameraMode()) return;
+
+  mapToolState.cameraHeight = Math.round(clampMapCameraHeight(
+    perspectiveCamera.position.y - getMapCameraGroundY()
+  ));
+  syncMapCameraFocusMarker();
+
+  if (options.updatePanel) {
+    const now = performance.now();
+    if (now - mapToolState.cameraPanelSyncedAt > 90) {
+      mapToolState.cameraPanelSyncedAt = now;
+      updateMapToolPanel();
+    }
+  }
+}
+
+function syncMapCameraGrid() {
+  ensureMapCameraGrid();
+  syncMapCameraFocusMarker();
+  mapToolCameraGroup.visible = isMapToolCameraMode();
+  if (mapToolState.cameraGrid) {
+    mapToolState.cameraGrid.visible = isMapToolCameraMode() && mapToolState.cameraGridEnabled;
+  }
+  if (mapToolState.cameraFocusMarker) {
+    mapToolState.cameraFocusMarker.visible = isMapToolCameraMode();
+  }
+}
+
+function applyMapCameraToolView(options = {}) {
+  if (!sceneState) return;
+
+  if (currentMode !== "3d" || activeCamera !== perspectiveCamera) {
+    apply3DView();
+  }
+
+  let position = perspectiveCamera.position.clone();
+  let target = null;
+
+  if (options.resetPosition === true) {
+    target = getMapCameraDefaultTarget();
+    position = getMapCameraPositionFromTarget(target, true);
+  } else {
+    if (options.applyHeight === true) {
+      position.y = getMapCameraGroundY() + clampMapCameraHeight(mapToolState.cameraHeight);
+    }
+    target = getMapCameraFocusFromPosition(position, options.resetDirection === true);
+  }
+
+  controls.target.copy(target);
+  perspectiveCamera.position.copy(position);
+  perspectiveCamera.lookAt(target);
+  perspectiveCamera.updateProjectionMatrix();
+  controls.update();
+  mapToolState.cameraHeight = Math.round(clampMapCameraHeight(
+    perspectiveCamera.position.y - getMapCameraGroundY()
+  ));
+  labelsDirty = true;
+  updateLabels(true);
+  syncMapCameraGrid();
+}
+
+function resetMapCameraTool() {
+  mapToolState.cameraPitch = MAP_CAMERA_DEFAULT_PITCH;
+  mapToolState.cameraHeight = MAP_CAMERA_DEFAULT_HEIGHT;
+  applyMapCameraToolView({ resetDirection: true, resetPosition: true });
+  updateMapToolPanel();
+}
+
+function setMapCameraGridEnabled(enabled) {
+  mapToolState.cameraGridEnabled = Boolean(enabled);
+  syncMapCameraGrid();
+  updateMapToolPanel();
+}
+
+function setMapCameraPitch(value) {
+  mapToolState.cameraPitch = clampMapCameraPitch(value);
+  if (isMapToolCameraMode()) applyMapCameraToolView();
+  updateMapToolPanel();
+}
+
+function setMapCameraHeight(value) {
+  mapToolState.cameraHeight = clampMapCameraHeight(value);
+  if (isMapToolCameraMode()) applyMapCameraToolView({ applyHeight: true });
+  updateMapToolPanel();
+}
+
+function formatMapCameraVector(vector) {
+  return [
+    Number(formatEntranceNumber(vector.x)),
+    Number(formatEntranceNumber(vector.y)),
+    Number(formatEntranceNumber(vector.z))
+  ];
+}
+
+function getMapCameraOrbitAngles() {
+  const offset = perspectiveCamera.position.clone().sub(controls.target);
+  offset.y = 0;
+
+  if (offset.lengthSq() < 0.0001) {
+    return {
+      sideAngleDegrees: 0,
+      orbitAngleDegrees: 0
+    };
+  }
+
+  const rawAngle = THREE.MathUtils.radToDeg(Math.atan2(offset.x, offset.z));
+  const orbitAngle = (rawAngle + 360) % 360;
+  const sideAngle = orbitAngle > 180 ? orbitAngle - 360 : orbitAngle;
+
+  return {
+    sideAngleDegrees: Number(formatEntranceNumber(sideAngle)),
+    orbitAngleDegrees: Number(formatEntranceNumber(orbitAngle))
+  };
+}
+
+function getMapCameraOutput() {
+  const focusSource = sceneToSourcePoint(controls.target);
+  const orbitAngles = getMapCameraOrbitAngles();
+
+  return {
+    tool: "camera-view",
+    mode: "focus-art-camera",
+    gridEnabled: mapToolState.cameraGridEnabled,
+    pitchDegrees: Number(formatEntranceNumber(mapToolState.cameraPitch)),
+    sideAngleDegrees: orbitAngles.sideAngleDegrees,
+    orbitAngleDegrees: orbitAngles.orbitAngleDegrees,
+    height: Number(formatEntranceNumber(mapToolState.cameraHeight)),
+    focus: {
+      scene: formatMapCameraVector(controls.target),
+      source: focusSource
+        ? [
+          Number(formatEntranceNumber(focusSource.x)),
+          Number(formatEntranceNumber(focusSource.y))
+        ]
+        : null
+    },
+    camera: {
+      mode: currentMode,
+      position: formatMapCameraVector(perspectiveCamera.position),
+      target: formatMapCameraVector(controls.target),
+      sideAngleDegrees: orbitAngles.sideAngleDegrees,
+      orbitAngleDegrees: orbitAngles.orbitAngleDegrees,
+      distance: Number(formatEntranceNumber(perspectiveCamera.position.distanceTo(controls.target)))
+    }
   };
 }
 
@@ -1190,16 +1545,19 @@ function getMapRoadOutput() {
 function getCurrentMapToolOutput() {
   if (mapToolState.mode === "boundary") return getMapBoundaryOutput();
   if (mapToolState.mode === "road") return getMapRoadOutput();
+  if (mapToolState.mode === "camera") return getMapCameraOutput();
   return getMapToolOutput();
 }
 
 function updateMapToolPanel() {
   const isBoundaryMode = mapToolState.mode === "boundary";
   const isRoadMode = mapToolState.mode === "road";
+  const isCameraMode = mapToolState.mode === "camera";
   const title = mapToolState.panel?.querySelector(".map-tool-panel__title");
   const entranceToggleButton = mapToolState.panel?.querySelector(".map-tool-panel__entrance-toggle");
   const toggleButton = mapToolState.panel?.querySelector(".map-tool-panel__mode-toggle");
   const roadToggleButton = mapToolState.panel?.querySelector(".map-tool-panel__road-toggle");
+  const cameraToggleButton = mapToolState.panel?.querySelector(".map-tool-panel__camera-toggle");
   const hint = mapToolState.panel?.querySelector(".map-tool-panel__hint");
   const output = mapToolState.panel?.querySelector(".map-tool-panel__output");
   const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
@@ -1208,6 +1566,12 @@ function updateMapToolPanel() {
   const clearButton = mapToolState.panel?.querySelector(".map-tool-panel__clear");
   const boundaryControls = mapToolState.panel?.querySelector(".map-tool-boundary-controls");
   const roadControls = mapToolState.panel?.querySelector(".map-tool-road-controls");
+  const cameraControls = mapToolState.panel?.querySelector(".map-tool-camera-controls");
+  const cameraGridInput = mapToolState.panel?.querySelector(".map-tool-camera-grid");
+  const cameraPitchInput = mapToolState.panel?.querySelector(".map-tool-camera-pitch");
+  const cameraHeightInput = mapToolState.panel?.querySelector(".map-tool-camera-height");
+  const cameraPitchValue = mapToolState.panel?.querySelector(".map-tool-camera-pitch-value");
+  const cameraHeightValue = mapToolState.panel?.querySelector(".map-tool-camera-height-value");
   const boundaryLabelButton = mapToolState.panel?.querySelector(".map-tool-boundary-label-toggle");
   const copyAllButton = mapToolState.panel?.querySelector(".map-tool-boundary-copy-all");
   const activeArea = getMapBoundaryActiveArea();
@@ -1220,10 +1584,18 @@ function updateMapToolPanel() {
     ? activeArea.points.length
     : isRoadMode
       ? roadItemCount
-      : mapToolState.picks.length;
+      : isCameraMode
+        ? 1
+        : mapToolState.picks.length;
 
   if (title) {
-    title.textContent = isBoundaryMode ? "圈地工具" : isRoadMode ? "道路工具" : "入口工具";
+    title.textContent = isBoundaryMode
+      ? "圈地工具"
+      : isRoadMode
+        ? "道路工具"
+        : isCameraMode
+          ? "摄像机工具"
+          : "入口工具";
   }
   if (entranceToggleButton) {
     const activeInputMode = isRoadMode ? mapToolState.roadMode : mapToolState.entranceMode;
@@ -1232,9 +1604,9 @@ function updateMapToolPanel() {
       : "鼠标模式";
     entranceToggleButton.classList.toggle(
       "is-active",
-      !isBoundaryMode && activeInputMode === "select"
+      !isBoundaryMode && !isCameraMode && activeInputMode === "select"
     );
-    entranceToggleButton.disabled = isBoundaryMode;
+    entranceToggleButton.disabled = isBoundaryMode || isCameraMode;
   }
   if (toggleButton) {
     toggleButton.textContent = isBoundaryMode ? "切回入口" : "切到圈地";
@@ -1243,6 +1615,10 @@ function updateMapToolPanel() {
   if (roadToggleButton) {
     roadToggleButton.textContent = isRoadMode ? "切回入口" : "切到道路";
     roadToggleButton.classList.toggle("is-active", isRoadMode);
+  }
+  if (cameraToggleButton) {
+    cameraToggleButton.textContent = isCameraMode ? "切回入口" : "摄像机";
+    cameraToggleButton.classList.toggle("is-active", isCameraMode);
   }
   if (hint) {
     hint.textContent = isBoundaryMode
@@ -1253,9 +1629,11 @@ function updateMapToolPanel() {
             ? "道路选点模式：点击现有道路段，把它加入待删除列表；不会直接修改道路文件。"
             : "道路选点模式：点击地图添加路线节点，节点之间会形成自定义导航道路；拖动地图不会记录。"
           : "道路鼠标模式：可以拖动、缩放和查看地图，不会新增或删除道路；需要操作道路时切到选点模式。"
-        : mapToolState.entranceMode === "select"
-          ? "选点模式：点击地图记录入口坐标；拖动地图不会记录。蓝色入口标记仅用于参考，不触发连线。"
-          : "鼠标模式：可以拖动、缩放和查看地图，不会记录入口点；需要标入口时切到选点模式。";
+        : isCameraMode
+          ? "摄像机工具：黑色落点是当前地面焦点；俯仰角只改变看向位置，不移动相机；高度才改变相机高度。"
+          : mapToolState.entranceMode === "select"
+            ? "选点模式：点击地图记录入口坐标；拖动地图不会记录。蓝色入口标记仅用于参考，不触发连线。"
+            : "鼠标模式：可以拖动、缩放和查看地图，不会记录入口点；需要标入口时切到选点模式。";
   }
 
   if (boundaryControls) {
@@ -1263,6 +1641,24 @@ function updateMapToolPanel() {
   }
   if (roadControls) {
     roadControls.hidden = !isRoadMode;
+  }
+  if (cameraControls) {
+    cameraControls.hidden = !isCameraMode;
+  }
+  if (cameraGridInput) {
+    cameraGridInput.checked = mapToolState.cameraGridEnabled;
+  }
+  if (cameraPitchInput) {
+    cameraPitchInput.value = String(mapToolState.cameraPitch);
+  }
+  if (cameraHeightInput) {
+    cameraHeightInput.value = String(mapToolState.cameraHeight);
+  }
+  if (cameraPitchValue) {
+    cameraPitchValue.textContent = `${Math.round(mapToolState.cameraPitch)}°`;
+  }
+  if (cameraHeightValue) {
+    cameraHeightValue.textContent = String(Math.round(mapToolState.cameraHeight));
   }
 
   if (output) {
@@ -1274,6 +1670,8 @@ function updateMapToolPanel() {
       output.textContent = roadOutputTotal
         ? JSON.stringify(getMapRoadOutput(), null, 2)
         : "暂无道路调整。";
+    } else if (isCameraMode) {
+      output.textContent = JSON.stringify(getMapCameraOutput(), null, 2);
     } else {
       output.textContent = mapToolState.picks.length
         ? JSON.stringify(getMapToolOutput(), null, 2)
@@ -1294,6 +1692,8 @@ function updateMapToolPanel() {
         : mapToolState.roadPoints.length >= MAP_ROAD_MAX_POINTS
           ? `${roadModeText}，已记录 ${MAP_ROAD_MAX_POINTS} 个道路点，已达到上限。`
           : `${roadModeText}，新增道路点 ${mapToolState.roadPoints.length} 个；待删除道路段 ${mapToolState.removedRoadSegments.length} 个。`;
+    } else if (isCameraMode) {
+      status.textContent = `视角模式，高度 ${Math.round(mapToolState.cameraHeight)}，俯仰 ${Math.round(mapToolState.cameraPitch)}°，网格${mapToolState.cameraGridEnabled ? "开" : "关"}。`;
     } else if (!mapToolState.picks.length) {
       status.textContent = mapToolState.entranceMode === "select"
         ? `选点模式，0 个点位，最多 ${MAP_TOOL_MAX_POINTS} 个。`
@@ -1307,26 +1707,36 @@ function updateMapToolPanel() {
   }
 
   if (copyButton) {
-    copyButton.disabled = isRoadMode ? roadOutputTotal === 0 : itemCount === 0;
-    copyButton.textContent = isBoundaryMode ? "复制当前" : isRoadMode ? "复制道路" : "复制 JSON";
+    copyButton.disabled = isCameraMode ? false : isRoadMode ? roadOutputTotal === 0 : itemCount === 0;
+    copyButton.textContent = isBoundaryMode
+      ? "复制当前"
+      : isRoadMode
+        ? "复制道路"
+        : isCameraMode
+          ? "复制视角"
+          : "复制 JSON";
   }
 
   if (deleteButton) {
-    deleteButton.disabled = itemCount === 0;
+    deleteButton.disabled = isCameraMode || itemCount === 0;
     deleteButton.textContent = isBoundaryMode
       ? "删除上一点"
       : isRoadMode
         ? mapToolState.roadAction === "remove" ? "撤销删段" : "删除节点"
-        : "删除上一个";
+        : isCameraMode
+          ? "无删除项"
+          : "删除上一个";
   }
 
   if (clearButton) {
-    clearButton.disabled = itemCount === 0;
+    clearButton.disabled = isCameraMode ? false : itemCount === 0;
     clearButton.textContent = isBoundaryMode
       ? "清空当前"
       : isRoadMode
         ? mapToolState.roadAction === "remove" ? "清空删段" : "清空路线"
-        : "清空";
+        : isCameraMode
+          ? "重置视角"
+          : "清空";
   }
 
   if (copyAllButton) {
@@ -1376,7 +1786,7 @@ function updateMapToolPanel() {
 }
 
 async function copyMapToolOutputToClipboard(output, successText) {
-  if (!output || !output.totalPoints) return;
+  if (!output || (!output.totalPoints && output.tool !== "camera-view")) return;
 
   const status = mapToolState.panel?.querySelector(".entrance-tool-panel__status");
 
@@ -1392,6 +1802,11 @@ async function copyMapToolOutputToClipboard(output, successText) {
 async function copyMapToolPointsToClipboard() {
   if (mapToolState.mode === "boundary") {
     await copyMapBoundaryAreaToClipboard(boundaryToolState.activeAreaIndex);
+    return;
+  }
+
+  if (mapToolState.mode === "camera") {
+    await copyMapToolOutputToClipboard(getMapCameraOutput(), "已复制摄像机视角。");
     return;
   }
 
@@ -1834,15 +2249,26 @@ function isMapToolRoadMode() {
   return mapToolState.active && mapToolState.mode === "road";
 }
 
+function isMapToolCameraMode() {
+  return mapToolState.active && mapToolState.mode === "camera";
+}
+
+function isMapToolTopDownMode(mode) {
+  return mode === "boundary" || mode === "road";
+}
+
 function syncMapToolMode() {
   const isBoundaryMode = isMapToolBoundaryMode();
   const isRoadMode = isMapToolRoadMode();
+  const isCameraMode = isMapToolCameraMode();
   document.body.classList.toggle("is-map-boundary-mode", isBoundaryMode);
   document.body.classList.toggle("is-map-road-mode", isRoadMode);
-  mapToolMarkerGroup.visible = !isBoundaryMode && !isRoadMode;
+  document.body.classList.toggle("is-map-camera-mode", isCameraMode);
+  mapToolMarkerGroup.visible = !isBoundaryMode && !isRoadMode && !isCameraMode;
   mapToolRoadGroup.visible = isRoadMode;
   boundaryToolGroup.visible = isBoundaryMode;
   boundaryToolShapeGroup.visible = isBoundaryMode;
+  syncMapCameraGrid();
 
   if (isBoundaryMode || isRoadMode) {
     setNumbersButtonState();
@@ -1857,6 +2283,11 @@ function syncMapToolMode() {
     } else {
       redrawMapRoadTool();
     }
+  } else if (isCameraMode) {
+    setNumbersButtonState();
+    clearMapRoadToolVisuals();
+    updateEntranceToolMarker(null, null);
+    applyMapCameraToolView();
   } else {
     setNumbersButtonState();
     clearMapRoadToolVisuals();
@@ -1868,10 +2299,10 @@ function syncMapToolMode() {
 }
 
 function setMapToolMode(mode) {
-  const nextMode = mode === "boundary" || mode === "road" ? mode : "entrance";
+  const nextMode = mode === "boundary" || mode === "road" || mode === "camera" ? mode : "entrance";
   if (mapToolState.mode === nextMode) return;
 
-  const wasEditMode = mapToolState.mode === "boundary" || mapToolState.mode === "road";
+  const wasTopDownMode = isMapToolTopDownMode(mapToolState.mode);
   mapToolState.mode = nextMode;
   mapToolState.pointerStart = null;
   mapToolState.roadPointerStart = null;
@@ -1883,12 +2314,12 @@ function setMapToolMode(mode) {
     mapToolState.roadMode = "mouse";
   }
 
-  if ((nextMode === "boundary" || nextMode === "road") && !wasEditMode) {
+  if (isMapToolTopDownMode(nextMode) && !wasTopDownMode) {
     mapToolState.previousMapViewMode = currentMode;
-  } else if (nextMode === "entrance" && mapToolState.previousMapViewMode === "3d") {
+  } else if (!isMapToolTopDownMode(nextMode) && wasTopDownMode && mapToolState.previousMapViewMode === "3d") {
     apply3DView();
     mapToolState.previousMapViewMode = null;
-  } else if (nextMode === "entrance") {
+  } else if (!isMapToolTopDownMode(nextMode)) {
     mapToolState.previousMapViewMode = null;
   }
   syncMapToolMode();
@@ -1949,6 +2380,11 @@ function deleteLastMapToolPoint() {
 }
 
 function clearMapToolPoints() {
+  if (mapToolState.mode === "camera") {
+    resetMapCameraTool();
+    return;
+  }
+
   if (mapToolState.mode === "boundary") {
     const activeArea = getMapBoundaryActiveArea();
     if (!activeArea.points.length) return;
@@ -3486,6 +3922,7 @@ function setGuidedDetailActions(isGuidedEntry) {
     navigationBtn.textContent = "Navigation";
     navigationBtn.setAttribute("aria-pressed", "false");
     navigationBtn.addEventListener("click", () => {
+      if (isAdminPreview) return;
       renderDormNavigationCategoryView();
     });
     actionWrap.appendChild(navigationBtn);
@@ -3496,6 +3933,7 @@ function setGuidedDetailActions(isGuidedEntry) {
     viewDetailsBtn.type = "button";
     viewDetailsBtn.textContent = "View Dorms";
     viewDetailsBtn.addEventListener("click", () => {
+      if (isAdminPreview) return;
       window.location.href = "index.html?home=1#homeResults";
     });
     actionWrap.appendChild(viewDetailsBtn);
@@ -4191,6 +4629,64 @@ function estimateHeight(area) {
   return 14;
 }
 
+function getStaticBuildingHeight(displayNumber, item, rawBuildings) {
+  const matchedHeightNumber = BUILDING_HEIGHT_MATCH_OVERRIDES[displayNumber];
+  const matchedHeightItem = matchedHeightNumber ? rawBuildings[matchedHeightNumber - 1] : null;
+  const heightScale = item.modelHeightScale || BUILDING_HEIGHT_SCALE_OVERRIDES[displayNumber] || 1;
+  const heightSourceArea = matchedHeightItem?.area || item.area;
+  const heightSourceScale = matchedHeightNumber
+    ? BUILDING_HEIGHT_SCALE_OVERRIDES[matchedHeightNumber] || 1
+    : heightScale;
+  const heightSourceMeters = matchedHeightItem ? null : item.modelHeightMeters;
+
+  return (heightSourceMeters || estimateHeight(heightSourceArea)) * heightSourceScale;
+}
+
+function getPublishedHeightOverride(overrides, displayNumber) {
+  const override = overrides?.[String(displayNumber)];
+  if (!override) return null;
+
+  const hasPublishedHeight =
+    Number.isFinite(override.publishedMultiplier) ||
+    Boolean(override.publishedCopyFrom);
+
+  return hasPublishedHeight ? override : null;
+}
+
+function resolvePublishedBuildingHeight(
+  displayNumber,
+  fallbackHeight,
+  baseHeightByNumber,
+  heightOverrides,
+  resolving = new Set()
+) {
+  const override = getPublishedHeightOverride(heightOverrides, displayNumber);
+  if (!override) return fallbackHeight;
+
+  const multiplier = Number.isFinite(override.publishedMultiplier)
+    ? override.publishedMultiplier
+    : 1;
+  const copyFrom = override.publishedCopyFrom;
+
+  if (!copyFrom) return fallbackHeight * multiplier;
+  if (resolving.has(String(displayNumber))) return fallbackHeight * multiplier;
+
+  resolving.add(String(displayNumber));
+  const sourceBaseHeight = baseHeightByNumber.get(String(copyFrom));
+  const sourceHeight = sourceBaseHeight
+    ? resolvePublishedBuildingHeight(
+      copyFrom,
+      sourceBaseHeight,
+      baseHeightByNumber,
+      heightOverrides,
+      resolving
+    )
+    : fallbackHeight;
+  resolving.delete(String(displayNumber));
+
+  return sourceHeight * multiplier;
+}
+
 function toVector2Ring(ring, centerX, centerY, scale) {
   return cleanRing(ring).map(([x, y]) => {
     const localX = (x - centerX) * scale;
@@ -4428,6 +4924,7 @@ window.addEventListener("resize", () => {
 
 controls.addEventListener("change", () => {
   labelsDirty = true;
+  syncMapCameraStateFromControls({ updatePanel: true });
   updateCityOverviewFade();
 });
 
@@ -4520,6 +5017,10 @@ function applyBoundaryOverviewView() {
 
 function switchMode(mode) {
   if (!sceneState || isTransitioning || currentMode === mode) return;
+  if (mapToolState.active && mapToolState.mode === "camera" && mode !== "3d") {
+    mapStatus.textContent = "摄像机工具使用 3D 视角，请切回入口工具后再使用 2D。";
+    return;
+  }
   if (mapToolState.active && (mapToolState.mode === "boundary" || mapToolState.mode === "road") && mode !== "2d") {
     mapStatus.textContent = mapToolState.mode === "road"
       ? "道路工具使用俯视 2D，请切回入口工具后再使用 3D。"
@@ -4540,7 +5041,9 @@ function resetCurrentView() {
   if (!sceneState || isTransitioning) return;
 
   runModeTransition(() => {
-    if (currentMode === "3d") {
+    if (isMapToolCameraMode()) {
+      resetMapCameraTool();
+    } else if (currentMode === "3d") {
       apply3DView();
     } else {
       apply2DView();
@@ -4641,6 +5144,36 @@ function applyCityOverviewCamera() {
   cityOverviewState.wheelZoomFade = 0;
   labelsDirty = true;
   updateCityOverviewFade();
+}
+
+function applyAdminCityOverviewView() {
+  if (!sceneState) return;
+
+  if (currentMode !== "3d") {
+    apply3DView();
+  }
+
+  const squareSide = sceneState.size.x;
+  const target = sceneState.center3D.clone();
+  const position = target.clone().add(
+    new THREE.Vector3(
+      squareSide * 0.52,
+      Math.max(squareSide * 0.56, 860),
+      squareSide * 0.58
+    )
+  );
+
+  controls.target.copy(target);
+  perspectiveCamera.position.copy(position);
+  perspectiveCamera.lookAt(target);
+  perspectiveCamera.updateProjectionMatrix();
+  controls.update();
+
+  cityOverviewState.defaultDistance = perspectiveCamera.position.distanceTo(controls.target);
+  cityOverviewState.wheelZoomFade = 1;
+  document.body.style.setProperty("--city-info-opacity", "0");
+  document.body.classList.add("is-city-info-hidden");
+  labelsDirty = true;
 }
 
 function getCityOverviewInfoOpacity() {
@@ -4801,6 +5334,11 @@ function handleBuildingLabelInteraction(building) {
   const functionalConfig = building?.functionalConfig;
   if (!functionalConfig?.interactive) return;
 
+  if (isAdminPreview) {
+    postAdminPreviewBuildingSelection(building);
+    return;
+  }
+
   if (cityOverviewState.active && !cityOverviewState.dismissed) {
     return;
   }
@@ -4853,6 +5391,8 @@ function closeFunctionalDetail() {
 }
 
 btnBackOverview.addEventListener("click", () => {
+  if (isAdminPreview) return;
+
   if (guidedPreviewState.active) {
     window.location.href = "explore.html";
     return;
@@ -4933,6 +5473,217 @@ function focusBuildingFromUrl() {
     }
   }
 }
+
+function findAdminPreviewBuilding(buildingNumber) {
+  const targetNumber = String(buildingNumber || "").trim();
+  if (!targetNumber) return null;
+  return buildingObjects.find((item) => String(item.displayNumber) === targetNumber) || null;
+}
+
+function getAdminPreviewBuildingCatalog() {
+  return buildingObjects.map((building) => ({
+    buildingNumber: String(building.displayNumber),
+    buildingId: building.functionalConfig?.buildingId || "",
+    name: building.functionalConfig?.name || `Building ${building.displayNumber}`,
+    shortName: building.functionalConfig?.shortName || String(building.displayNumber),
+    displayMode: building.displayMode || "",
+    baseHeight: Number(formatEntranceNumber(building.baseHeight || building.currentHeight || 0)),
+    currentHeight: Number(formatEntranceNumber(building.currentHeight || 0))
+  }));
+}
+
+function postAdminPreviewReady() {
+  if (!isAdminPreview || window.parent === window) return;
+
+  window.parent.postMessage(
+    {
+      source: "anu-explore-preview",
+      type: "ready",
+      buildings: getAdminPreviewBuildingCatalog()
+    },
+    window.location.origin
+  );
+}
+
+function postAdminPreviewBuildingSelection(building) {
+  if (!isAdminPreview || window.parent === window || !building) return;
+
+  window.parent.postMessage(
+    {
+      source: "anu-explore-preview",
+      type: "select-building",
+      buildingNumber: String(building.displayNumber || ""),
+      buildingId: building.functionalConfig?.buildingId || "",
+      displayMode: building.displayMode || ""
+    },
+    window.location.origin
+  );
+}
+
+function resetAdminPreviewHeightScales() {
+  buildingObjects.forEach((building) => {
+    building.mesh3D.scale.y = 1;
+    building.edge3D.scale.y = 1;
+  });
+}
+
+function setAdminPreviewMode(mode) {
+  document.body.classList.toggle("is-admin-height-preview", mode === "height");
+  document.body.classList.toggle("is-admin-dorm-preview", mode === "dorm");
+}
+
+function renderAdminOverviewPreview() {
+  setAdminPreviewMode("overview");
+  resetAdminPreviewHeightScales();
+  selectedBuilding = null;
+  clearGuidedNavigationRoutes();
+  setGuidedNavigationButtonActive(false);
+  setSidePanelState("overview");
+
+  applyAdminCityOverviewView();
+
+  showNormalLabels = true;
+  refreshBuildingStyles();
+  setNumbersButtonState();
+  updateStatusText();
+  updateLabels(true);
+}
+
+function renderAdminDormPreview(building, preview) {
+  if (!building) return;
+
+  setAdminPreviewMode("dorm");
+  resetAdminPreviewHeightScales();
+  selectedBuilding = building;
+
+  if (currentMode !== "3d") apply3DView();
+  focusBuildingFromEntry(building);
+  setSidePanelState("detail");
+  detailPanel.classList.add("scene-panel-detail--guided");
+  setGuidedDetailActions(true);
+
+  detailTitle.textContent = preview.name || building.functionalConfig?.name || "Selected dorm";
+  detailCode.textContent = "Admin live preview";
+
+  const quickPoints = [
+    ["Best for", preview.bestFor],
+    ["Location feel", preview.locationFeel],
+    ["Main trade-off", preview.tradeOff]
+  ].filter(([, value]) => value);
+
+  detailScroll.innerHTML = `
+    <div class="information-drawer-panel information-drawer-panel--guided information-drawer-panel--guided-compact">
+      <p class="information-drawer__eyebrow">Residence detail</p>
+      <h2 class="information-drawer__title">${escapeHtml(preview.name || "")}</h2>
+      <p class="information-drawer__summary">${escapeHtml(preview.summary || "")}</p>
+
+      <div class="information-drawer__facts">
+        <div>
+          <span>Rent</span>
+          <strong>${escapeHtml(preview.rentText || "Not listed")}</strong>
+        </div>
+        <div>
+          <span>Type</span>
+          <strong>${escapeHtml(preview.type || "—")}</strong>
+        </div>
+        <div>
+          <span>Location</span>
+          <strong>${escapeHtml(preview.location || "—")}</strong>
+        </div>
+      </div>
+
+      <div class="information-drawer__compact-notes">
+        ${quickPoints
+          .map(([label, value]) => `
+            <section class="information-drawer__compact-note">
+              <h3>${escapeHtml(label)}</h3>
+              <p>${escapeHtml(value)}</p>
+            </section>
+          `)
+          .join("")}
+      </div>
+    </div>
+  `;
+
+  detailScroll.scrollTop = 0;
+  refreshBuildingStyles();
+  updateLabels(true);
+}
+
+function getAdminPreviewHeight(building, preview) {
+  const multiplier = Number.isFinite(Number(preview.multiplier))
+    ? Math.max(Number(preview.multiplier), 0.01)
+    : 1;
+  const copyFrom = findAdminPreviewBuilding(preview.copyFromBuildingNumber);
+  const sourceHeight = copyFrom
+    ? copyFrom.currentHeight || copyFrom.baseHeight || building.currentHeight
+    : building.baseHeight || building.currentHeight;
+
+  return sourceHeight * multiplier;
+}
+
+function applyAdminHeightPreview(preview) {
+  setAdminPreviewMode("height");
+  resetAdminPreviewHeightScales();
+  setSidePanelState("overview");
+  clearGuidedNavigationRoutes();
+
+  if (currentMode !== "3d") apply3DView();
+
+  const targetNumbers = Array.isArray(preview.buildingNumbers)
+    ? preview.buildingNumbers.map((item) => String(item).trim()).filter(Boolean).slice(0, 5)
+    : [];
+  const primaryBuilding = findAdminPreviewBuilding(targetNumbers[0] || preview.buildingNumber);
+
+  targetNumbers.forEach((buildingNumber) => {
+    const building = findAdminPreviewBuilding(buildingNumber);
+    if (!building) return;
+
+    const nextHeight = getAdminPreviewHeight(building, preview);
+    const currentHeight = Math.max(building.currentHeight || building.baseHeight || 1, 1);
+    const scaleY = THREE.MathUtils.clamp(nextHeight / currentHeight, 0.05, 8);
+    building.mesh3D.scale.y = scaleY;
+    building.edge3D.scale.y = scaleY;
+  });
+
+  selectedBuilding = primaryBuilding;
+  if (primaryBuilding) focusBuilding(primaryBuilding);
+  showNormalLabels = true;
+  refreshBuildingStyles();
+  setNumbersButtonState();
+  updateStatusText();
+  updateLabels(true);
+}
+
+function handleAdminPreviewMessage(event) {
+  if (!isAdminPreview || event.origin !== window.location.origin) return;
+  const message = event.data || {};
+  if (message.source !== "anu-admin") return;
+
+  if (message.type === "get-buildings") {
+    postAdminPreviewReady();
+    return;
+  }
+
+  if (message.type === "overview-preview") {
+    renderAdminOverviewPreview();
+    return;
+  }
+
+  if (message.type === "dorm-preview") {
+    renderAdminDormPreview(
+      findAdminPreviewBuilding(message.buildingNumber),
+      message.preview || {}
+    );
+    return;
+  }
+
+  if (message.type === "height-preview") {
+    applyAdminHeightPreview(message.preview || {});
+  }
+}
+
+window.addEventListener("message", handleAdminPreviewMessage);
 
 /* =========================================================
    BUILDING STYLE APPLICATION
@@ -5461,6 +6212,8 @@ async function loadScene() {
       );
     }
 
+    const buildingHeightOverrides = await loadBuildingHeightOverrides();
+
     const features = buildingsGeoJson.features || [];
     if (!features.length) {
       throw new Error("Building GeoJSON contains no features.");
@@ -5565,6 +6318,16 @@ async function loadScene() {
       return a.sourceCenterX - b.sourceCenterX;
     });
 
+    const baseHeightByNumber = new Map();
+    rawBuildings.forEach((item, index) => {
+      const displayNumber = item.modelDisplayNumber || index + 1;
+      if (item.modelMergedInto) return;
+      baseHeightByNumber.set(
+        String(displayNumber),
+        getStaticBuildingHeight(displayNumber, item, rawBuildings)
+      );
+    });
+
     rawBuildings.forEach((item, index) => {
       const displayNumber = item.modelDisplayNumber || index + 1;
       if (item.modelMergedInto) return;
@@ -5577,16 +6340,14 @@ async function loadScene() {
         .map((featureId) => rawBuildings.find((modelItem) => modelItem.featureId === featureId))
         .filter(Boolean);
       const modelShapes = [item, ...mergedItems].map((modelItem) => modelItem.shape);
-      const matchedHeightNumber = BUILDING_HEIGHT_MATCH_OVERRIDES[displayNumber];
-      const matchedHeightItem = matchedHeightNumber ? rawBuildings[matchedHeightNumber - 1] : null;
-      const heightScale = item.modelHeightScale || BUILDING_HEIGHT_SCALE_OVERRIDES[displayNumber] || 1;
-      const heightSourceArea = matchedHeightItem?.area || item.area;
-      const heightSourceScale = matchedHeightNumber
-        ? BUILDING_HEIGHT_SCALE_OVERRIDES[matchedHeightNumber] || 1
-        : heightScale;
-      const heightSourceMeters = matchedHeightItem ? null : item.modelHeightMeters;
-      const height =
-        (heightSourceMeters || estimateHeight(heightSourceArea)) * heightSourceScale;
+      const baseHeight = baseHeightByNumber.get(String(displayNumber)) ||
+        getStaticBuildingHeight(displayNumber, item, rawBuildings);
+      const height = resolvePublishedBuildingHeight(
+        displayNumber,
+        baseHeight,
+        baseHeightByNumber,
+        buildingHeightOverrides.overrides
+      );
 
       const mesh3DMaterial = new THREE.MeshStandardMaterial({
         color: typeConfig ? typeConfig.baseColor : "#d6d5cf",
@@ -5672,6 +6433,8 @@ async function loadScene() {
         displayMode,
         functionalConfig,
         typeConfig,
+        baseHeight,
+        currentHeight: height,
         mesh3D,
         edge3D,
         mesh2D,
@@ -5765,6 +6528,7 @@ async function loadScene() {
     syncSceneAfterLayoutChange();
     updateLabels(true);
     focusBuildingFromUrl();
+    postAdminPreviewReady();
   } catch (error) {
     console.error(error);
     mapStatus.textContent = `Scene failed: ${error.message}`;
@@ -5847,14 +6611,38 @@ function getNormalLabelScale(anchor) {
   return THREE.MathUtils.lerp(0.88, 0.48, eased);
 }
 
+function getLabelProjectionMetrics() {
+  const canvasRect = renderer.domElement.getBoundingClientRect();
+  const layerRect = labelLayer.getBoundingClientRect();
+  const width = canvasRect.width || container.clientWidth || layerRect.width;
+  const height = canvasRect.height || container.clientHeight || layerRect.height;
+
+  return {
+    width,
+    height,
+    offsetX: canvasRect.left - layerRect.left,
+    offsetY: canvasRect.top - layerRect.top
+  };
+}
+
+function getProjectedLabelPosition(anchor, metrics) {
+  const projected = anchor.clone().project(activeCamera);
+  return {
+    projected,
+    x: metrics.offsetX + (projected.x * 0.5 + 0.5) * metrics.width,
+    y: metrics.offsetY + (-projected.y * 0.5 + 0.5) * metrics.height
+  };
+}
+
 function placeLabel(el, x, y, scale) {
   el.style.display = "block";
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
-  el.style.scale = `${scale}`;
+  el.style.scale = "";
+  el.style.transform = `translate(-50%, -100%) scale(${scale})`;
 }
 
-function updateEntranceRouteTimeLabels(width, height) {
+function updateEntranceRouteTimeLabels(metrics) {
   for (const item of entranceRouteTimeLabels) {
     if (!activeEntranceRouteLabelId || item.routeId !== activeEntranceRouteLabelId) {
       item.el.style.display = "none";
@@ -5875,8 +6663,8 @@ function updateEntranceRouteTimeLabels(width, height) {
       continue;
     }
 
-    const x = (projected.x * 0.5 + 0.5) * width;
-    const y = (-projected.y * 0.5 + 0.5) * height;
+    const x = metrics.offsetX + (projected.x * 0.5 + 0.5) * metrics.width;
+    const y = metrics.offsetY + (-projected.y * 0.5 + 0.5) * metrics.height;
     item.el.style.display = "block";
     item.el.style.left = `${x}px`;
     item.el.style.top = `${y}px`;
@@ -5892,10 +6680,10 @@ function updateLabels(force = false) {
   labelsDirty = false;
   lastLabelMode = modeKey;
 
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+  const labelMetrics = getLabelProjectionMetrics();
+  const { width, height } = labelMetrics;
 
-  updateEntranceRouteTimeLabels(width, height);
+  updateEntranceRouteTimeLabels(labelMetrics);
 
   for (const building of buildingObjects) {
     if (!building.functionalLabelEl) continue;
@@ -5915,7 +6703,7 @@ function updateLabels(force = false) {
     }
 
     const anchor = currentMode === "3d" ? building.anchor3D : building.anchor2D;
-    const projected = anchor.clone().project(activeCamera);
+    const { projected, x, y } = getProjectedLabelPosition(anchor, labelMetrics);
 
     const visible =
       projected.z >= -1 &&
@@ -5930,8 +6718,6 @@ function updateLabels(force = false) {
       continue;
     }
 
-    const x = (projected.x * 0.5 + 0.5) * width;
-    const y = (-projected.y * 0.5 + 0.5) * height;
     const scale = getFunctionalLabelScale(anchor);
 
     placeLabel(building.functionalLabelEl, x, y, scale);
@@ -5984,7 +6770,7 @@ function updateLabels(force = false) {
     }
 
     const anchor = currentMode === "3d" ? building.anchor3D : building.anchor2D;
-    const projected = anchor.clone().project(activeCamera);
+    const { projected, x, y } = getProjectedLabelPosition(anchor, labelMetrics);
 
     const screenMargin = boundaryLabelMode ? 1.22 : 1.08;
     const visible =
@@ -6000,8 +6786,6 @@ function updateLabels(force = false) {
       continue;
     }
 
-    const x = (projected.x * 0.5 + 0.5) * width;
-    const y = (-projected.y * 0.5 + 0.5) * height;
     const scale = getNormalLabelScale(anchor);
 
     candidates.push({
@@ -6009,8 +6793,8 @@ function updateLabels(force = false) {
       x,
       y,
       scale,
-      dx: x - width / 2,
-      dy: y - height / 2
+      dx: x - (labelMetrics.offsetX + width / 2),
+      dy: y - (labelMetrics.offsetY + height / 2)
     });
   }
 
@@ -6073,6 +6857,7 @@ btnReset.addEventListener("click", () => {
 function animate(now = 0) {
   updateCameraTween(now);
   controls.update();
+  syncMapCameraStateFromControls();
   updateCityOverviewFade();
   updateLabels(false);
   updateSelectedBuildingBeam(now);

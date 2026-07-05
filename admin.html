@@ -3,32 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Pilot | ANU Explore</title>
-  <link rel="stylesheet" href="style.css?v=dorm-editor-v1" />
+  <title>Admin Workbench | ANU Explore</title>
+  <link rel="stylesheet" href="style.css?v=admin-workbench-v3" />
 </head>
 <body data-page="admin">
-  <main class="admin-shell">
-    <section class="admin-panel admin-panel--hero">
-      <div>
-        <p class="admin-kicker">BACKEND PILOT</p>
-        <h1>Admin Pilot</h1>
-        <p id="adminStatus" class="admin-status">Preparing Supabase connection...</p>
+  <main class="admin-workbench">
+    <header class="admin-topbar">
+      <div class="admin-brand-mark" aria-hidden="true">A</div>
+      <div class="admin-topbar__crumbs">
+        <span id="adminUserName">Admin</span>
+        <span id="adminProjectName">ANU Explore Project</span>
+        <strong id="adminPublishState">Draft workspace</strong>
       </div>
-      <button id="adminRefresh" class="admin-button admin-button--ghost" type="button">
-        Refresh
-      </button>
-    </section>
+      <div class="admin-account">
+        <button id="adminAvatarButton" class="admin-avatar-button" type="button" aria-expanded="false">
+          <span id="adminAvatarInitial">A</span>
+        </button>
+        <div id="adminAccountMenu" class="admin-account-menu" hidden>
+          <p class="admin-kicker">ACCOUNT</p>
+          <strong id="adminAccountEmail">Not signed in</strong>
+          <span id="adminAccountRole">Permission: Clevel</span>
+          <button id="adminSignOut" class="admin-button admin-button--ghost" type="button">
+            Sign out
+          </button>
+        </div>
+      </div>
+    </header>
 
-    <section id="adminConfigPanel" class="admin-panel" hidden>
+    <section id="adminConfigPanel" class="admin-auth-panel" hidden>
       <p class="admin-kicker">CONFIG</p>
-      <h2>Supabase setup</h2>
+      <h1>Supabase setup</h1>
       <p id="adminConfigText" class="admin-copy"></p>
     </section>
 
-    <section id="adminLoginPanel" class="admin-panel" hidden>
+    <section id="adminLoginPanel" class="admin-auth-panel" hidden>
       <p class="admin-kicker">SIGN IN</p>
-      <h2>Admin email</h2>
-      <p class="admin-copy">Use a password account created in Supabase Auth. Email code is kept as a backup.</p>
+      <h1>Admin Workbench</h1>
+      <p id="adminStatus" class="admin-status">Preparing Supabase connection...</p>
+
       <form id="adminPasswordForm" class="admin-form">
         <label class="admin-field">
           <span>Email</span>
@@ -40,152 +52,243 @@
         </label>
         <button class="admin-button" type="submit">Sign in with password</button>
       </form>
+
       <form id="adminLoginForm" class="admin-form">
         <button class="admin-button admin-button--ghost" type="submit">Send email code</button>
       </form>
+
       <form id="adminOtpForm" class="admin-form" hidden>
         <label class="admin-field">
           <span>Email code</span>
-          <input
-            id="adminOtpCode"
-            type="text"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            placeholder="123456"
-            required
-          />
+          <input id="adminOtpCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" required />
         </label>
         <button class="admin-button" type="submit">Verify code</button>
       </form>
     </section>
 
-    <section id="adminSessionPanel" class="admin-panel" hidden>
-      <div class="admin-panel__topline">
-        <div>
-          <p class="admin-kicker">SESSION</p>
-          <h2 id="adminUserEmail">Signed in</h2>
-        </div>
-        <button id="adminSignOut" class="admin-button admin-button--ghost" type="button">
-          Sign out
-        </button>
-      </div>
+    <section id="adminSessionPanel" class="admin-auth-panel" hidden>
+      <p class="admin-kicker">SESSION</p>
+      <h1 id="adminUserEmail">Signed in</h1>
       <p id="adminRoleText" class="admin-copy"></p>
       <pre id="adminBootstrapSql" class="admin-code" hidden></pre>
     </section>
 
-    <section id="adminBuildingPanel" class="admin-panel" hidden>
-      <div class="admin-panel__topline">
-        <div>
-          <p class="admin-kicker">RESIDENCE CONTENT</p>
-          <h2>宿舍详情编辑</h2>
-        </div>
-        <button id="adminBuildingReload" class="admin-button admin-button--ghost" type="button">
-          重新载入
+    <section id="adminWorkspace" class="admin-workspace" hidden>
+      <nav class="admin-side-nav" aria-label="Admin tools">
+        <button class="admin-nav-item is-active" type="button" data-admin-section="home" title="预览首页" aria-label="预览首页">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 10.5 12 3l9 7.5" />
+              <path d="M5 9.5V21h14V9.5" />
+              <path d="M9 21v-7h6v7" />
+            </svg>
+          </span>
+          <strong>预览首页</strong>
         </button>
-      </div>
-      <p id="adminBuildingStatus" class="admin-copy">正在读取宿舍详情...</p>
-      <form id="adminBuildingForm" class="admin-form">
-        <label class="admin-field">
-          <span>选择宿舍</span>
-          <select id="adminBuildingSelect"></select>
-        </label>
+        <button class="admin-nav-item" type="button" data-admin-section="dorm" title="宿舍详情编辑" aria-label="宿舍详情编辑">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16" />
+              <path d="M8 7h2" />
+              <path d="M14 7h2" />
+              <path d="M8 11h2" />
+              <path d="M14 11h2" />
+              <path d="M9 21v-5h6v5" />
+            </svg>
+          </span>
+          <strong>宿舍详情编辑</strong>
+        </button>
+        <button class="admin-nav-item" type="button" data-admin-section="height" title="建筑高度管理" aria-label="建筑高度管理">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 20h16" />
+              <path d="M6 20V8l6-4 6 4v12" />
+              <path d="M9 20v-7h6v7" />
+              <path d="M9 9h6" />
+            </svg>
+          </span>
+          <strong>建筑高度管理</strong>
+        </button>
+      </nav>
 
-        <div class="admin-grid">
-          <label class="admin-field">
-            <span>楼号</span>
-            <input id="adminBuildingNumber" type="text" inputmode="numeric" placeholder="777" readonly required />
-          </label>
-          <label class="admin-field">
-            <span>内部 ID</span>
-            <input id="adminBuildingId" type="text" placeholder="dorm_lena" readonly />
-          </label>
-        </div>
+      <aside class="admin-control-column">
+        <section id="adminHomePanel" class="admin-tool-panel admin-tool-panel--empty" data-admin-panel="home"></section>
 
-        <input id="adminDisplayMode" type="hidden" value="dorm" />
-        <input id="adminTypeKey" type="hidden" value="dorm" />
-        <input id="adminLabelEnabled" type="checkbox" checked hidden />
-        <input id="adminInteractive" type="checkbox" checked hidden />
+        <section id="adminBuildingPanel" class="admin-tool-panel" data-admin-panel="dorm" hidden>
+          <div class="admin-tool-panel__head">
+            <div>
+              <p class="admin-kicker">RESIDENCE CONTENT</p>
+              <h2>宿舍详情编辑</h2>
+            </div>
+            <button id="adminBuildingReload" class="admin-button admin-button--ghost" type="button">
+              重新载入
+            </button>
+          </div>
 
-        <div class="admin-grid">
-          <label class="admin-field">
-            <span>宿舍名称</span>
-            <input id="adminDisplayName" type="text" placeholder="Lena Karmel Lodge" />
-          </label>
-          <label class="admin-field">
-            <span>地图水滴标签</span>
-            <input id="adminShortName" type="text" placeholder="Lena" />
-          </label>
-        </div>
+          <p id="adminBuildingStatus" class="admin-copy">正在读取宿舍详情...</p>
 
-        <div class="admin-grid">
-          <label class="admin-field">
-            <span>详情标签</span>
-            <input id="adminDormTag" type="text" placeholder="QUIET / PRIVATE" />
-          </label>
-          <label class="admin-field">
-            <span>Rent</span>
-            <input id="adminDormRent" type="text" placeholder="Not listed" />
-          </label>
-        </div>
+          <form id="adminBuildingForm" class="admin-form">
+            <label class="admin-field">
+              <span>选择宿舍</span>
+              <select id="adminBuildingSelect"></select>
+            </label>
 
-        <div class="admin-grid">
-          <label class="admin-field">
-            <span>Type</span>
-            <input id="adminDormType" type="text" placeholder="Residential hall" />
-          </label>
-          <label class="admin-field">
-            <span>Location</span>
-            <input id="adminDormLocation" type="text" placeholder="ANU campus" />
-          </label>
-        </div>
+            <div class="admin-grid">
+              <label class="admin-field">
+                <span>楼号</span>
+                <input id="adminBuildingNumber" type="text" inputmode="numeric" placeholder="777" readonly required />
+              </label>
+              <label class="admin-field">
+                <span>内部 ID</span>
+                <input id="adminBuildingId" type="text" placeholder="dorm_lena" readonly />
+              </label>
+            </div>
 
-        <label class="admin-field">
-          <span>介绍</span>
-          <textarea id="adminDormSummary" rows="3" placeholder="Placeholder residence profile..."></textarea>
-        </label>
+            <input id="adminDisplayMode" type="hidden" value="dorm" />
+            <input id="adminTypeKey" type="hidden" value="dorm" />
+            <input id="adminLabelEnabled" type="checkbox" checked hidden />
+            <input id="adminInteractive" type="checkbox" checked hidden />
 
-        <label class="admin-field">
-          <span>Best for</span>
-          <textarea id="adminDormBestFor" rows="3"></textarea>
-        </label>
+            <div class="admin-grid">
+              <label class="admin-field">
+                <span>宿舍名称</span>
+                <input id="adminDisplayName" type="text" placeholder="Lena Karmel Lodge" />
+              </label>
+              <label class="admin-field">
+                <span>地图水滴标签</span>
+                <input id="adminShortName" type="text" placeholder="Lena" />
+              </label>
+            </div>
 
-        <label class="admin-field">
-          <span>Location feel</span>
-          <textarea id="adminDormLocationFeel" rows="3"></textarea>
-        </label>
+            <div class="admin-grid">
+              <label class="admin-field">
+                <span>详情标签</span>
+                <input id="adminDormTag" type="text" placeholder="QUIET / PRIVATE" />
+              </label>
+              <label class="admin-field">
+                <span>Rent</span>
+                <input id="adminDormRent" type="text" placeholder="Not listed" />
+              </label>
+            </div>
 
-        <label class="admin-field">
-          <span>Main trade-off</span>
-          <textarea id="adminDormTradeOff" rows="3"></textarea>
-        </label>
+            <div class="admin-grid">
+              <label class="admin-field">
+                <span>Type</span>
+                <input id="adminDormType" type="text" placeholder="Residential hall" />
+              </label>
+              <label class="admin-field">
+                <span>Location</span>
+                <input id="adminDormLocation" type="text" placeholder="ANU campus" />
+              </label>
+            </div>
 
-        <div class="admin-actions">
-          <button class="admin-button" type="submit">保存到数据库</button>
-          <button id="adminRollbackBuilding" class="admin-button admin-button--danger" type="button">
-            回退上一版
-          </button>
-          <button id="adminPublishPublic" class="admin-button admin-button--ghost" type="button">
-            发布代码到官网
-          </button>
-        </div>
-      </form>
-      <p id="adminBuildingGuard" class="admin-copy admin-copy--guard"></p>
-    </section>
+            <label class="admin-field">
+              <span>介绍</span>
+              <textarea id="adminDormSummary" rows="3" placeholder="Placeholder residence profile..."></textarea>
+            </label>
+            <label class="admin-field">
+              <span>Best for</span>
+              <textarea id="adminDormBestFor" rows="3"></textarea>
+            </label>
+            <label class="admin-field">
+              <span>Location feel</span>
+              <textarea id="adminDormLocationFeel" rows="3"></textarea>
+            </label>
+            <label class="admin-field">
+              <span>Main trade-off</span>
+              <textarea id="adminDormTradeOff" rows="3"></textarea>
+            </label>
 
-    <section id="adminSettingsPanel" class="admin-panel" hidden>
-      <p class="admin-kicker">TEST TABLE</p>
-      <h2>app_settings</h2>
-      <form id="adminSettingsForm" class="admin-form">
-        <label class="admin-field">
-          <span>backend_test_message</span>
-          <textarea id="adminSettingValue" rows="4"></textarea>
-        </label>
-        <button class="admin-button" type="submit">Save test setting</button>
-      </form>
-      <p id="adminSettingMeta" class="admin-copy"></p>
+            <div class="admin-actions">
+              <button class="admin-button" type="submit">保存到数据库</button>
+              <button id="adminRollbackBuilding" class="admin-button admin-button--danger" type="button">
+                回退当前宿舍
+              </button>
+              <button id="adminPublishDorm" class="admin-button admin-button--ghost" type="button">
+                发布当前功能
+              </button>
+            </div>
+          </form>
+
+          <p id="adminBuildingGuard" class="admin-copy admin-copy--guard"></p>
+        </section>
+
+        <section id="adminHeightPanel" class="admin-tool-panel" data-admin-panel="height" hidden>
+          <div class="admin-tool-panel__head">
+            <div>
+              <p class="admin-kicker">BUILDING HEIGHT</p>
+              <h2>建筑高度管理</h2>
+            </div>
+            <button id="adminHeightReload" class="admin-button admin-button--ghost" type="button">
+              重新载入
+            </button>
+          </div>
+
+          <p id="adminHeightStatus" class="admin-copy">等待地图预览载入建筑清单...</p>
+
+          <form id="adminHeightForm" class="admin-form">
+            <label class="admin-field">
+              <span>主建筑</span>
+              <select id="adminHeightBuildingSelect"></select>
+            </label>
+
+            <div class="admin-grid">
+              <label class="admin-field">
+                <span>高度乘数</span>
+                <input id="adminHeightMultiplier" type="number" min="0.1" max="10" step="0.05" value="1" />
+              </label>
+              <label class="admin-field">
+                <span>复制另一栋高度</span>
+                <select id="adminHeightCopyFrom"></select>
+              </label>
+            </div>
+
+            <details class="admin-sync-set">
+              <summary>同步建筑，最多 5 栋</summary>
+              <select class="admin-height-target" data-height-target="0"></select>
+              <select class="admin-height-target" data-height-target="1"></select>
+              <select class="admin-height-target" data-height-target="2"></select>
+              <select class="admin-height-target" data-height-target="3"></select>
+              <select class="admin-height-target" data-height-target="4"></select>
+              <button class="admin-button admin-button--ghost" type="button" id="adminClearHeightTargets">
+                清空同步建筑
+              </button>
+            </details>
+
+            <div class="admin-height-meta">
+              <span id="adminHeightCurrent">当前高度：—</span>
+              <span id="adminHeightBase">原始高度：—</span>
+              <span id="adminHeightPublished">已发布：—</span>
+            </div>
+
+            <div class="admin-actions">
+              <button class="admin-button" type="submit">
+                保存草稿
+              </button>
+              <button id="adminPublishHeight" class="admin-button admin-button--publish" type="button">
+                统一发布草稿
+              </button>
+              <button id="adminRollbackHeight" class="admin-button admin-button--danger" type="button">
+                回退当前高度
+              </button>
+            </div>
+          </form>
+        </section>
+      </aside>
+
+      <section class="admin-map-stage">
+        <strong id="adminPreviewTitle" hidden>后台地图预览</strong>
+        <span id="adminPreviewStatus" hidden>Loading map...</span>
+        <iframe
+          id="adminMapFrame"
+          title="ANU Explore admin map preview"
+          src="explore.html?adminPreview=overview&mode=guided&frame=admin-preview-v3"
+        ></iframe>
+      </section>
     </section>
   </main>
 
-  <script type="module" src="admin.js?v=dorm-editor-v4"></script>
+  <script src="src/data/dorms.js?v=new-dorm-placeholders-v1"></script>
+  <script type="module" src="admin-workbench.js?v=admin-workbench-v3"></script>
 </body>
 </html>
