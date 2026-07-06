@@ -1,0 +1,15 @@
+{
+  "schema": "anu-explore-public-publish-manifest-v1",
+  "generatedAt": "2026-07-06T11:26:03.667Z",
+  "lastScope": "dorm_details",
+  "lastRequestId": "1b1f5aa3-687e-408b-9c87-6484cbaad1c7",
+  "allowedScopes": [
+    "dorm_details",
+    "building_heights"
+  ],
+  "allowedOutputPaths": [
+    "config/published/dorm-details.json",
+    "config/published/building-heights.json",
+    "config/published/publish-manifest.json"
+  ]
+}
