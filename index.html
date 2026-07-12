@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>hero逻辑页（首页） | ANU Dorm Guide</title>
-  <link rel="stylesheet" href="style.css?v=site-pages-overview-v1" />
+  <link rel="stylesheet" href="style.css?v=initial-view-state-v1" />
   <script>
     if (!new URLSearchParams(window.location.search).has("home")) {
       window.location.replace("explore.html");
     }
   </script>
 </head>
-<body data-page="home">
+<body data-page="home" class="home-paged home-stage-hero" style="--home-curtain-progress: 0;">
   <section class="hero hero-home">
     <div class="hero-overlay"></div>
     <div class="container hero-inner">
@@ -219,7 +219,7 @@
   <script src="src/components/DormCard.js"></script>
   <script src="src/components/DormList.js"></script>
   <script src="src/components/DormSummary.js"></script>
-  <script src="nav.js?v=site-pages-overview-v1"></script>
-  <script src="script.js?v=dorm-residences-burgman-v1"></script>
+  <script src="nav.js?v=initial-view-state-v1"></script>
+  <script src="script.js?v=initial-view-state-v1"></script>
 </body>
 </html>

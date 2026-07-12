@@ -1,0 +1,6 @@
+project_id = "gjigfyndgqpxzqmprptr"
+
+[functions.publish-public-pages]
+# Gateway JWT is disabled so this function can validate the signed-in admin
+# token itself against public.admin_users before writing allowlisted GitHub files.
+verify_jwt = false

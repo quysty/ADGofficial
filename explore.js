@@ -246,6 +246,18 @@ const MAP_CAMERA_MIN_HEIGHT = 0;
 const MAP_CAMERA_MAX_HEIGHT = 2800;
 const MAP_CAMERA_PITCH_MODE_CAMERA = "camera";
 const MAP_CAMERA_PITCH_MODE_FOCUS = "focus";
+const MAP_CAMERA_MOVE_KEYS = new Set([
+  "w",
+  "a",
+  "s",
+  "d",
+  "arrowup",
+  "arrowdown",
+  "arrowleft",
+  "arrowright",
+  "q",
+  "e"
+]);
 const BUILDING_DISPLAY_MODES = {
   dorm: {
     key: "dorm",
@@ -379,6 +391,8 @@ const mapToolState = {
   cameraHeight: MAP_CAMERA_DEFAULT_HEIGHT,
   cameraPitchMode: MAP_CAMERA_PITCH_MODE_CAMERA,
   cameraPanelSyncedAt: 0,
+  cameraMoveKeys: new Set(),
+  cameraKeyboardLastAt: 0,
   pointerStart: null,
   roadPointerStart: null,
   boundaryPointerStart: null,
@@ -431,8 +445,11 @@ const cityOverviewState = {
 
 if (guidedPreviewState.active) {
   document.body.classList.add("is-guided-preview");
-} else {
+  document.body.classList.remove("is-city-overview");
+} else if (cityOverviewState.active) {
   document.body.classList.add("is-city-overview");
+} else {
+  document.body.classList.remove("is-city-overview");
 }
 
 if (isHomePathEntry) {
@@ -1415,6 +1432,96 @@ function setMapCameraHeight(value) {
   }
   updateMapToolPanel();
 }
+
+function isKeyboardEditableTarget(target) {
+  const element = target instanceof Element ? target : null;
+  if (!element) return false;
+  if (element.closest("input, textarea, select, button")) return true;
+  return element.isContentEditable;
+}
+
+function getMapCameraMoveKey(event) {
+  return String(event?.key || "").toLowerCase();
+}
+
+function shouldUseMapCameraKeyboard(event) {
+  if (!isAdminMapToolPreview || !isMapToolCameraMode()) return false;
+  if (event?.metaKey || event?.ctrlKey || event?.altKey) return false;
+  if (isKeyboardEditableTarget(event?.target)) return false;
+  return MAP_CAMERA_MOVE_KEYS.has(getMapCameraMoveKey(event));
+}
+
+function setMapCameraMoveKey(event, isPressed) {
+  if (!shouldUseMapCameraKeyboard(event)) return;
+
+  event.preventDefault();
+  const key = getMapCameraMoveKey(event);
+  if (isPressed) {
+    mapToolState.cameraMoveKeys.add(key);
+    if (!mapToolState.cameraKeyboardLastAt) {
+      mapToolState.cameraKeyboardLastAt = performance.now();
+    }
+  } else {
+    mapToolState.cameraMoveKeys.delete(key);
+    if (!mapToolState.cameraMoveKeys.size) {
+      mapToolState.cameraKeyboardLastAt = 0;
+    }
+  }
+}
+
+function clearMapCameraMoveKeys() {
+  mapToolState.cameraMoveKeys.clear();
+  mapToolState.cameraKeyboardLastAt = 0;
+}
+
+function updateMapCameraKeyboardMovement(now = performance.now()) {
+  if (!isAdminMapToolPreview || !isMapToolCameraMode()) return;
+  if (!mapToolState.cameraMoveKeys.size || !controls || !perspectiveCamera) return;
+
+  const lastAt = mapToolState.cameraKeyboardLastAt || now;
+  const deltaSeconds = Math.min(Math.max((now - lastAt) / 1000, 0.008), 0.05);
+  mapToolState.cameraKeyboardLastAt = now;
+
+  const target = controls.target;
+  const forward = target.clone().sub(perspectiveCamera.position);
+  forward.y = 0;
+  if (forward.lengthSq() < 0.0001) return;
+  forward.normalize();
+
+  const right = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
+  const movement = new THREE.Vector3();
+  const keys = mapToolState.cameraMoveKeys;
+
+  if (keys.has("w") || keys.has("arrowup")) movement.add(forward);
+  if (keys.has("s") || keys.has("arrowdown")) movement.addScaledVector(forward, -1);
+  if (keys.has("d") || keys.has("arrowright")) movement.add(right);
+  if (keys.has("a") || keys.has("arrowleft")) movement.addScaledVector(right, -1);
+
+  const speed = THREE.MathUtils.clamp(mapToolState.cameraHeight * 0.62, 120, 920);
+  if (movement.lengthSq() > 0.0001) {
+    movement.normalize().multiplyScalar(speed * deltaSeconds);
+    perspectiveCamera.position.add(movement);
+    controls.target.add(movement);
+  }
+
+  const verticalInput = (keys.has("e") ? 1 : 0) - (keys.has("q") ? 1 : 0);
+  if (verticalInput) {
+    const nextHeight = clampMapCameraHeight(
+      mapToolState.cameraHeight + verticalInput * speed * 0.78 * deltaSeconds
+    );
+    perspectiveCamera.position.y = getMapCameraGroundY() + nextHeight;
+  }
+
+  controls.target.y = getMapCameraGroundY();
+  perspectiveCamera.lookAt(controls.target);
+  perspectiveCamera.updateProjectionMatrix();
+  syncMapCameraStateFromControls({ updatePanel: true });
+  labelsDirty = true;
+}
+
+document.addEventListener("keydown", (event) => setMapCameraMoveKey(event, true));
+document.addEventListener("keyup", (event) => setMapCameraMoveKey(event, false));
+window.addEventListener("blur", clearMapCameraMoveKeys);
 
 function formatMapCameraVector(vector) {
   return [
@@ -2488,6 +2595,7 @@ function syncMapToolMode() {
   const isBoundaryMode = isMapToolBoundaryMode();
   const isRoadMode = isMapToolRoadMode();
   const isCameraMode = isMapToolCameraMode();
+  if (!isCameraMode) clearMapCameraMoveKeys();
   document.body.classList.toggle("is-map-boundary-mode", isBoundaryMode);
   document.body.classList.toggle("is-map-road-mode", isRoadMode);
   document.body.classList.toggle("is-map-camera-mode", isCameraMode);
@@ -7248,6 +7356,7 @@ btnReset.addEventListener("click", () => {
 
 function animate(now = 0) {
   updateCameraTween(now);
+  updateMapCameraKeyboardMovement(now);
   controls.update();
   syncMapCameraStateFromControls();
   updateCityOverviewFade();

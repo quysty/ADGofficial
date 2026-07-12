@@ -7144,6 +7144,59 @@ body[data-page="admin"] .admin-range-field strong {
   font-weight: 650;
 }
 
+body[data-page="admin"] .admin-director-controls {
+  gap: 12px;
+}
+
+body[data-page="admin"] .admin-director-note {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+body[data-page="admin"] .admin-director-note strong {
+  color: #1f2328;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+body[data-page="admin"] .admin-director-note span {
+  color: #5d6761;
+  font-size: 0.82rem;
+  font-weight: 450;
+  line-height: 1.55;
+}
+
+body[data-page="admin"] .admin-director-shot-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #e6e6e6;
+}
+
+body[data-page="admin"] .admin-director-shot-list li {
+  display: grid;
+  gap: 3px;
+  padding: 9px 0;
+  border-bottom: 1px solid #eeeeee;
+}
+
+body[data-page="admin"] .admin-director-shot-list strong {
+  color: #1f2328;
+  font-size: 0.84rem;
+  font-weight: 620;
+}
+
+body[data-page="admin"] .admin-director-shot-list span,
+body[data-page="admin"] .admin-director-shot-empty {
+  color: #69726c;
+  font-size: 0.78rem;
+  font-weight: 450;
+}
+
 body[data-page="admin"] .admin-map-tool-boundary-areas {
   display: grid;
   gap: 6px;
@@ -7621,6 +7674,18 @@ body[data-page="admin"] .admin-home-section-title {
   color: #d8dcd8;
 }
 
+body[data-page="admin"] .admin-home-section-title--actions {
+  justify-content: space-between;
+  gap: 18px;
+}
+
+body[data-page="admin"] .admin-home-section-title--actions > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
 body[data-page="admin"] .admin-home-section-title span {
   color: #747b75;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -7633,6 +7698,44 @@ body[data-page="admin"] .admin-home-section-title h2 {
   font-size: 1rem;
   font-weight: 590;
   letter-spacing: 0;
+}
+
+body[data-page="admin"] .admin-home-publish-button {
+  min-height: 30px;
+  border: 1px solid #2f5f43;
+  border-radius: 6px;
+  padding: 0 12px;
+  background: #143722;
+  color: #a9e7c4;
+  font-size: 0.76rem;
+  font-weight: 570;
+  line-height: 1;
+}
+
+body[data-page="admin"] .admin-home-publish-button:disabled {
+  border-color: #2b302d;
+  background: transparent;
+  color: #6f7772;
+  cursor: default;
+}
+
+body[data-page="admin"] .admin-home-page-status {
+  margin: -8px 0 14px;
+  color: #7e8580;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+body[data-page="admin"] .admin-home-page-status[data-tone="success"] {
+  color: #77e3a5;
+}
+
+body[data-page="admin"] .admin-home-page-status[data-tone="warning"] {
+  color: #d6bd77;
+}
+
+body[data-page="admin"] .admin-home-page-status[data-tone="error"] {
+  color: #f2aaa5;
 }
 
 body[data-page="admin"] .admin-home-module-grid {
@@ -7682,12 +7785,17 @@ body[data-page="admin"] .admin-home-page-list {
 
 body[data-page="admin"] .admin-home-page-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 140px 90px 64px;
-  gap: 18px;
+  grid-template-columns: minmax(260px, 1fr) 108px 86px 76px 54px;
+  column-gap: 16px;
   align-items: center;
-  min-height: 58px;
+  min-height: 64px;
   border-bottom: 1px solid #262b28;
   color: #cfd5d0;
+  padding: 0 6px;
+}
+
+body[data-page="admin"] .admin-home-page-main {
+  min-width: 0;
 }
 
 body[data-page="admin"] .admin-home-page-row strong,
@@ -7709,20 +7817,83 @@ body[data-page="admin"] .admin-home-page-row small {
   font-size: 0.74rem;
 }
 
-body[data-page="admin"] .admin-home-page-row em {
+body[data-page="admin"] .admin-home-page-role {
   justify-self: start;
-  color: #77e3a5;
-  font-size: 0.72rem;
-  font-style: normal;
-  font-weight: 600;
+  line-height: 1.2;
 }
 
-body[data-page="admin"] .admin-home-page-row[data-status="hidden"] em {
+body[data-page="admin"] .admin-home-page-status-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  width: 76px;
+  height: 28px;
+  border: 1px solid rgba(119, 227, 165, 0.3);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: rgba(119, 227, 165, 0.08);
+  color: #77e3a5;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+
+body[data-page="admin"] .admin-home-page-row[data-status="hidden"] .admin-home-page-status-button {
+  border-color: rgba(198, 176, 109, 0.34);
+  background: rgba(198, 176, 109, 0.08);
   color: #c6b06d;
 }
 
+body[data-page="admin"] .admin-home-page-status-button:hover,
+body[data-page="admin"] .admin-home-page-status-button:focus-visible {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: #171a18;
+  outline: none;
+}
+
+body[data-page="admin"] .admin-home-page-order {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 30px);
+  gap: 4px;
+  justify-self: start;
+}
+
+body[data-page="admin"] .admin-home-page-order button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  border: 1px solid #303633;
+  border-radius: 6px;
+  background: transparent;
+  color: #8f9791;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+body[data-page="admin"] .admin-home-page-order button:hover,
+body[data-page="admin"] .admin-home-page-order button:focus-visible {
+  border-color: #454d48;
+  background: #171a18;
+  color: #ffffff;
+  outline: none;
+}
+
+body[data-page="admin"] .admin-home-page-order button:disabled {
+  color: #3f4541;
+  cursor: default;
+}
+
 body[data-page="admin"] .admin-home-page-row a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
   justify-self: end;
+  min-width: 48px;
+  height: 28px;
   color: #b9c0bb;
   font-size: 0.74rem;
   font-weight: 500;
@@ -7779,6 +7950,41 @@ body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-url button:ho
 body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-url button:focus-visible {
   border-color: #c5cbc8;
   background: #f5f7f6;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-publish-button {
+  border-color: #cfe8d8;
+  background: #eefaf3;
+  color: #167445;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-publish-button:not(:disabled):hover,
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-publish-button:not(:disabled):focus-visible {
+  border-color: #a9d8bc;
+  background: #e2f6eb;
+  outline: none;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-publish-button:disabled {
+  border-color: #dde2df;
+  background: #ffffff;
+  color: #8a938d;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-status {
+  color: #6b746e;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-status[data-tone="success"] {
+  color: #15803d;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-status[data-tone="warning"] {
+  color: #9a6700;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-status[data-tone="error"] {
+  color: #b42318;
 }
 
 body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-stat__icon {
@@ -7850,6 +8056,37 @@ body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-row a:fo
   color: #111111;
 }
 
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-status-button {
+  border-color: #bfe8d0;
+  background: #f1fbf5;
+  color: #16a35f;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-row[data-status="hidden"] .admin-home-page-status-button {
+  border-color: #ead8a4;
+  background: #fff8e4;
+  color: #b08a15;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-status-button:hover,
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-status-button:focus-visible,
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-order button:hover,
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-order button:focus-visible {
+  border-color: #cdd4d0;
+  background: #f3f5f4;
+  color: #111111;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-order button {
+  border-color: #e1e5e3;
+  background: #ffffff;
+  color: #707a73;
+}
+
+body[data-page="admin"]:not([data-admin-theme="dark"]) .admin-home-page-order button:disabled {
+  color: #c8d0cc;
+}
+
 body[data-page="admin"][data-admin-section="tool-boundary"] #adminMapToolDeveloperLabelBlock {
   display: none !important;
 }
@@ -7907,13 +8144,21 @@ body[data-page="admin"][data-admin-theme="dark"] .admin-choice-row {
   border-color: #282d2a;
 }
 
+body[data-page="admin"][data-admin-theme="dark"] .admin-director-note,
+body[data-page="admin"][data-admin-theme="dark"] .admin-director-shot-list,
+body[data-page="admin"][data-admin-theme="dark"] .admin-director-shot-list li {
+  border-color: #282d2a;
+}
+
 body[data-page="admin"][data-admin-theme="dark"] .admin-tool-panel__head h2,
 body[data-page="admin"][data-admin-theme="dark"] .admin-control-column .admin-field,
 body[data-page="admin"][data-admin-theme="dark"] .admin-control-column .admin-field > span,
 body[data-page="admin"][data-admin-theme="dark"] .admin-range-field strong,
 body[data-page="admin"][data-admin-theme="dark"] .admin-choice-title,
 body[data-page="admin"][data-admin-theme="dark"] .admin-sync-set summary,
-body[data-page="admin"][data-admin-theme="dark"] .admin-switch-row {
+body[data-page="admin"][data-admin-theme="dark"] .admin-switch-row,
+body[data-page="admin"][data-admin-theme="dark"] .admin-director-note strong,
+body[data-page="admin"][data-admin-theme="dark"] .admin-director-shot-list strong {
   color: #e8ece8;
 }
 
@@ -7925,7 +8170,10 @@ body[data-page="admin"][data-admin-theme="dark"] .admin-range-field input[type="
 }
 
 body[data-page="admin"][data-admin-theme="dark"] .admin-control-column .admin-kicker,
-body[data-page="admin"][data-admin-theme="dark"] .admin-control-column .admin-copy {
+body[data-page="admin"][data-admin-theme="dark"] .admin-control-column .admin-copy,
+body[data-page="admin"][data-admin-theme="dark"] .admin-director-note span,
+body[data-page="admin"][data-admin-theme="dark"] .admin-director-shot-list span,
+body[data-page="admin"][data-admin-theme="dark"] .admin-director-shot-empty {
   color: #8f9992;
 }
 

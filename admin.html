@@ -183,6 +183,16 @@
           </span>
           <strong>摄像机工具</strong>
         </button>
+        <button class="admin-nav-item" type="button" data-admin-section="tool-director" title="导演工具" aria-label="导演工具">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 7h16v13H4z" />
+              <path d="M4 7l3-4h13l-3 4" />
+              <path d="m10 12 5 3-5 3z" />
+            </svg>
+          </span>
+          <strong>导演工具</strong>
+        </button>
         <div class="admin-nav-divider" aria-hidden="true"></div>
         <button class="admin-nav-item" type="button" data-admin-section="logs" title="工程日志" aria-label="工程日志">
           <span class="admin-nav-icon" aria-hidden="true">
@@ -320,10 +330,18 @@
             </section>
 
             <section class="admin-home-pages" aria-label="Official pages">
-              <div class="admin-home-section-title">
-                <span aria-hidden="true">::</span>
-                <h2>Official pages</h2>
+              <div class="admin-home-section-title admin-home-section-title--actions">
+                <div>
+                  <span aria-hidden="true">::</span>
+                  <h2>Official pages</h2>
+                </div>
+                <button id="adminHomePublishPages" class="admin-home-publish-button" type="button">
+                  发布页面配置
+                </button>
               </div>
+              <p id="adminHomePageStatus" class="admin-home-page-status">
+                点击状态可切换 Public / Hidden；上下箭头调整官网菜单顺序。
+              </p>
               <div id="adminHomePageList" class="admin-home-page-list"></div>
             </section>
           </div>
@@ -511,7 +529,7 @@
         <section
           id="adminMapToolPanel"
           class="admin-tool-panel admin-map-tool-panel"
-          data-admin-panel="tool-entrance tool-boundary tool-road tool-camera"
+          data-admin-panel="tool-entrance tool-boundary tool-road tool-camera tool-director"
           hidden
         >
           <div class="admin-tool-panel__head">
@@ -610,6 +628,27 @@
             </label>
           </div>
 
+          <div id="adminDirectorControls" class="admin-map-tool-block admin-director-controls" hidden>
+            <div class="admin-director-note">
+              <strong>镜头记录</strong>
+              <span>点击右侧地图后，用鼠标、滚轮、WASD、方向键和 Q/E 调整视角，再记录当前镜头。</span>
+            </div>
+            <div class="admin-grid admin-grid--two">
+              <label class="admin-field">
+                <span>镜头名称</span>
+                <input id="adminDirectorShotName" type="text" placeholder="镜头 1" />
+              </label>
+              <label class="admin-field">
+                <span>持续时间（秒）</span>
+                <input id="adminDirectorShotDuration" type="number" min="0.5" max="30" step="0.5" value="4" />
+              </label>
+            </div>
+            <button id="adminDirectorRecord" class="admin-button admin-button--publish" type="button">
+              记录当前镜头
+            </button>
+            <ol id="adminDirectorShotList" class="admin-director-shot-list"></ol>
+          </div>
+
           <label class="admin-field admin-map-tool-output-field">
             <span>复制板</span>
             <pre id="adminMapToolOutput" class="admin-map-tool-output">等待地图工具载入...</pre>
@@ -663,6 +702,6 @@
   </main>
 
   <script src="src/data/dorms.js?v=dorm-residences-burgman-v1"></script>
-  <script type="module" src="admin-workbench.js?v=admin-theme-labels-v1"></script>
+  <script type="module" src="admin-workbench.js?v=director-tool-v1"></script>
 </body>
 </html>

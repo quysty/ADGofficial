@@ -1,5 +1,9 @@
 const siteNavRoot = document.querySelector("#site-nav-root");
 const currentPage = document.body.dataset.page;
+const sitePagesConfigPaths = [
+  "config/published/site-pages.json",
+  "config/site-pages.json"
+];
 
 const fallbackNavItems = [
   { key: "home", label: "hero逻辑页（首页）", href: "index.html?home=1" },
@@ -60,24 +64,32 @@ function renderNav(navItems) {
   drawerOverlay.addEventListener("click", closeDrawer);
 }
 
+async function fetchSitePagesConfig(path) {
+  const url = `${path}?v=${Date.now()}`;
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
 async function loadNavItems() {
-  try {
-    const response = await fetch("config/site-pages.json", { cache: "no-cache" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    const pages = Array.isArray(data.pages) ? data.pages : [];
-    const navItems = pages
-      .filter((page) => page.showInNavigation !== false && page.status !== "hidden")
-      .map((page) => ({
-        key: page.key,
-        label: page.label,
-        href: page.href
-      }));
-    return navItems.length ? navItems : fallbackNavItems;
-  } catch (error) {
-    console.warn("Failed to load site pages config. Using fallback navigation.", error);
-    return fallbackNavItems;
+  for (const path of sitePagesConfigPaths) {
+    try {
+      const data = await fetchSitePagesConfig(path);
+      const pages = Array.isArray(data.pages) ? data.pages : [];
+      return pages
+        .filter((page) => page.showInNavigation !== false && page.status !== "hidden")
+        .map((page) => ({
+          key: page.key,
+          label: page.label,
+          href: page.href
+        }));
+    } catch (error) {
+      console.warn(`Failed to load site pages config from ${path}.`, error);
+    }
   }
+
+  console.warn("Failed to load site pages config. Using fallback navigation.");
+  return fallbackNavItems;
 }
 
 loadNavItems().then(renderNav);

@@ -14,15 +14,27 @@ import {
   createBuildingHeightSnapshot,
   normalizeBuildingHeightOverrideRow
 } from "./src/backend/buildingHeights.js";
+import {
+  PUBLIC_PAGE_PUBLISH_REQUESTS_TABLE,
+  PUBLIC_PAGE_PUBLISH_SCOPES,
+  enqueuePublicPagePublishRequest,
+  invokePublicPagePublishRequest
+} from "./src/backend/publicPublishRequests.js?v=admin-publish-auth-v5";
 
 const PENDING_EMAIL_KEY = "anu_explore_admin_pending_email";
 const BUILDING_LABEL_HISTORY_TABLE = "building_label_override_history";
 const ADMIN_OPERATION_LOG_TABLE = "admin_operation_logs";
 const ADMIN_OPERATION_LOG_COLUMNS =
   "id,created_at,actor_email,permission_level,action,entity_type,entity_id,target_table,status,summary,details";
+const PUBLIC_PAGE_PUBLISH_ALLOWED_SCOPES = [
+  PUBLIC_PAGE_PUBLISH_SCOPES.DORM_DETAILS,
+  PUBLIC_PAGE_PUBLISH_SCOPES.BUILDING_HEIGHTS,
+  PUBLIC_PAGE_PUBLISH_SCOPES.SITE_PAGES
+];
 const MAX_HEIGHT_TARGETS = 5;
 const MAX_HEIGHT_MULTIPLIER = 10;
 const SITE_PAGES_CONFIG_PATH = "config/site-pages.json";
+const SITE_PAGES_PUBLISHED_CONFIG_PATH = "config/published/site-pages.json";
 const FUNCTIONAL_BUILDINGS_CONFIG_PATH = "config/functional-buildings.json";
 const ADMIN_MAP_TOOL_FRAME = "site-pages-overview-v1";
 const NORMAL_MAP_FRAME = "site-pages-overview-v1";
@@ -47,6 +59,12 @@ const ADMIN_MAP_TOOL_SECTIONS = {
     mode: "camera",
     title: "摄像机工具",
     hint: "用于调试聚焦美术视角。焦点固定在地面，网格用于判断相机落点。"
+  },
+  "tool-director": {
+    mode: "camera",
+    title: "导演工具",
+    hint: "像游戏导演一样取景：点击右侧地图后用鼠标、滚轮、WASD、方向键和 Q/E 移动视角，再记录当前镜头。",
+    director: true
   }
 };
 
@@ -91,6 +109,8 @@ const els = {
   homeHiddenPages: document.querySelector("#adminHomeHiddenPages"),
   homeRegistryState: document.querySelector("#adminHomeRegistryState"),
   homeRegistryMeta: document.querySelector("#adminHomeRegistryMeta"),
+  homePublishPages: document.querySelector("#adminHomePublishPages"),
+  homePageStatus: document.querySelector("#adminHomePageStatus"),
   homePageList: document.querySelector("#adminHomePageList"),
   buildingPanel: document.querySelector("#adminBuildingPanel"),
   buildingReload: document.querySelector("#adminBuildingReload"),
@@ -158,6 +178,11 @@ const els = {
   mapToolCameraPitchValue: document.querySelector("#adminMapToolCameraPitchValue"),
   mapToolCameraHeight: document.querySelector("#adminMapToolCameraHeight"),
   mapToolCameraHeightValue: document.querySelector("#adminMapToolCameraHeightValue"),
+  directorControls: document.querySelector("#adminDirectorControls"),
+  directorShotName: document.querySelector("#adminDirectorShotName"),
+  directorShotDuration: document.querySelector("#adminDirectorShotDuration"),
+  directorRecord: document.querySelector("#adminDirectorRecord"),
+  directorShotList: document.querySelector("#adminDirectorShotList"),
   mapToolOutput: document.querySelector("#adminMapToolOutput"),
   mapToolCopy: document.querySelector("#adminMapToolCopy"),
   mapToolDelete: document.querySelector("#adminMapToolDelete"),
@@ -185,7 +210,10 @@ const state = {
   mapReady: false,
   mapFrameMode: "normal",
   mapTool: null,
+  directorShots: [],
   sitePages: [],
+  sitePagesDirty: false,
+  sitePagesSource: SITE_PAGES_CONFIG_PATH,
   sitePageProject: {
     projectName: "ANU Explore Project",
     publicUrl: "https://www.anuexplore.com"
@@ -375,6 +403,10 @@ function getMapToolConfig(section = state.activeSection) {
   return ADMIN_MAP_TOOL_SECTIONS[section] || ADMIN_MAP_TOOL_SECTIONS["tool-entrance"];
 }
 
+function isDirectorSection(section = state.activeSection) {
+  return ADMIN_MAP_TOOL_SECTIONS[section]?.director === true;
+}
+
 function panelMatchesSection(panel, section) {
   return String(panel?.dataset?.adminPanel || "")
     .split(/\s+/)
@@ -419,6 +451,71 @@ function getHiddenSitePages() {
   );
 }
 
+function escapeAdminHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function setHomePageStatus(message, tone = "neutral") {
+  if (!els.homePageStatus) return;
+  els.homePageStatus.textContent = message;
+  els.homePageStatus.dataset.tone = tone;
+}
+
+function normalizeSitePage(page, index = 0) {
+  const status = page?.status === "hidden" ? "hidden" : "public";
+  return {
+    key: cleanText(page?.key) || `page-${index + 1}`,
+    label: cleanText(page?.label) || cleanText(page?.key) || `Page ${index + 1}`,
+    href: cleanText(page?.href) || "#",
+    status,
+    showInNavigation: status === "hidden" ? false : page?.showInNavigation !== false,
+    role: cleanText(page?.role) || "page"
+  };
+}
+
+function setSitePagesDirty(dirty, message = "") {
+  state.sitePagesDirty = Boolean(dirty);
+  if (els.homePublishPages) {
+    els.homePublishPages.disabled = !state.sitePages.length || !state.sitePagesDirty;
+    els.homePublishPages.textContent = state.sitePagesDirty ? "发布页面配置" : "页面配置已同步";
+  }
+  if (message) setHomePageStatus(message, dirty ? "warning" : "success");
+}
+
+function getSitePagesPublishPayload() {
+  return {
+    schema: "anu-explore-site-pages-draft-v1",
+    projectName: state.sitePageProject.projectName || "ANU Explore Project",
+    publicUrl: state.sitePageProject.publicUrl || "https://www.anuexplore.com",
+    pages: state.sitePages.map(normalizeSitePage)
+  };
+}
+
+function updateSitePageByKey(key, updater) {
+  const index = state.sitePages.findIndex((page) => page.key === key);
+  if (index < 0) return false;
+  const nextPage = updater({ ...state.sitePages[index] }, index);
+  state.sitePages[index] = normalizeSitePage(nextPage, index);
+  setSitePagesDirty(true, "页面配置有未发布更改。点击“发布页面配置”后，官网菜单才会更新。");
+  renderSitePagesOverview();
+  return true;
+}
+
+function moveSitePage(key, direction) {
+  const index = state.sitePages.findIndex((page) => page.key === key);
+  const nextIndex = direction === "up" ? index - 1 : index + 1;
+  if (index < 0 || nextIndex < 0 || nextIndex >= state.sitePages.length) return false;
+  const [page] = state.sitePages.splice(index, 1);
+  state.sitePages.splice(nextIndex, 0, page);
+  setSitePagesDirty(true, "页面顺序有未发布更改。点击“发布页面配置”后，官网菜单才会更新。");
+  renderSitePagesOverview();
+  return true;
+}
+
 function renderSitePagesOverview() {
   const publicPages = getPublicSitePages();
   const navPages = getNavigationSitePages();
@@ -442,8 +539,12 @@ function renderSitePagesOverview() {
   }
   if (els.homeRegistryMeta) {
     els.homeRegistryMeta.textContent = state.sitePages.length
-      ? `${state.sitePages.length} registered, ${publicPages.length} public, ${hiddenPages.length} hidden`
+      ? `${state.sitePages.length} registered, ${publicPages.length} public, ${hiddenPages.length} hidden · ${state.sitePagesSource}`
       : "page registry not loaded";
+  }
+  if (els.homePublishPages) {
+    els.homePublishPages.disabled = !state.sitePages.length || !state.sitePagesDirty;
+    els.homePublishPages.textContent = state.sitePagesDirty ? "发布页面配置" : "页面配置已同步";
   }
 
   if (!els.homePageList) return;
@@ -459,32 +560,68 @@ function renderSitePagesOverview() {
     }
   ];
 
-  pages.forEach((page) => {
+  pages.forEach((page, index) => {
+    const normalizedPage = normalizeSitePage(page, index);
     const row = document.createElement("article");
     row.className = "admin-home-page-row";
-    row.dataset.status = page.status || "public";
+    row.dataset.status = normalizedPage.status;
+    row.dataset.pageKey = normalizedPage.key;
 
-    const statusText = page.status === "hidden"
+    const statusText = normalizedPage.status === "hidden"
       ? "Hidden"
-      : page.showInNavigation === false
+      : normalizedPage.showInNavigation === false
         ? "Unlisted"
         : "Public";
-    const url = new URL(page.href || "#", window.location.href);
+    const url = new URL(normalizedPage.href || "#", window.location.href);
 
     row.innerHTML = `
-      <div>
-        <strong>${page.label || page.key || "Untitled page"}</strong>
-        <span>${page.href || "-"}</span>
+      <div class="admin-home-page-main">
+        <strong>${escapeAdminHtml(normalizedPage.label)}</strong>
+        <span>${escapeAdminHtml(normalizedPage.href || "-")}</span>
       </div>
-      <small>${page.role || "page"}</small>
-      <em>${statusText}</em>
-      <a href="${url.toString()}" target="_blank" rel="noreferrer">Open</a>
+      <small class="admin-home-page-role">${escapeAdminHtml(normalizedPage.role || "page")}</small>
+      <button class="admin-home-page-status-button" type="button" data-site-page-action="toggle" data-page-key="${escapeAdminHtml(normalizedPage.key)}" aria-pressed="${normalizedPage.status !== "hidden"}" title="切换页面显示状态">
+        ${statusText}
+      </button>
+      <div class="admin-home-page-order" aria-label="页面顺序">
+        <button type="button" data-site-page-action="up" data-page-key="${escapeAdminHtml(normalizedPage.key)}" ${index === 0 ? "disabled" : ""} aria-label="上移 ${escapeAdminHtml(normalizedPage.label)}" title="上移">↑</button>
+        <button type="button" data-site-page-action="down" data-page-key="${escapeAdminHtml(normalizedPage.key)}" ${index === pages.length - 1 ? "disabled" : ""} aria-label="下移 ${escapeAdminHtml(normalizedPage.label)}" title="下移">↓</button>
+      </div>
+      <a class="admin-home-page-open" href="${url.toString()}" target="_blank" rel="noreferrer">Open</a>
     `;
     els.homePageList.appendChild(row);
   });
 }
 
 async function loadSitePagesOverview() {
+  const paths = [SITE_PAGES_PUBLISHED_CONFIG_PATH, SITE_PAGES_CONFIG_PATH];
+  for (const path of paths) {
+    try {
+      const response = await fetch(`${path}?v=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      state.sitePagesSource = path;
+      state.sitePageProject = {
+        projectName: data.projectName || state.sitePageProject.projectName,
+        publicUrl: data.publicUrl || state.sitePageProject.publicUrl
+      };
+      state.sitePages = Array.isArray(data.pages)
+        ? data.pages.map((page, index) => normalizeSitePage(page, index))
+        : [];
+      state.sitePagesDirty = false;
+      setHomePageStatus(
+        path === SITE_PAGES_PUBLISHED_CONFIG_PATH
+          ? "已载入官网发布版页面配置。"
+          : "已载入本地默认页面配置；发布后官网会读取发布版配置。",
+        "neutral"
+      );
+      renderSitePagesOverview();
+      return;
+    } catch (error) {
+      console.warn(`Failed to load site pages overview from ${path}:`, error);
+    }
+  }
+
   try {
     const response = await fetch(SITE_PAGES_CONFIG_PATH, { cache: "no-cache" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -493,10 +630,14 @@ async function loadSitePagesOverview() {
       projectName: data.projectName || state.sitePageProject.projectName,
       publicUrl: data.publicUrl || state.sitePageProject.publicUrl
     };
-    state.sitePages = Array.isArray(data.pages) ? data.pages : [];
+    state.sitePages = Array.isArray(data.pages)
+      ? data.pages.map((page, index) => normalizeSitePage(page, index))
+      : [];
+    state.sitePagesDirty = false;
   } catch (error) {
     console.warn("Failed to load site pages overview:", error);
     state.sitePages = [];
+    state.sitePagesDirty = false;
   }
   renderSitePagesOverview();
 }
@@ -1114,6 +1255,7 @@ function getDeveloperLabelsButton(section = state.activeSection) {
   if (section === "dorm") return els.dormDeveloperLabels;
   if (section === "height") return els.heightDeveloperLabels;
   if (section === "tool-boundary") return null;
+  if (isDirectorSection(section)) return null;
   if (isMapToolSection(section)) return els.mapToolDeveloperLabels;
   return null;
 }
@@ -1271,7 +1413,10 @@ function renderAdminMapToolShell() {
   const config = getMapToolConfig();
   if (els.mapToolTitle) els.mapToolTitle.textContent = config.title;
   if (els.mapToolHint) els.mapToolHint.textContent = config.hint;
-  const usesDeveloperLabels = config.mode !== "boundary";
+  if (isDirectorSection() && els.directorShotName && !cleanText(els.directorShotName.value)) {
+    els.directorShotName.value = `镜头 ${state.directorShots.length + 1}`;
+  }
+  const usesDeveloperLabels = config.mode !== "boundary" && !isDirectorSection();
   setHidden(els.mapToolDeveloperLabelBlock, !usesDeveloperLabels);
   if (!usesDeveloperLabels) setAdminSwitch(els.mapToolDeveloperLabels, false);
   renderAdminMapToolState(state.mapTool?.mode === config.mode ? state.mapTool : null);
@@ -1331,14 +1476,118 @@ function renderBoundaryRows(areas = [], activeArea = 1) {
   });
 }
 
+function cloneAdminData(value) {
+  if (value == null) return value;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return value;
+  }
+}
+
+function getDirectorOutput() {
+  return {
+    tool: "director-camera-script",
+    mode: "camera-keyframes-v1",
+    totalShots: state.directorShots.length,
+    shots: state.directorShots
+  };
+}
+
+function getDirectorOutputText() {
+  return JSON.stringify(getDirectorOutput(), null, 2);
+}
+
+function getDirectorDraftName() {
+  return cleanText(els.directorShotName?.value) || `镜头 ${state.directorShots.length + 1}`;
+}
+
+function renderDirectorShotList() {
+  if (!els.directorShotList) return;
+  els.directorShotList.replaceChildren();
+
+  if (!state.directorShots.length) {
+    const empty = document.createElement("li");
+    empty.className = "admin-director-shot-empty";
+    empty.textContent = "还没有记录镜头。";
+    els.directorShotList.appendChild(empty);
+    return;
+  }
+
+  state.directorShots.forEach((shot) => {
+    const item = document.createElement("li");
+    const title = document.createElement("strong");
+    const meta = document.createElement("span");
+
+    title.textContent = `${shot.index}. ${shot.label}`;
+    meta.textContent = `${shot.durationSeconds}s · 高度 ${Math.round(shot.cameraView?.height || 0)} · 俯仰 ${Math.round(shot.cameraView?.pitchDegrees || 0)}°`;
+
+    item.append(title, meta);
+    els.directorShotList.appendChild(item);
+  });
+}
+
+function recordDirectorShot() {
+  const cameraView = state.mapTool?.output;
+  if (!cameraView || cameraView.tool !== "camera-view") {
+    setAdminMapToolStatus("右侧地图视角尚未就绪，请先点击地图或稍等载入。", "warning");
+    return;
+  }
+
+  const index = state.directorShots.length + 1;
+  const durationValue = Number(els.directorShotDuration?.value);
+  const durationSeconds = Number.isFinite(durationValue)
+    ? Math.max(0.5, Math.min(30, durationValue))
+    : 4;
+  const label = getDirectorDraftName();
+
+  state.directorShots.push({
+    index,
+    label,
+    durationSeconds,
+    cameraView: cloneAdminData(cameraView),
+    recordedAt: new Date().toISOString()
+  });
+
+  if (els.directorShotName) {
+    els.directorShotName.value = `镜头 ${state.directorShots.length + 1}`;
+  }
+  if (els.directorShotDuration) {
+    els.directorShotDuration.value = String(durationSeconds);
+  }
+
+  renderAdminMapToolState(state.mapTool);
+  setAdminMapToolStatus(`已记录 ${label}。`, "success");
+}
+
+function deleteLastDirectorShot() {
+  if (!state.directorShots.length) return;
+  const removed = state.directorShots.pop();
+  state.directorShots = state.directorShots.map((shot, index) => ({
+    ...shot,
+    index: index + 1
+  }));
+  renderAdminMapToolState(state.mapTool);
+  setAdminMapToolStatus(`已删除 ${removed.label}。`, "success");
+}
+
+function clearDirectorShots() {
+  if (!state.directorShots.length) return;
+  state.directorShots = [];
+  if (els.directorShotName) els.directorShotName.value = "镜头 1";
+  renderAdminMapToolState(state.mapTool);
+  setAdminMapToolStatus("已清空导演镜头。", "success");
+}
+
 function renderAdminMapToolState(payload) {
   const config = getMapToolConfig();
   const mode = payload?.mode || config.mode;
   const isBoundary = mode === "boundary";
   const isRoad = mode === "road";
   const isCamera = mode === "camera";
-  const outputText = getAdminMapToolOutputText(payload);
-  const hasOutput = Boolean(outputText);
+  const isDirector = isDirectorSection();
+  const outputText = isDirector ? getDirectorOutputText() : getAdminMapToolOutputText(payload);
+  const hasOutput = isDirector ? state.directorShots.length > 0 : Boolean(outputText);
   const inputMode = isBoundary
     ? payload?.boundaryMode || "mouse"
     : isRoad
@@ -1349,6 +1598,7 @@ function renderAdminMapToolState(payload) {
   setHidden(els.mapToolBoundaryControls, !isBoundary);
   setHidden(els.mapToolRoadControls, !isRoad);
   setHidden(els.mapToolCameraControls, !isCamera);
+  setHidden(els.directorControls, !isDirector);
 
   els.mapToolInputModes.forEach((button) => {
     const isActive = button.dataset.adminInputMode === inputMode;
@@ -1366,14 +1616,18 @@ function renderAdminMapToolState(payload) {
       ? "复制当前"
       : isRoad
         ? "复制道路"
-        : isCamera
+        : isDirector
+          ? "复制镜头脚本"
+          : isCamera
           ? "复制视角"
           : "复制 JSON";
   }
 
   if (els.mapToolDelete) {
-    els.mapToolDelete.disabled = isCamera || !payload?.canDelete;
-    els.mapToolDelete.textContent = isBoundary
+    els.mapToolDelete.disabled = isDirector ? !state.directorShots.length : isCamera || !payload?.canDelete;
+    els.mapToolDelete.textContent = isDirector
+      ? "删除上一镜头"
+      : isBoundary
       ? "删除上一点"
       : isRoad && payload?.roadAction === "remove"
         ? "撤销删段"
@@ -1381,8 +1635,8 @@ function renderAdminMapToolState(payload) {
   }
 
   if (els.mapToolClear) {
-    els.mapToolClear.disabled = isCamera ? false : !payload?.canClear;
-    els.mapToolClear.textContent = isCamera ? "重置视角" : "清空";
+    els.mapToolClear.disabled = isDirector ? !state.directorShots.length : isCamera ? false : !payload?.canClear;
+    els.mapToolClear.textContent = isDirector ? "清空镜头" : isCamera ? "重置视角" : "清空";
   }
 
   if (els.mapToolBoundaryLabels) {
@@ -1426,6 +1680,17 @@ function renderAdminMapToolState(payload) {
     if (els.mapToolCameraHeightValue) {
       els.mapToolCameraHeightValue.textContent = String(Math.round(cameraHeight));
     }
+  }
+
+  if (isDirector) {
+    renderDirectorShotList();
+    setAdminMapToolStatus(
+      payload
+        ? `视角可记录，已记录 ${state.directorShots.length} 个镜头。`
+        : "等待右侧地图载入导演视角...",
+      payload ? "success" : "neutral"
+    );
+    return;
   }
 
   setAdminMapToolStatus(payload?.status || "等待右侧地图工具载入...", payload ? "success" : "neutral");
@@ -1533,6 +1798,7 @@ function renderOperationLogs() {
     meta.textContent = [
       log.actor_email || "unknown user",
       log.permission_level || "Clevel",
+      log.status || "success",
       log.target_table || "database",
       [log.entity_type, log.entity_id].filter(Boolean).join(": ")
     ].filter(Boolean).join(" / ");
@@ -1615,6 +1881,54 @@ async function logAdminOperation({
   if (state.activeSection === "logs") {
     await loadOperationLogs();
   }
+}
+
+async function queuePublicPagePublish(scope, details, statusTarget = "global") {
+  const { data, error } = await enqueuePublicPagePublishRequest(state.client, scope, {
+    ...details,
+    allowedScopes: PUBLIC_PAGE_PUBLISH_ALLOWED_SCOPES
+  });
+
+  if (error) {
+    const message =
+      `官网发布请求失败：请确认已运行 supabase/patch-public-page-publish-requests.sql。${error.message}`;
+    if (statusTarget === "building") setBuildingStatus(message, "error");
+    else if (statusTarget === "height") setHeightStatus(message, "error");
+    else setStatus(message, "error");
+    return null;
+  }
+
+  return data;
+}
+
+async function invokePublicPagePublish(requestRow, statusTarget = "global") {
+  if (!requestRow?.id) return { ok: false, skipped: true };
+
+  const { data, error } = await invokePublicPagePublishRequest(state.client, requestRow.id);
+  if (error) {
+    const message = `官网发布请求已记录，但发布函数暂不可用：${error.message}`;
+    if (statusTarget === "building") setBuildingStatus(message, "warning");
+    else if (statusTarget === "height") setHeightStatus(message, "warning");
+    else setStatus(message, "warning");
+
+    await logAdminOperation({
+      action: "invoke_public_pages_publish_failed",
+      entityType: "public_pages_publish",
+      entityId: requestRow.id,
+      targetTable: PUBLIC_PAGE_PUBLISH_REQUESTS_TABLE,
+      status: "failed",
+      summary: "触发官网发布函数失败",
+      details: {
+        requestId: requestRow.id,
+        error: error.message,
+        response: data || null
+      }
+    });
+
+    return { ok: false, error };
+  }
+
+  return { ok: true, data };
 }
 
 async function refreshAdminState() {
@@ -2032,7 +2346,39 @@ async function publishAllHeightDrafts() {
         total: payloads.length
       }
     });
-    setHeightStatus(`已统一发布 ${payloads.length} 个高度草稿。官网刷新后会读取最新高度。`, "success");
+    const request = await queuePublicPagePublish(
+      PUBLIC_PAGE_PUBLISH_SCOPES.BUILDING_HEIGHTS,
+      {
+        source: "admin_building_height_manager",
+        buildingNumbers: draftRows.map((row) => row.buildingNumber),
+        total: payloads.length
+      },
+      "height"
+    );
+    if (!request) return;
+
+    await logAdminOperation({
+      action: "queue_building_height_public_publish",
+      entityType: "public_pages_publish",
+      entityId: request.id,
+      targetTable: PUBLIC_PAGE_PUBLISH_REQUESTS_TABLE,
+      status: "queued",
+      summary: `创建建筑高度官网发布请求：${payloads.length} 个建筑`,
+      details: {
+        requestId: request.id,
+        publishScope: PUBLIC_PAGE_PUBLISH_SCOPES.BUILDING_HEIGHTS,
+        buildingNumbers: draftRows.map((row) => row.buildingNumber),
+        allowedScopes: PUBLIC_PAGE_PUBLISH_ALLOWED_SCOPES
+      }
+    });
+
+    const invokeResult = await invokePublicPagePublish(request, "height");
+    if (!invokeResult.ok) return;
+
+    setHeightStatus(
+      `已统一发布 ${payloads.length} 个高度草稿，并触发官网发布请求 ${request.id}。`,
+      "success"
+    );
   } finally {
     setButtonBusy(els.publishHeight, false);
   }
@@ -2117,11 +2463,159 @@ function handleClearHeightTargets() {
   sendHeightPreview();
 }
 
-function handlePublishDorm() {
-  setBuildingStatus(
-    "宿舍文字保存到数据库后，官网刷新即可读取。这个发布按钮先保留为发布入口；后续可升级为宿舍文字草稿/发布双版本。",
-    "warning"
-  );
+async function handlePublishDorm() {
+  if (!state.client || !state.session || !state.adminProfile) return;
+  const selectedRow = getSelectedBuildingRow();
+  const buildingNumber = selectedRow?.buildingNumber || cleanText(els.buildingNumber?.value);
+  const dormName = cleanText(els.displayName?.value) || selectedRow?.name || buildingNumber || "宿舍详情";
+
+  if (!window.confirm(`确认创建宿舍详情官网发布请求？\n\n范围：只导出宿舍详情文字和标签，不会修改入口、道路、圈地或建筑几何。`)) {
+    setBuildingStatus("已取消官网发布请求。", "neutral");
+    return;
+  }
+
+  setButtonBusy(els.publishDorm, true, "请求中...");
+  setBuildingStatus("正在创建宿舍详情官网发布请求...", "neutral");
+
+  try {
+    const request = await queuePublicPagePublish(
+      PUBLIC_PAGE_PUBLISH_SCOPES.DORM_DETAILS,
+      {
+        source: "admin_dorm_detail_editor",
+        buildingNumber,
+        dormName
+      },
+      "building"
+    );
+
+    if (!request) return;
+
+    await logAdminOperation({
+      action: "queue_dorm_detail_public_publish",
+      entityType: "public_pages_publish",
+      entityId: request.id,
+      targetTable: PUBLIC_PAGE_PUBLISH_REQUESTS_TABLE,
+      status: "queued",
+      summary: `创建宿舍详情官网发布请求：${dormName}`,
+      details: {
+        requestId: request.id,
+        publishScope: PUBLIC_PAGE_PUBLISH_SCOPES.DORM_DETAILS,
+        buildingNumber,
+        allowedScopes: PUBLIC_PAGE_PUBLISH_ALLOWED_SCOPES
+      }
+    });
+
+    const invokeResult = await invokePublicPagePublish(request, "building");
+    if (!invokeResult.ok) return;
+
+    setBuildingStatus(
+      `已创建并触发官网发布请求 ${request.id}。第一版只允许同步宿舍详情文字和标签。`,
+      "success"
+    );
+  } finally {
+    setButtonBusy(els.publishDorm, false);
+  }
+}
+
+function handleSitePageListClick(event) {
+  const button = event.target.closest("[data-site-page-action]");
+  if (!button || !els.homePageList?.contains(button)) return;
+
+  const key = button.dataset.pageKey;
+  const action = button.dataset.sitePageAction;
+  if (!key || !action) return;
+
+  if (action === "toggle") {
+    updateSitePageByKey(key, (page) => {
+      const hidden = page.status === "hidden" || page.showInNavigation === false;
+      return {
+        ...page,
+        status: hidden ? "public" : "hidden",
+        showInNavigation: hidden
+      };
+    });
+    return;
+  }
+
+  if (action === "up" || action === "down") {
+    moveSitePage(key, action);
+  }
+}
+
+async function handlePublishSitePages() {
+  if (!state.client || !state.session || !state.adminProfile) return;
+  if (!state.sitePages.length) {
+    setHomePageStatus("页面配置没有载入，无法发布。", "error");
+    return;
+  }
+
+  const payload = getSitePagesPublishPayload();
+  const hiddenLabels = payload.pages
+    .filter((page) => page.status === "hidden" || page.showInNavigation === false)
+    .map((page) => page.label);
+  const publicLabels = payload.pages
+    .filter((page) => page.status !== "hidden" && page.showInNavigation !== false)
+    .map((page) => page.label);
+
+  if (!window.confirm(
+    `确认发布页面配置？\n\n公开页面：${publicLabels.join("、") || "无"}\n隐藏页面：${hiddenLabels.join("、") || "无"}`
+  )) {
+    setHomePageStatus("已取消页面配置发布。", "neutral");
+    return;
+  }
+
+  setButtonBusy(els.homePublishPages, true, "发布中...");
+  setHomePageStatus("正在创建页面配置官网发布请求...", "neutral");
+
+  try {
+    const request = await queuePublicPagePublish(
+      PUBLIC_PAGE_PUBLISH_SCOPES.SITE_PAGES,
+      {
+        source: "admin_site_pages_overview",
+        sitePages: payload.pages,
+        projectName: payload.projectName,
+        publicUrl: payload.publicUrl,
+        publicPageKeys: payload.pages
+          .filter((page) => page.status !== "hidden" && page.showInNavigation !== false)
+          .map((page) => page.key),
+        hiddenPageKeys: payload.pages
+          .filter((page) => page.status === "hidden" || page.showInNavigation === false)
+          .map((page) => page.key)
+      },
+      "global"
+    );
+
+    if (!request) return;
+
+    await logAdminOperation({
+      action: "queue_site_pages_public_publish",
+      entityType: "public_pages_publish",
+      entityId: request.id,
+      targetTable: PUBLIC_PAGE_PUBLISH_REQUESTS_TABLE,
+      status: "queued",
+      summary: `创建页面配置官网发布请求：${publicLabels.length} 个公开，${hiddenLabels.length} 个隐藏`,
+      details: {
+        requestId: request.id,
+        publishScope: PUBLIC_PAGE_PUBLISH_SCOPES.SITE_PAGES,
+        pages: payload.pages,
+        allowedScopes: PUBLIC_PAGE_PUBLISH_ALLOWED_SCOPES
+      }
+    });
+
+    const invokeResult = await invokePublicPagePublish(request, "global");
+    if (!invokeResult.ok) return;
+
+    state.sitePagesDirty = false;
+    state.sitePagesSource = SITE_PAGES_PUBLISHED_CONFIG_PATH;
+    renderSitePagesOverview();
+    setHomePageStatus(
+      `已发布页面配置 ${request.id}。官网刷新后会按当前顺序和隐藏状态显示菜单。`,
+      "success"
+    );
+  } finally {
+    setButtonBusy(els.homePublishPages, false);
+    renderSitePagesOverview();
+  }
 }
 
 function handleMapMessage(event) {
@@ -2211,6 +2705,8 @@ els.homeCopyUrl?.addEventListener("click", async () => {
     setStatus("复制被浏览器拦截，请手动选择官网链接。", "warning");
   }
 });
+els.homePageList?.addEventListener("click", handleSitePageListClick);
+els.homePublishPages?.addEventListener("click", handlePublishSitePages);
 els.navItems.forEach((item) => {
   item.addEventListener("click", () => switchAdminSection(item.dataset.adminSection));
 });
@@ -2291,13 +2787,25 @@ els.mapToolCameraHeight?.addEventListener("input", () => {
     value: els.mapToolCameraHeight.value
   });
 });
+els.directorRecord?.addEventListener("click", recordDirectorShot);
 els.mapToolCopy?.addEventListener("click", () => {
-  copyAdminText(getAdminMapToolOutputText(), "已复制地图工具 JSON。");
+  copyAdminText(
+    isDirectorSection() ? getDirectorOutputText() : getAdminMapToolOutputText(),
+    isDirectorSection() ? "已复制导演镜头脚本。" : "已复制地图工具 JSON。"
+  );
 });
 els.mapToolDelete?.addEventListener("click", () => {
+  if (isDirectorSection()) {
+    deleteLastDirectorShot();
+    return;
+  }
   postMapMessage({ type: "map-tool-delete-last" });
 });
 els.mapToolClear?.addEventListener("click", () => {
+  if (isDirectorSection()) {
+    clearDirectorShots();
+    return;
+  }
   postMapMessage({ type: "map-tool-clear" });
 });
 [
