@@ -35,6 +35,14 @@
       "role": "content"
     },
     {
+      "key": "course-builder",
+      "label": "Course Builder",
+      "href": "course-builder.html",
+      "status": "public",
+      "showInNavigation": true,
+      "role": "tool"
+    },
+    {
       "key": "map-tool",
       "label": "地图工具",
       "href": "map-tool.html",

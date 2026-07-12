@@ -9,6 +9,7 @@ const fallbackNavItems = [
   { key: "home", label: "hero逻辑页（首页）", href: "index.html?home=1" },
   { key: "explore", label: "地图开发者版本", href: "explore.html" },
   { key: "information", label: "Information", href: "information.html" },
+  { key: "course-builder", label: "Course Builder", href: "course-builder.html" },
   { key: "question", label: "Question", href: "question.html" }
 ];
 
