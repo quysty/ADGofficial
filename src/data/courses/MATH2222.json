@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 2,
+  "code": "MATH2222",
+  "title": "Introduction to Mathematical Thinking: Problem-Solving and Proofs",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Mathematics",
+  "inherentRequirements": {
+    "status": "explicit_no_specific",
+    "officialText": "No specific inherent requirements have been identified in this course.",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "choice",
+    "choiceGroup": "BCOMP_DISCRETE_MATH"
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2028",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "prerequisite_interpretation",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "The first-year exceptional entry pathway depends on excellent secondary-school mathematics results and concurrent MATH1115.",
+        "action": "Verify the exceptional pathway manually before allowing enrolment without one of the standard university-course prerequisites."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "Students with excellent results in either the ACT Specialist Mathematics double major, NSW HSC Mathematics Extension 2 or equivalent may take this course together with MATH1115 in the first year. For many students taking MATH1115 in their first year, MATH1005 would be a more appropriate companion choice. If you are not sure which courses to take in your first year, please consult the MSI First-year Coordinator. All other students may enrol in this course if they have completed MATH1116 with a mark of at least 50, or MATH1113 with a mark of at least 60, or MATH1005 with a mark of at least 70, or MATH1013 or MATH1014 with a mark of at least 80. Incompatible: MATH2322, MATH3104, MATH2320, MATH3116 or MATH6222.",
+    "prerequisiteRule": {
+      "type": "anyOf",
+      "rules": [
+        {
+          "type": "allOf",
+          "rules": [
+            {
+              "type": "externalQualification",
+              "conditionCode": "MATH2222_EXCELLENT_SECONDARY_SCHOOL_MATHEMATICS",
+              "qualificationArea": "secondary_school_mathematics",
+              "acceptableQualifications": [
+                {
+                  "system": "ACT",
+                  "name": "Specialist Mathematics double major"
+                },
+                {
+                  "system": "NSW HSC",
+                  "name": "Mathematics Extension 2"
+                },
+                {
+                  "system": "equivalent",
+                  "name": "Equivalent secondary-school mathematics qualification"
+                }
+              ],
+              "requiredResult": "excellent",
+              "verification": "manual",
+              "unknownResult": "manual_review"
+            },
+            {
+              "type": "course",
+              "courseCode": "MATH1115",
+              "minimumStatus": "completed_or_concurrent"
+            },
+            {
+              "type": "manualCondition",
+              "conditionCode": "MATH2222_FIRST_YEAR_PATHWAY",
+              "officialText": "The exceptional secondary-school entry pathway applies only when MATH2222 is taken in the first year.",
+              "planningEnforcement": "manual_review"
+            }
+          ]
+        },
+        {
+          "type": "course",
+          "courseCode": "MATH1116",
+          "minimumStatus": "completed",
+          "minimumMark": 50
+        },
+        {
+          "type": "course",
+          "courseCode": "MATH1113",
+          "minimumStatus": "completed",
+          "minimumMark": 60
+        },
+        {
+          "type": "course",
+          "courseCode": "MATH1005",
+          "minimumStatus": "completed",
+          "minimumMark": 70
+        },
+        {
+          "type": "course",
+          "courseCode": "MATH1013",
+          "minimumStatus": "completed",
+          "minimumMark": 80
+        },
+        {
+          "type": "course",
+          "courseCode": "MATH1014",
+          "minimumStatus": "completed",
+          "minimumMark": 80
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "MATH2322",
+      "MATH3104",
+      "MATH2320",
+      "MATH3116",
+      "MATH6222"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "MATH2322",
+      "MATH3104",
+      "MATH2320",
+      "MATH3116",
+      "MATH6222"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/MATH2222",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

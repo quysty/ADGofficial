@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP4670",
+  "title": "Statistical Machine Learning",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2028",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "prerequisite_interpretation",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "The official expression uses a slash and mixed AND/OR operators inside one parenthesised alternative. This package interprets it as COMP3670, or one of COMP1110/COMP1140 together with one of MATH1014/MATH1115/MATH1116.",
+        "action": "Confirm the intended grouping with the School if this interpretation affects eligibility."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed: COMP3670 OR (COMP1110 / COMP1140 AND MATH1014 OR MATH1115 OR MATH1116). Incompatible with COMP8600 and COMP8960.",
+    "prerequisiteRule": {
+      "type": "anyOf",
+      "rules": [
+        {
+          "type": "course",
+          "courseCode": "COMP3670",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "allOf",
+          "rules": [
+            {
+              "type": "anyOf",
+              "rules": [
+                {
+                  "type": "course",
+                  "courseCode": "COMP1110",
+                  "minimumStatus": "completed"
+                },
+                {
+                  "type": "course",
+                  "courseCode": "COMP1140",
+                  "minimumStatus": "completed"
+                }
+              ]
+            },
+            {
+              "type": "anyOf",
+              "rules": [
+                {
+                  "type": "course",
+                  "courseCode": "MATH1014",
+                  "minimumStatus": "completed"
+                },
+                {
+                  "type": "course",
+                  "courseCode": "MATH1115",
+                  "minimumStatus": "completed"
+                },
+                {
+                  "type": "course",
+                  "courseCode": "MATH1116",
+                  "minimumStatus": "completed"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP8600",
+      "COMP8960"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP8600",
+      "COMP8960"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP4670",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

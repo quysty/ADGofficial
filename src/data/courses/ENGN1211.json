@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 2,
+  "code": "ENGN1211",
+  "title": "Engineering Design 1: Discovering Engineering",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Engineering",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": null,
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "ict_related_option",
+    "choiceGroup": "BCOMP_ICT_RELATED",
+    "requirementGroup": "BCOMP_ICT_RELATED",
+    "requiredUnits": 6
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2027,
+    "appliesFromYear": 2028,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": false,
+    "items": []
+  },
+  "requisiteAndIncompatibility": {
+    "status": "no_section_published",
+    "officialText": null,
+    "prerequisiteRule": null,
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "not_verified",
+    "blockedByCompletedCourses": [],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/ENGN1211",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

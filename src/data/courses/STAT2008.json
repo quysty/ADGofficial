@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 2,
+  "code": "STAT2008",
+  "title": "Regression Modelling",
+  "units": 6,
+  "libraryGroup": "BACCT",
+  "courseSubject": "Statistics",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": null,
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BACCT",
+    "role": "elective_option",
+    "choiceGroup": null,
+    "requirementGroup": "BACCT_ELECTIVES",
+    "requiredUnits": 12
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2027,
+    "appliesFromYear": 2028,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      },
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": false,
+    "items": []
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course, you must have completed STAT1003 or STAT1008. Or be enrolled in the Bachelor of Applied Data Analytics and have completed STAT2001. Incompatible with STAT2014 and STAT6014.",
+    "prerequisiteRule": {
+      "type": "anyOf",
+      "rules": [
+        {
+          "type": "course",
+          "courseCode": "STAT1003",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "course",
+          "courseCode": "STAT1008",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "allOf",
+          "rules": [
+            {
+              "type": "programEnrollment",
+              "programCode": "BADAN",
+              "programTitle": "Bachelor of Applied Data Analytics",
+              "minimumStatus": "enrolled"
+            },
+            {
+              "type": "course",
+              "courseCode": "STAT2001",
+              "minimumStatus": "completed"
+            }
+          ]
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "STAT2014",
+      "STAT6014"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "STAT2014",
+      "STAT6014"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/STAT2008",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

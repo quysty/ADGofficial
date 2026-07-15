@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 2,
+  "code": "SOCY2038",
+  "title": "Introduction to Quantitative Research Methods",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Sociology",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": null,
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "ict_related_option",
+    "choiceGroup": "BCOMP_ICT_RELATED",
+    "requirementGroup": "BCOMP_ICT_RELATED",
+    "requiredUnits": 6
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2026,
+    "appliesFromYear": 2027,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "prerequisite_interpretation",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "The alternative path requires 12 units in the relevant field or discipline, but the official page does not define which course subject codes qualify.",
+        "action": "The active planner enforces the unambiguous 24-unit tertiary-study path; confirm the 12-unit relevant-discipline alternative manually."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed 24 units of tertiary study or 12 units in the relevant field/discipline.",
+    "prerequisiteRule": {
+      "type": "minimumCompletedUnits",
+      "units": 24,
+      "minimumStatus": "completed"
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [],
+    "otherConditions": [
+      "An official alternative permits enrolment after completing 12 units in the relevant field or discipline; the qualifying subject codes are not defined on the course page."
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/SOCY2038",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP1720",
+  "title": "Art and Interaction Computing",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": "Information on inherent requirements for this course is currently not available.",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [],
+      "status": "no_current_offerings_published"
+    },
+    {
+      "year": 2027,
+      "sessions": [],
+      "status": "no_future_offerings_published"
+    },
+    {
+      "year": 2028,
+      "sessions": [],
+      "status": "no_future_offerings_published"
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "unavailable_until_official_schedule_published",
+    "basedOnPublishedYear": null,
+    "appliesFromYear": null,
+    "appliesUntil": null,
+    "sessions": [],
+    "manualReviewRequired": true,
+    "manualReviewReason": "The 2026 official COMP1720 page says there are no current offerings and publishes no future-offering schedule."
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "offering_time",
+        "status": "open",
+        "authoritativeField": "Offered in",
+        "issue": "The 2026 official COMP1720 page says there are no current offerings and publishes no future-offering schedule.",
+        "action": "Check the official Offered in field manually before allowing this compulsory-major course into a planned semester."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "Incompatible with COMP6720.",
+    "prerequisiteRule": null,
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP6720"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP6720"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP1720",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": false
+  }
+}

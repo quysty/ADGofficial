@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "code": "CBEA2001",
+  "title": "Australian Indigenous Perspectives in Business and Economics",
+  "programDisplayTitle": "Indigenous Perspectives in Business and Economics",
+  "units": 6,
+  "libraryGroup": "BACCT",
+  "courseSubject": "College of Business and Economics Administration",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": null,
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BACCT",
+    "role": "elective_option",
+    "choiceGroup": null,
+    "requirementGroup": "BACCT_ELECTIVES",
+    "requiredUnits": 12
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2028",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "prerequisite_interpretation",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "Students in a Flexible Double Degree with a CBE program need a permission code to enrol.",
+        "action": "Confirm the student's program type and permission code manually when this condition applies."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "24 units of study and must be enrolled in a CBE degree. Please note if you’re in a Flexible Double Degree with a CBE program, you will need a permission code to enrol into this course, please contact info.cbe@anu.edu.au",
+    "prerequisiteRule": {
+      "type": "allOf",
+      "rules": [
+        {
+          "type": "minimumCompletedUnits",
+          "units": 24,
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "programEnrollment",
+          "programGroup": "CBE degree",
+          "minimumStatus": "enrolled"
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [
+      {
+        "when": {
+          "programTypes": [
+            "Flexible Double Degree with CBE"
+          ]
+        },
+        "prerequisiteRule": {
+          "type": "manualCondition",
+          "conditionCode": "CBEA2001_FLEXIBLE_DOUBLE_DEGREE_PERMISSION",
+          "officialText": "A student in a Flexible Double Degree with a CBE program needs a permission code to enrol."
+        }
+      }
+    ],
+    "incompatibilities": [],
+    "otherConditions": [
+      "Flexible Double Degree students with a CBE program must obtain a permission code from info.cbe@anu.edu.au."
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/CBEA2001",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

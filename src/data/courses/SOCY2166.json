@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 2,
+  "code": "SOCY2166",
+  "title": "Social Science of the Internet",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Sociology",
+  "inherentRequirements": {
+    "status": "not_applicable",
+    "officialText": "Not applicable",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "ict_related_option",
+    "choiceGroup": "BCOMP_ICT_RELATED",
+    "requirementGroup": "BCOMP_ICT_RELATED",
+    "requiredUnits": 6
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2028",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "prerequisite_interpretation",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "Students who do not satisfy the standard prerequisite path may request permission to enrol from the Convener.",
+        "action": "The active planner enforces the explicit subject-unit and SOCY2038 requirements; treat Convener permission as a manual exception."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed: -12 units of Computer (COMP) or Statistics (STAT) courses, OR -12 units of Criminology (CRIM), Political Science (POLS), Social Research (SOCR) or Sociology (SOCY) courses. In addition, if SOCY2038 Introduction to Quantitative Research Methods has not been completed, then it must studied concurrently with SOCY2166. Students not satisfying the above may request permission to enrol from the convener. You are not able to enrol in this course if you have previously completed SOCY6066.",
+    "prerequisiteRule": {
+      "type": "allOf",
+      "rules": [
+        {
+          "type": "anyOf",
+          "rules": [
+            {
+              "type": "subjectUnits",
+              "subjects": [
+                "COMP",
+                "STAT"
+              ],
+              "minimumUnits": 12,
+              "level": null,
+              "minimumStatus": "completed"
+            },
+            {
+              "type": "subjectUnits",
+              "subjects": [
+                "CRIM",
+                "POLS",
+                "SOCR",
+                "SOCY"
+              ],
+              "minimumUnits": 12,
+              "level": null,
+              "minimumStatus": "completed"
+            }
+          ]
+        },
+        {
+          "type": "course",
+          "courseCode": "SOCY2038",
+          "minimumStatus": "completed_or_concurrent"
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "SOCY6066"
+    ],
+    "otherConditions": [
+      "Students who do not satisfy the standard prerequisites may request permission to enrol from the Convener."
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "SOCY6066"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/SOCY2166",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

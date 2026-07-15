@@ -1,0 +1,672 @@
+{
+  "schemaVersion": 2,
+  "program": {
+    "code": "BACCT-BCOMP",
+    "title": "Bachelor of Accounting / Bachelor of Computing",
+    "academicYear": 2026,
+    "academicPlans": [
+      "BACCT",
+      "BCOMP"
+    ],
+    "componentCodes": [
+      "BACCT",
+      "BCOMP"
+    ],
+    "programGroups": [
+      "CBE degree"
+    ],
+    "programTypes": [
+      "Flexible Double Degree with CBE"
+    ],
+    "minimumUnits": 192,
+    "sourceUrl": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP"
+  },
+  "catalog": {
+    "courseCount": 94,
+    "firstAcademicYear": 2026,
+    "futureOfferingsIndicative": true,
+    "verifiedAt": "2026-07-13"
+  },
+  "planningPolicy": {
+    "activeTerms": [
+      "S1",
+      "S2"
+    ],
+    "recordOnlySessions": [
+      "Spring Session"
+    ],
+    "futureOfferingProjection": "repeat_latest_published_pattern",
+    "projectionAppliesUntil": "open-ended",
+    "authoritativeOfferingField": "Offered in",
+    "manualReviewArea": "manualReview",
+    "manualReviewCourses": [
+      "BUSN1001",
+      "STAT1008",
+      "ECON1101",
+      "BUSN3014",
+      "BUSN3003",
+      "BUSN3008",
+      "CBEA2001",
+      "COMP1140",
+      "MATH1005",
+      "MATH2222",
+      "COMP2300",
+      "ARTH2181",
+      "MUSI3309",
+      "SOCY2038",
+      "SOCY2166",
+      "COMP1710",
+      "COMP1720",
+      "COMP3500",
+      "COMP3610",
+      "COMP4011",
+      "COMP4045",
+      "COMP4300",
+      "COMP4350",
+      "COMP4620",
+      "COMP4670",
+      "COMP4680",
+      "COMP4880",
+      "CRIM2010",
+      "INFS1001"
+    ],
+    "note": "All published sessions are retained. Only First Semester and Second Semester are enabled for the first planning mechanism."
+  },
+  "ruleModel": {
+    "ruleTypes": [
+      "course",
+      "subjectUnits",
+      "minimumCompletedUnits",
+      "programEnrollment",
+      "externalQualification",
+      "anyOf",
+      "allOf",
+      "manualCondition"
+    ],
+    "minimumStatusValues": [
+      "completed",
+      "completed_or_concurrent"
+    ],
+    "unknownRequisitePolicy": "skip_ui_validation_when_package_unavailable",
+    "minimumMarkRecorded": true,
+    "minimumMarkPlanningPolicy": "ignored",
+    "courseTiming": {
+      "completed": "must_be_in_an_earlier_semester",
+      "completed_or_concurrent": "may_be_in_the_same_or_an_earlier_semester"
+    },
+    "unitCountingPolicy": "only_courses_in_earlier_semesters_count_as_completed_units",
+    "unknownMarkPolicy": "ignored",
+    "incompatibilityPolicy": "symmetric_whole_plan_check",
+    "externalQualificationPlanningPolicy": "ignored",
+    "manualConditionPlanningPolicy": "ignored",
+    "permissionCodePlanningPolicy": "ignored",
+    "manualOverridePolicy": "ignored",
+    "programRestrictionSourcePolicy": "requisite_and_incompatibility_only",
+    "validationOutcomes": [
+      "valid",
+      "invalid",
+      "manual"
+    ],
+    "note": "Official text remains stored in every package. The active planner validates explicit course, timing, unit, subject, program-enrolment, incompatibility, and degree-slot requirements; marks, secondary-school qualifications, permission codes, manual alternatives, and advisory conditions are not evaluated."
+  },
+  "inherentRequirementsModel": {
+    "statusValues": [
+      "present",
+      "not_applicable",
+      "explicit_none",
+      "explicit_no_specific",
+      "not_published",
+      "blank_on_official_page"
+    ],
+    "planningPolicy": "informational_only_unless_a_future_rule_explicitly_sets_other_enforcement"
+  },
+  "choiceGroupPolicy": {
+    "maximumSelectedCoursesPerGroup": 1,
+    "planningEffect": "block_additional_course_from_same_choice_group"
+  },
+  "requirementGroups": {
+    "BACCT_ELECTIVES": {
+      "component": "BACCT",
+      "requiredUnits": 12,
+      "courseUnits": 6,
+      "selectionMode": "minimum_units_from_list",
+      "note": "These courses are BACCT elective options, not a one-course mutual-exclusion group."
+    },
+    "BCOMP_ICT_RELATED": {
+      "component": "BCOMP",
+      "requiredUnits": 6,
+      "courseUnits": 6,
+      "selectionMode": "exactly_one_course_from_list",
+      "note": "The BCOMP component requires one 6-unit Information and Communications Technology-related course from this list."
+    }
+  },
+  "coursePackages": [
+    {
+      "code": "BUSN1001",
+      "libraryGroup": "BACCT",
+      "file": "BUSN1001.json"
+    },
+    {
+      "code": "STAT1008",
+      "libraryGroup": "BACCT",
+      "file": "STAT1008.json",
+      "additionalLibraryMemberships": [
+        {
+          "libraryGroup": "BCOMP_ICT",
+          "choiceGroup": "BCOMP_ICT_RELATED",
+          "requirementGroup": "BCOMP_ICT_RELATED",
+          "component": "BCOMP"
+        }
+      ]
+    },
+    {
+      "code": "BUSN1002",
+      "libraryGroup": "BACCT",
+      "file": "BUSN1002.json"
+    },
+    {
+      "code": "FINM1001",
+      "libraryGroup": "BACCT",
+      "file": "FINM1001.json"
+    },
+    {
+      "code": "ECON1101",
+      "libraryGroup": "BACCT",
+      "file": "ECON1101.json"
+    },
+    {
+      "code": "BUSN2015",
+      "libraryGroup": "BACCT",
+      "file": "BUSN2015.json"
+    },
+    {
+      "code": "ECON1102",
+      "libraryGroup": "BACCT",
+      "file": "ECON1102.json"
+    },
+    {
+      "code": "BUSN1101",
+      "libraryGroup": "BACCT",
+      "file": "BUSN1101.json"
+    },
+    {
+      "code": "BUSN2011",
+      "libraryGroup": "BACCT",
+      "file": "BUSN2011.json"
+    },
+    {
+      "code": "BUSN2101",
+      "libraryGroup": "BACCT",
+      "file": "BUSN2101.json"
+    },
+    {
+      "code": "BUSN3001",
+      "libraryGroup": "BACCT",
+      "file": "BUSN3001.json"
+    },
+    {
+      "code": "INFS2005",
+      "libraryGroup": "BACCT",
+      "file": "INFS2005.json"
+    },
+    {
+      "code": "BUSN3014",
+      "libraryGroup": "BACCT",
+      "file": "BUSN3014.json"
+    },
+    {
+      "code": "BUSN3002",
+      "libraryGroup": "BACCT",
+      "file": "BUSN3002.json"
+    },
+    {
+      "code": "BUSN2037",
+      "libraryGroup": "BACCT",
+      "file": "BUSN2037.json",
+      "requirementGroup": "BACCT_ELECTIVES"
+    },
+    {
+      "code": "BUSN3003",
+      "libraryGroup": "BACCT",
+      "file": "BUSN3003.json",
+      "requirementGroup": "BACCT_ELECTIVES"
+    },
+    {
+      "code": "BUSN3008",
+      "libraryGroup": "BACCT",
+      "file": "BUSN3008.json",
+      "requirementGroup": "BACCT_ELECTIVES"
+    },
+    {
+      "code": "BUSN3017",
+      "libraryGroup": "BACCT",
+      "file": "BUSN3017.json",
+      "requirementGroup": "BACCT_ELECTIVES"
+    },
+    {
+      "code": "BUSN3051",
+      "libraryGroup": "BACCT",
+      "file": "BUSN3051.json",
+      "requirementGroup": "BACCT_ELECTIVES"
+    },
+    {
+      "code": "CBEA2001",
+      "libraryGroup": "BACCT",
+      "file": "CBEA2001.json",
+      "requirementGroup": "BACCT_ELECTIVES"
+    },
+    {
+      "code": "STAT2008",
+      "libraryGroup": "BACCT",
+      "file": "STAT2008.json",
+      "requirementGroup": "BACCT_ELECTIVES"
+    },
+    {
+      "code": "COMP1100",
+      "libraryGroup": "BCOMP",
+      "file": "COMP1100.json",
+      "choiceGroup": "BCOMP_PROGRAMMING_FOUNDATION"
+    },
+    {
+      "code": "COMP1130",
+      "libraryGroup": "BCOMP",
+      "file": "COMP1130.json",
+      "choiceGroup": "BCOMP_PROGRAMMING_FOUNDATION"
+    },
+    {
+      "code": "COMP1110",
+      "libraryGroup": "BCOMP",
+      "file": "COMP1110.json",
+      "choiceGroup": "BCOMP_STRUCTURED_PROGRAMMING"
+    },
+    {
+      "code": "COMP1140",
+      "libraryGroup": "BCOMP",
+      "file": "COMP1140.json",
+      "choiceGroup": "BCOMP_STRUCTURED_PROGRAMMING"
+    },
+    {
+      "code": "MATH1005",
+      "libraryGroup": "BCOMP",
+      "file": "MATH1005.json",
+      "choiceGroup": "BCOMP_DISCRETE_MATH"
+    },
+    {
+      "code": "MATH2222",
+      "libraryGroup": "BCOMP",
+      "file": "MATH2222.json",
+      "choiceGroup": "BCOMP_DISCRETE_MATH"
+    },
+    {
+      "code": "COMP1600",
+      "libraryGroup": "BCOMP",
+      "file": "COMP1600.json"
+    },
+    {
+      "code": "COMP2100",
+      "libraryGroup": "BCOMP",
+      "file": "COMP2100.json"
+    },
+    {
+      "code": "COMP2300",
+      "libraryGroup": "BCOMP",
+      "file": "COMP2300.json"
+    },
+    {
+      "code": "COMP2400",
+      "libraryGroup": "BCOMP",
+      "file": "COMP2400.json"
+    },
+    {
+      "code": "ARTH2181",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "ARTH2181.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "ASIA3032",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "ASIA3032.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "DESN2010",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "DESN2010.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "ENGN1211",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "ENGN1211.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "ENVS2015",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "ENVS2015.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "INFS2024",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "INFS2024.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "INFS3002",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "INFS3002.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "INFS3024",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "INFS3024.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "MATH1013",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "MATH1013.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "MATH1115",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "MATH1115.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "MATH2301",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "MATH2301.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "MATH2307",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "MATH2307.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "MGMT2009",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "MGMT2009.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "MUSI3309",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "MUSI3309.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "SCOM3029",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "SCOM3029.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "SOCY2038",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "SOCY2038.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "SOCY2166",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "SOCY2166.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "STAT1003",
+      "libraryGroup": "BCOMP_ICT",
+      "file": "STAT1003.json",
+      "choiceGroup": "BCOMP_ICT_RELATED",
+      "requirementGroup": "BCOMP_ICT_RELATED"
+    },
+    {
+      "code": "COMP2310",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP2310.json"
+    },
+    {
+      "code": "COMP3300",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3300.json"
+    },
+    {
+      "code": "COMP3310",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3310.json"
+    },
+    {
+      "code": "ENGN4213",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "ENGN4213.json"
+    },
+    {
+      "code": "COMP3320",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3320.json"
+    },
+    {
+      "code": "COMP3610",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3610.json"
+    },
+    {
+      "code": "COMP4045",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4045.json"
+    },
+    {
+      "code": "COMP4300",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4300.json"
+    },
+    {
+      "code": "COMP4712",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4712.json"
+    },
+    {
+      "code": "ENGN1218",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "ENGN1218.json"
+    },
+    {
+      "code": "ENGN2218",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "ENGN2218.json"
+    },
+    {
+      "code": "COMP2120",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP2120.json"
+    },
+    {
+      "code": "COMP2700",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP2700.json"
+    },
+    {
+      "code": "COMP3704",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3704.json"
+    },
+    {
+      "code": "COMP4130",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4130.json"
+    },
+    {
+      "code": "COMP4703",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4703.json"
+    },
+    {
+      "code": "COMP4011",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4011.json"
+    },
+    {
+      "code": "CRIM2010",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "CRIM2010.json"
+    },
+    {
+      "code": "MATH3301",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "MATH3301.json"
+    },
+    {
+      "code": "COMP3425",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3425.json"
+    },
+    {
+      "code": "COMP3430",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3430.json"
+    },
+    {
+      "code": "COMP3670",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3670.json"
+    },
+    {
+      "code": "COMP4650",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4650.json"
+    },
+    {
+      "code": "COMP4880",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4880.json"
+    },
+    {
+      "code": "SOCR3001",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "SOCR3001.json"
+    },
+    {
+      "code": "COMP1720",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP1720.json"
+    },
+    {
+      "code": "COMP3900",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3900.json"
+    },
+    {
+      "code": "COMP3540",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3540.json"
+    },
+    {
+      "code": "COMP4350",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4350.json"
+    },
+    {
+      "code": "COMP4610",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4610.json"
+    },
+    {
+      "code": "COMP4528",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4528.json"
+    },
+    {
+      "code": "COMP1710",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP1710.json"
+    },
+    {
+      "code": "MUSI1110",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "MUSI1110.json"
+    },
+    {
+      "code": "DESN2004",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "DESN2004.json"
+    },
+    {
+      "code": "INFS1001",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "INFS1001.json"
+    },
+    {
+      "code": "INFS3059",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "INFS3059.json"
+    },
+    {
+      "code": "COMP2620",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP2620.json"
+    },
+    {
+      "code": "COMP3620",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3620.json"
+    },
+    {
+      "code": "COMP3600",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3600.json"
+    },
+    {
+      "code": "COMP4620",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4620.json"
+    },
+    {
+      "code": "COMP4670",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4670.json"
+    },
+    {
+      "code": "COMP4680",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4680.json"
+    },
+    {
+      "code": "COMP4691",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP4691.json"
+    },
+    {
+      "code": "COMP3500",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "COMP3500.json"
+    },
+    {
+      "code": "ENGN2300",
+      "libraryGroup": "BCOMP_MAJOR",
+      "file": "ENGN2300.json"
+    }
+  ]
+}

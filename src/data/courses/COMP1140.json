@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP1140",
+  "title": "Structured Programming (Advanced)",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None.",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "prerequisiteEquivalences": [
+    "COMP1110"
+  ],
+  "manualOverrideRule": {
+    "type": "allOf",
+    "rules": [
+      {
+        "type": "course",
+        "courseCode": "COMP1100",
+        "minimumStatus": "completed"
+      },
+      {
+        "type": "manualCondition",
+        "conditionCode": "COMP1140_EXCELLENT_COMP1100_PERMISSION",
+        "officialText": "An excellent result in COMP1100 and an approved permission code are required.",
+        "planningEnforcement": "manual_review"
+      }
+    ],
+    "sourceSection": "Assumed Knowledge",
+    "planningEffect": "manual_review_only",
+    "doesNotReplaceFormalPrerequisite": true
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "choice",
+    "choiceGroup": "BCOMP_STRUCTURED_PROGRAMMING"
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "alternative_prerequisite",
+        "status": "open",
+        "authoritativeField": "Assumed Knowledge",
+        "issue": "The alternate pathway requires an excellent COMP1100 result and an approved permission code, but the official page does not publish a numeric mark threshold.",
+        "action": "Use the formal COMP1130 prerequisite automatically; confirm the COMP1100 result and permission code manually only when using the alternate pathway."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have successfully completed COMP1130. Incompatible with COMP1110 or COMP6710 or COMP7710.",
+    "prerequisiteRule": {
+      "type": "course",
+      "courseCode": "COMP1130",
+      "minimumStatus": "completed"
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP1110",
+      "COMP6710",
+      "COMP7710"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP1110",
+      "COMP6710",
+      "COMP7710"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP1140",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

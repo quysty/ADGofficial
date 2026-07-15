@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP4011",
+  "title": "Advanced Topics in Formal Methods and Programming Languages",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "repeatability": {
+    "maximumCompletionsForCredit": 3,
+    "condition": "Different Advanced topics",
+    "officialText": "Students will be able to receive credit for completing this course up to 3 times provided they complete three different Advanced topics.",
+    "sourceSection": "Other Information",
+    "planningEnforcement": "informational_only"
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "prerequisite_interpretation",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "The official page says additional prerequisite courses will be published only after the Advanced Topic is announced, so this package can enforce only the published 12-unit COMP rule.",
+        "action": "Verify the announced topic-specific prerequisites manually before enrolment; permission-code administration remains record-only."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "12 units of 3000 and/or 4000 level COMP courses. Additional Prerequisite courses for the Advanced Topic will be listed on the SoCo website when the course topic is announced. Students who meet the pre-requisites can request a permission code following the instructions Enrolling in CECC courses. You will need to contact the School of Computing to request a permission code to enrol in this course.",
+    "prerequisiteRule": {
+      "type": "subjectUnits",
+      "subject": "COMP",
+      "minimumUnits": 12,
+      "minimumLevel": 3000,
+      "maximumLevel": 4000,
+      "minimumStatus": "completed"
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [],
+    "otherConditions": [
+      {
+        "type": "topicSpecificPrerequisites",
+        "officialText": "Additional Prerequisite courses for the Advanced Topic will be listed on the SoCo website when the course topic is announced.",
+        "planningEnforcement": "ignored"
+      },
+      {
+        "type": "permissionCode",
+        "officialText": "You will need to contact the School of Computing to request a permission code to enrol in this course.",
+        "planningEnforcement": "ignored"
+      }
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP4011",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

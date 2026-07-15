@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 2,
+  "code": "BUSN3014",
+  "title": "Principles of Tax Law",
+  "units": 6,
+  "libraryGroup": "BACCT",
+  "courseSubject": "Business",
+  "inherentRequirements": {
+    "status": "not_applicable",
+    "officialText": "Not applicable",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BACCT",
+    "role": "compulsory",
+    "choiceGroup": null
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2028",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      },
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "assumed_knowledge_conflict",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "The Assumed Knowledge section says BUSN1101 must be completed, while the formal Requisite and Incompatibility section also allows completion of both LAWS1204 and LAWS1201.",
+        "action": "Enforce the formal Requisite and Incompatibility rule and manually review the conflicting Assumed Knowledge statement."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed BUSN1101, or both LAWS1204 and LAWS1201. Incompatible with LAWS2221 or LAWS4221.",
+    "prerequisiteRule": {
+      "type": "anyOf",
+      "rules": [
+        {
+          "type": "course",
+          "courseCode": "BUSN1101",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "allOf",
+          "rules": [
+            {
+              "type": "course",
+              "courseCode": "LAWS1204",
+              "minimumStatus": "completed"
+            },
+            {
+              "type": "course",
+              "courseCode": "LAWS1201",
+              "minimumStatus": "completed"
+            }
+          ]
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "LAWS2221",
+      "LAWS4221"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "LAWS2221",
+      "LAWS4221"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/BUSN3014",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

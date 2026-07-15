@@ -5,119 +5,196 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Course Builder | ANU Dorm Guide</title>
   <link rel="stylesheet" href="style.css?v=course-builder-v2" />
-  <link rel="stylesheet" href="course-builder.css?v=course-builder-v4" />
+  <link rel="stylesheet" href="course-builder.css?v=course-builder-v45" />
 </head>
 <body data-page="course-builder">
+  <div id="courseBuilderGrid" class="course-builder-grid" aria-hidden="true" hidden>
+    <div id="courseBuilderGridXAxis" class="course-builder-grid__axis course-builder-grid__axis--x"></div>
+    <div id="courseBuilderGridYAxis" class="course-builder-grid__axis course-builder-grid__axis--y"></div>
+  </div>
   <main class="course-builder-page">
     <div class="course-builder-shell">
       <header class="course-builder-header">
         <h1>Course Builder</h1>
       </header>
 
-      <section class="degree-plan" aria-labelledby="study-options-title">
-        <h2 id="study-options-title">课程书架</h2>
-
+      <section class="degree-plan" aria-label="课程书架">
         <div class="degree-year">
           <h3>Year 1</h3>
           <div class="course-rack">
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN1001</strong><span>Business Reporting and Analysis</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>STAT1008</strong><span>Quantitative Research Methods</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>COMP1100</strong><span>Programming as Problem Solving</span><b>6 units</b><span class="course-choice">OR</span><strong>COMP1130</strong></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>MATH1005</strong><span>Discrete Mathematical Models</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN1002</strong><span>Accounting Processes and Systems</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>FINM1001</strong><span>Foundations of Finance</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>COMP1110</strong><span>Structured Programming</span><b>6 units</b><span class="course-choice">OR</span><strong>COMP1140</strong></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>COMP1600</strong><span>Foundations of Computing</span><b>6 units</b></article></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot course-slot--extra"><div class="course-slot-label"><strong>Extra Course</strong></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot course-slot--extra"><div class="course-slot-label"><strong>Extra Course</strong></div></div>
           </div>
         </div>
 
         <div class="degree-year">
           <h3>Year 2</h3>
           <div class="course-rack">
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>ECON1101</strong><span>Microeconomics 1</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN2015</strong><span>Company Accounting</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>COMP2100</strong><span>Software Construction</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>COMP2300</strong><span>Computer Architecture</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>ECON1102</strong><span>Macroeconomics 1</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN1101</strong><span>Introduction to Commercial Law</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>COMP2400</strong><span>Relational Databases</span><b>6 units</b></article></div>
-            <div class="course-slot"><div class="course-slot-label"><strong>Computing course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot course-slot--extra"><div class="course-slot-label"><strong>Extra Course</strong></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot course-slot--extra"><div class="course-slot-label"><strong>Extra Course</strong></div></div>
           </div>
         </div>
 
         <div class="degree-year">
           <h3>Year 3</h3>
           <div class="course-rack">
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN2011</strong><span>Management Accounting</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN2101</strong><span>Law of Business Entities</span><b>6 units</b></article></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Information and Communications Technology-related course</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN3001</strong><span>Accounting Theory</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>INFS2005</strong><span>Accounting Information Systems</span><b>6 units</b></article></div>
+            <div class="course-slot course-slot--extra"><div class="course-slot-label"><strong>Extra Course</strong></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot course-slot--extra"><div class="course-slot-label"><strong>Extra Course</strong></div></div>
           </div>
         </div>
 
         <div class="degree-year">
           <h3>Year 4</h3>
           <div class="course-rack">
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN3014</strong><span>Principles of Tax Law</span><b>6 units</b></article></div>
-            <div class="course-slot"><article class="course-card" draggable="true"><strong>BUSN3002</strong><span>Auditing</span><b>6 units</b></article></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
+            <div class="course-slot"><div class="course-slot-label"><strong>Accounting Course</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot course-slot--extra"><div class="course-slot-label"><strong>Extra Course</strong></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Accounting course from the List</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>CBE LIST 1 Elective course</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
             <div class="course-slot"><div class="course-slot-label"><strong>Computing Course</strong><b>6 units</b></div></div>
+            <div class="course-slot course-slot--extra"><div class="course-slot-label"><strong>Extra Course</strong></div></div>
           </div>
         </div>
       </section>
+
+      <section id="degreeProgress" class="degree-progress" aria-label="学位等级要求"></section>
     </div>
 
-    <aside class="course-library" aria-labelledby="course-library-title">
-      <h2 id="course-library-title">课程图书馆</h2>
+    <aside class="course-library" aria-label="课程图书馆">
 
       <section class="course-library-section" aria-labelledby="bacct-library-title">
-        <h3 id="bacct-library-title">BACCT</h3>
-        <div class="course-library-grid">
+        <details class="course-library-disclosure" open>
+          <summary id="bacct-library-title">BACCT compulsory · 84 units · 14 courses</summary>
+          <div class="course-library-grid">
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN1001</strong><span>Business Reporting and Analysis</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>STAT1008</strong><span>Quantitative Research Methods</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN1002</strong><span>Accounting Processes and Systems</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>FINM1001</strong><span>Foundations of Finance</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>ECON1101</strong><span>Microeconomics 1</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN2015</strong><span>Company Accounting</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>ECON1102</strong><span>Macroeconomics 1</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN1101</strong><span>Introduction to Commercial Law</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN2011</strong><span>Management Accounting</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN2015</strong><span>Company Accounting</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN2101</strong><span>Law of Business Entities</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN3001</strong><span>Accounting Theory</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>INFS2005</strong><span>Accounting Information Systems</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN3014</strong><span>Principles of Tax Law</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN3002</strong><span>Auditing</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN3014</strong><span>Principles of Tax Law</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card"><strong>ECON1101</strong><span>Microeconomics 1</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card"><strong>ECON1102</strong><span>Macroeconomics 1</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card"><strong>FINM1001</strong><span>Foundations of Finance</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card"><strong>INFS2005</strong><span>Accounting Information Systems</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card"><strong>STAT1008</strong><span>Quantitative Research Methods</span><b>6 units</b></article></div>
+          </div>
+        </details>
+        <div class="course-library-subsection">
+          <details class="course-library-disclosure" open>
+            <summary>BACCT electives · 12 units · 2 courses</summary>
+            <div class="course-library-grid">
+            <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN2037</strong><span>Fundamentals of Accounting Data Analytics</span><b>6 units</b></article></div>
+            <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN3003</strong><span>Advanced Management Accounting</span><b>6 units</b></article></div>
+            <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN3008</strong><span>Financial Reporting By Corporations</span><b>6 units</b></article></div>
+            <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN3017</strong><span>Corporate Social Responsibility, Accountability and Reporting</span><b>6 units</b></article></div>
+            <div class="course-library-slot"><article class="course-card course-library-card"><strong>BUSN3051</strong><span>Advanced Accounting Data Analytics</span><b>6 units</b></article></div>
+            <div class="course-library-slot"><article class="course-card course-library-card"><strong>CBEA2001</strong><span>Indigenous Perspectives in Business and Economics</span><b>6 units</b></article></div>
+            <div class="course-library-slot"><article class="course-card course-library-card"><strong>STAT2008</strong><span>Regression Modelling</span><b>6 units</b></article></div>
+            </div>
+          </details>
         </div>
       </section>
 
       <section class="course-library-section" aria-labelledby="bcomp-library-title">
-        <h3 id="bcomp-library-title">BCOMP</h3>
-        <div class="course-library-grid">
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>COMP1100</strong><span>Programming as Problem Solving</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>COMP1130</strong><span>Programming as Problem Solving</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>MATH1005</strong><span>Discrete Mathematical Models</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>COMP1110</strong><span>Structured Programming</span><b>6 units</b></article></div>
-          <div class="course-library-slot"><article class="course-card course-library-card"><strong>COMP1140</strong><span>Structured Programming</span><b>6 units</b></article></div>
+        <details class="course-library-disclosure" open>
+          <summary id="bcomp-library-title">BCOMP compulsory · 42 units · 7 courses</summary>
+          <div class="course-library-grid">
+          <div class="course-library-slot"><article class="course-card course-library-card" data-course-code="COMP1100" data-choice-group="BCOMP_PROGRAMMING_FOUNDATION"><strong>COMP1100</strong><span>Programming as Problem Solving</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card" data-course-code="COMP1130" data-choice-group="BCOMP_PROGRAMMING_FOUNDATION"><strong>COMP1130</strong><span>Programming as Problem Solving</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card" data-course-code="COMP1110" data-choice-group="BCOMP_STRUCTURED_PROGRAMMING"><strong>COMP1110</strong><span>Structured Programming</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card" data-course-code="COMP1140" data-choice-group="BCOMP_STRUCTURED_PROGRAMMING"><strong>COMP1140</strong><span>Structured Programming</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card" data-course-code="MATH1005" data-choice-group="BCOMP_DISCRETE_MATH"><strong>MATH1005</strong><span>Discrete Mathematical Models</span><b>6 units</b></article></div>
+          <div class="course-library-slot"><article class="course-card course-library-card" data-course-code="MATH2222" data-choice-group="BCOMP_DISCRETE_MATH"><strong>MATH2222</strong><span>Introduction to Mathematical Thinking: Problem-Solving and Proofs</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>COMP1600</strong><span>Foundations of Computing</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>COMP2100</strong><span>Software Construction</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>COMP2300</strong><span>Computer Architecture</span><b>6 units</b></article></div>
           <div class="course-library-slot"><article class="course-card course-library-card"><strong>COMP2400</strong><span>Relational Databases</span><b>6 units</b></article></div>
+          </div>
+        </details>
+        <div class="course-library-subsection">
+          <details class="course-library-disclosure" open>
+            <summary>BCOMP COMP courses · 48 units · 8 courses</summary>
+            <div class="bcomp-major-picker">
+              <label for="bcompMajorSelect">Major</label>
+              <select id="bcompMajorSelect" aria-label="Choose a BCOMP major">
+                <option value="">Choose a Major</option>
+              </select>
+            </div>
+            <p id="bcompMajorEmpty" class="bcomp-major-empty">选择一个 Major 以显示对应课程块</p>
+            <div id="bcompMajorPanels" class="bcomp-major-panels" aria-live="polite"></div>
+          </details>
+        </div>
+        <div class="course-library-subsection">
+          <details class="course-library-disclosure" open>
+            <summary>BCOMP ICT-related course · 6 units · 1 course</summary>
+            <div class="course-library-grid" aria-label="BCOMP ICT-related course">
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>ARTH2181</strong><span>Digital Approaches to Art History and Curatorship</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>ASIA3032</strong><span>Digital Asia: Technology and Society</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>DESN2010</strong><span>Physical Computing for Design and Art</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>ENGN1211</strong><span>Engineering Design 1: Discovering Engineering</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>ENVS2015</strong><span>GIS and Spatial Analysis</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>INFS2024</strong><span>Information Systems Analysis</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>INFS3002</strong><span>Enterprise Systems in Business</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>INFS3024</strong><span>Information Systems Management</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>MATH1013</strong><span>Mathematics and Applications 1</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>MATH1115</strong><span>Advanced Mathematics and Applications 1</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>MATH2301</strong><span>Games, Graphs and Machines</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>MATH2307</strong><span>Bioinformatics and Biological Modelling</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>MGMT2009</strong><span>Design Thinking: Human-Centred Innovation</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>MUSI3309</strong><span>Music and Digital Media</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>SCOM3029</strong><span>Science Communication and Planetary Crises</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>SOCY2038</strong><span>Introduction to Quantitative Research Methods</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>SOCY2166</strong><span>Social Science of the Internet</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>STAT1003</strong><span>Statistical Techniques</span><b>6 units</b></article></div>
+              <div class="course-library-slot"><article class="course-card course-library-card" data-choice-group-override="BCOMP_ICT_RELATED" data-planning-component="BCOMP"><strong>STAT1008</strong><span>Quantitative Research Methods</span><b>6 units</b></article></div>
+            </div>
+          </details>
         </div>
       </section>
     </aside>
   </main>
 
+  <button id="courseBuilderGridToggle" class="course-grid-toggle" type="button" aria-pressed="false">网格：关</button>
+
   <div id="site-nav-root"></div>
 
   <script src="nav.js?v=course-builder-v2"></script>
-  <script src="course-builder.js?v=course-builder-v7"></script>
+  <script src="course-builder-grid.js?v=course-grid-v1"></script>
+  <script src="src/data/majors/bcomp-majors.js?v=bcomp-majors-v1"></script>
+  <script src="course-builder-majors.js?v=course-builder-majors-v2"></script>
+  <script src="src/data/courses/catalog.bundle.js?v=course-catalog-v3"></script>
+  <script src="course-requisite-engine.js?v=course-requisite-v5"></script>
+  <script src="course-degree-progress.js?v=degree-progress-v3"></script>
+  <script src="course-builder.js?v=course-builder-v21"></script>
 </body>
 </html>

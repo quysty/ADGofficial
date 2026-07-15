@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP3610",
+  "title": "Principles of Programming Languages",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2027,
+    "appliesFromYear": 2028,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": true,
+    "manualReviewReason": "No 2026 class is published; the first visible future class is Second Semester 2027, and Other Information states that the course is offered in Semester 2 in alternate odd-numbered years, which conflicts with an annual repeat projection."
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "offering_time",
+        "status": "open",
+        "authoritativeField": "Offered in / Other Information",
+        "issue": "No 2026 class is published; the first visible future class is Second Semester 2027, and the official page states that the course is offered in Semester 2 in alternate odd-numbered years.",
+        "action": "Do not enforce the annual repeat projection without checking the target year's official offering; the stated cadence indicates odd-numbered years only."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed: COMP2100 and (COMP1600 or 6 units of MATHS excluding MATH1003) Incompatible with COMP6361.",
+    "prerequisiteRule": {
+      "type": "allOf",
+      "rules": [
+        {
+          "type": "course",
+          "courseCode": "COMP2100",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "anyOf",
+          "rules": [
+            {
+              "type": "course",
+              "courseCode": "COMP1600",
+              "minimumStatus": "completed"
+            },
+            {
+              "type": "subjectUnits",
+              "subject": "MATH",
+              "minimumUnits": 6,
+              "level": null,
+              "excludedCourseCodes": [
+                "MATH1003"
+              ],
+              "minimumStatus": "completed"
+            }
+          ]
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP6361"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP6361"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP3610",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

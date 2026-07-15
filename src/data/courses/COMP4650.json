@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP4650",
+  "title": "Document Analysis",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": false,
+    "items": []
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed: (COMP1600 OR COMP2100) AND 12 units of 3000/4000 level COMP or INFS courses. Incompatible with COMP6490.",
+    "prerequisiteRule": {
+      "type": "allOf",
+      "rules": [
+        {
+          "type": "anyOf",
+          "rules": [
+            {
+              "type": "course",
+              "courseCode": "COMP1600",
+              "minimumStatus": "completed"
+            },
+            {
+              "type": "course",
+              "courseCode": "COMP2100",
+              "minimumStatus": "completed"
+            }
+          ]
+        },
+        {
+          "type": "subjectUnits",
+          "subjects": [
+            "COMP",
+            "INFS"
+          ],
+          "minimumUnits": 12,
+          "minimumLevel": 3000,
+          "maximumLevel": 4000,
+          "minimumStatus": "completed"
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP6490"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP6490"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP4650",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

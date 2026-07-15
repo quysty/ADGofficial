@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP4300",
+  "title": "Parallel Systems",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "not_applicable",
+    "officialText": "Not applicable",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2027,
+    "appliesFromYear": 2028,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": true,
+    "manualReviewReason": "No 2026 class is published, while the official future offerings list First Semester 2027."
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "offering_time",
+        "status": "open",
+        "authoritativeField": "Offered in",
+        "issue": "No 2026 class is published, while the official future offerings list First Semester 2027.",
+        "action": "Follow the latest official Offered in data and verify manually before enforcing projected future availability."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed COMP2310. Incompatible with COMP8300.",
+    "prerequisiteRule": {
+      "type": "course",
+      "courseCode": "COMP2310",
+      "minimumStatus": "completed"
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP8300"
+    ],
+    "otherConditions": [
+      {
+        "type": "assumedKnowledge",
+        "officialText": "The course assumes proficiency in programming, and currently uses the C programming language. While it is largely self-contained, some background in threaded programming, message-based programming such as sockets, and computer organization will be useful.",
+        "sourceSection": "Assumed Knowledge",
+        "planningEnforcement": "ignored"
+      }
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP8300"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP4300",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

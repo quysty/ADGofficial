@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 2,
+  "code": "DESN2004",
+  "title": "Autonomous Agents: Natural and Algorithmic Systems in Art and Design",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Design",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": null,
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": false,
+    "items": []
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed 24 units of courses towards an ANU degree, and you must have completed DESN2002 or DESN2010. You are not able to enrol in this course if you have previously completed DESN2004 or DESN6004 (Dynamic Design).",
+    "prerequisiteRule": {
+      "type": "allOf",
+      "rules": [
+        {
+          "type": "minimumCompletedUnits",
+          "units": 24,
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "anyOf",
+          "rules": [
+            {
+              "type": "course",
+              "courseCode": "DESN2002",
+              "minimumStatus": "completed"
+            },
+            {
+              "type": "course",
+              "courseCode": "DESN2010",
+              "minimumStatus": "completed"
+            }
+          ]
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "DESN2004",
+      "DESN6004"
+    ],
+    "otherConditions": [
+      {
+        "type": "assumedKnowledge",
+        "officialText": "Familiarity with basic computer techniques for graphics and design, familiarity with basic photography/video techniques for documenting experiments.",
+        "sourceSection": "Assumed Knowledge",
+        "planningEnforcement": "ignored"
+      }
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "DESN2004",
+      "DESN6004"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/DESN2004",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

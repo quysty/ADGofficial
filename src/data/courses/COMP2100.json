@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP2100",
+  "title": "Software Construction",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "compulsory",
+    "choiceGroup": null
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2027,
+    "appliesFromYear": 2028,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      },
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": false,
+    "items": []
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course, you must have successfully completed: COMP1110 or COMP1140 AND 6 units of 1000-level MATH. Students enrolled in a Bachelor of Science (BSC) or Bachelor of Advanced Science (ASCAD) must have successfully completed: COMP1110 or COMP1140 AND COMP1600 AND 6 units of 1000-level MATH. You are not able to enrol in this course if you have completed COMP6442.",
+    "prerequisiteRule": {
+      "type": "allOf",
+      "rules": [
+        {
+          "type": "anyOf",
+          "rules": [
+            {
+              "type": "course",
+              "courseCode": "COMP1110",
+              "minimumStatus": "completed"
+            },
+            {
+              "type": "course",
+              "courseCode": "COMP1140",
+              "minimumStatus": "completed"
+            }
+          ]
+        },
+        {
+          "type": "subjectUnits",
+          "subject": "MATH",
+          "minimumUnits": 6,
+          "level": 1000,
+          "minimumStatus": "completed"
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [
+      {
+        "when": {
+          "programCodes": [
+            "BSC",
+            "ASCAD"
+          ]
+        },
+        "prerequisiteRule": {
+          "type": "allOf",
+          "rules": [
+            {
+              "type": "anyOf",
+              "rules": [
+                {
+                  "type": "course",
+                  "courseCode": "COMP1110",
+                  "minimumStatus": "completed"
+                },
+                {
+                  "type": "course",
+                  "courseCode": "COMP1140",
+                  "minimumStatus": "completed"
+                }
+              ]
+            },
+            {
+              "type": "course",
+              "courseCode": "COMP1600",
+              "minimumStatus": "completed"
+            },
+            {
+              "type": "subjectUnits",
+              "subject": "MATH",
+              "minimumUnits": 6,
+              "level": 1000,
+              "minimumStatus": "completed"
+            }
+          ]
+        }
+      }
+    ],
+    "incompatibilities": [
+      "COMP6442"
+    ],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP6442"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP2100",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

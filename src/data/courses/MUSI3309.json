@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 2,
+  "code": "MUSI3309",
+  "title": "Digital Music: Platforms, Content and AI",
+  "programDisplayTitle": "Music and Digital Media",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Music",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": null,
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "ict_related_option",
+    "choiceGroup": "BCOMP_ICT_RELATED",
+    "requirementGroup": "BCOMP_ICT_RELATED",
+    "requiredUnits": 6
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2027,
+    "appliesFromYear": 2028,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "prerequisite_interpretation",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "The official rule allows enrolment with the consent of the Convener as an alternative to completing 72 units.",
+        "action": "The active planner enforces the explicit 72-unit path; treat Convener consent as a manual exception."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed 72 units of tertiary courses, or with consent of the Convener. You are not able to enrol in this course if you have previously completed MUSI6009.",
+    "prerequisiteRule": {
+      "type": "minimumCompletedUnits",
+      "units": 72,
+      "minimumStatus": "completed"
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "MUSI6009"
+    ],
+    "otherConditions": [
+      "Consent of the Convener is an official alternative to the 72-unit requirement and requires manual confirmation."
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "MUSI6009"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/MUSI3309",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP3670",
+  "title": "Introduction to Machine Learning",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None.",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": false,
+    "items": []
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must have completed COMP1110 or COMP1140. Incompatible with COMP6670.",
+    "prerequisiteRule": {
+      "type": "anyOf",
+      "rules": [
+        {
+          "type": "course",
+          "courseCode": "COMP1110",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "course",
+          "courseCode": "COMP1140",
+          "minimumStatus": "completed"
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP6670"
+    ],
+    "otherConditions": [
+      {
+        "type": "assumedKnowledge",
+        "officialText": "Students are assumed to have taken the highest level of high school mathematics available and some programming. For ACT students, this means a double major in specialist mathematics. For NSW students, this means HSC Maths Extension 2. Other students should have equivalent background knowledge, which can be gained through courses such as MATH1013 or MATH1115. Recommended Knowledge: Linear Algebra, Calculus, Discrete Math, Probability & Statistics.",
+        "sourceSection": "Assumed Knowledge",
+        "planningEnforcement": "ignored"
+      }
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP6670"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP3670",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

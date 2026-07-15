@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 2,
+  "code": "INFS2024",
+  "title": "Information Systems Analysis",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Information Systems",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": "This course has yet to be assessed for inherent requirements.",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "ict_related_option",
+    "choiceGroup": "BCOMP_ICT_RELATED",
+    "requirementGroup": "BCOMP_ICT_RELATED",
+    "requiredUnits": 6
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2027,
+    "appliesFromYear": 2028,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": false,
+    "items": []
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course, you must have completed at least one of the following courses: INFS1001 - Business Information Systems, COMP1100 - Programming as Problem Solving, COMP1710 - Web Development and Design, or COMP1720 - Art and Interaction Computing.",
+    "prerequisiteRule": {
+      "type": "anyOf",
+      "rules": [
+        {
+          "type": "course",
+          "courseCode": "INFS1001",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "course",
+          "courseCode": "COMP1100",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "course",
+          "courseCode": "COMP1710",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "course",
+          "courseCode": "COMP1720",
+          "minimumStatus": "completed"
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [],
+    "otherConditions": []
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/INFS2024",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

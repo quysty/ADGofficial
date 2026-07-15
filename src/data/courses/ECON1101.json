@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 2,
+  "code": "ECON1101",
+  "title": "Microeconomics 1",
+  "units": 6,
+  "libraryGroup": "BACCT",
+  "courseSubject": "Economics",
+  "inherentRequirements": {
+    "status": "not_applicable",
+    "officialText": "Not applicable",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BACCT",
+    "role": "compulsory",
+    "choiceGroup": null
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        },
+        {
+          "name": "Spring Session",
+          "label": "Spring Session 2026",
+          "planningTerm": null,
+          "planningEnabled": false
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2028",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      },
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": true,
+    "manualReviewReason": "The published pattern changes after 2026: Spring Session appears in 2026 but is not listed for 2027 or 2028."
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "offering_time",
+        "status": "open",
+        "authoritativeField": "Offered in",
+        "issue": "The published pattern changes after 2026: Spring Session appears in 2026 but is not listed for 2027 or 2028.",
+        "action": "Follow the latest official Offered in data and verify manually before enforcing projected future availability."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "no_section_published",
+    "officialText": null,
+    "prerequisiteRule": null,
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [],
+    "otherConditions": [],
+    "manualVerification": {
+      "scope": "prerequisite",
+      "result": "none",
+      "verifiedAt": "2026-07-13",
+      "providedBy": "user",
+      "evidence": "User manually reviewed the course and reported no prerequisite. The supplied screenshot shows the separate Inherent Requirements section and is not treated as official Requisite and Incompatibility text."
+    }
+  },
+  "postrequisiteRestrictions": {
+    "status": "not_verified",
+    "blockedByCompletedCourses": [],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/ECON1101",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

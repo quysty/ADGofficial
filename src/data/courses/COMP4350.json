@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP4350",
+  "title": "Sound and Music Computing",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2028",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": true,
+    "manualReviewReason": "No 2026 class is published, while the official future offerings list First Semester in both 2027 and 2028."
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "offering_time",
+        "status": "open",
+        "authoritativeField": "Offered in",
+        "issue": "No 2026 class is published, while the official future offerings list First Semester in both 2027 and 2028.",
+        "action": "Follow the latest official Offered in data and verify manually before enforcing projected future availability."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course, you must have either completed 12 units of 2000-level COMP courses or have completed 12 units of 2000-level MUSI, DESN or ARTV courses and have completed COMP1720. Incompatible with COMP8350.",
+    "prerequisiteRule": {
+      "type": "anyOf",
+      "rules": [
+        {
+          "type": "subjectUnits",
+          "subject": "COMP",
+          "minimumUnits": 12,
+          "level": 2000,
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "allOf",
+          "rules": [
+            {
+              "type": "subjectUnits",
+              "subjects": [
+                "MUSI",
+                "DESN",
+                "ARTV"
+              ],
+              "minimumUnits": 12,
+              "level": 2000,
+              "minimumStatus": "completed"
+            },
+            {
+              "type": "course",
+              "courseCode": "COMP1720",
+              "minimumStatus": "completed"
+            }
+          ]
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP8350"
+    ],
+    "otherConditions": [
+      {
+        "type": "assumedKnowledge",
+        "officialText": "This course is open to students in computer science, music, art, and elsewhere at ANU. You should have a strong interest in making music using computers and a willingness to learn new approaches to music and computer programming. You should have a strong background in your discipline having completed coursework at the first- and second-year level. It is recommended that students take COMP1720 before this course.",
+        "sourceSection": "Assumed Knowledge",
+        "planningEnforcement": "ignored"
+      }
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP8350"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP4350",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

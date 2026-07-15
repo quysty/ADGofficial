@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP4620",
+  "title": "Advanced Topics in Artificial Intelligence",
+  "units": 6,
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "not_published",
+    "officialText": "Information on inherent requirements for this course is currently not available.",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "prerequisite_interpretation",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "The official page enforces 12 units of 3000/4000-level COMP courses but says additional prerequisites depend on the announced Advanced Topic and are not specified on this page.",
+        "action": "Enforce the published 12-unit rule and verify the topic-specific prerequisites manually after the Advanced Topic is announced."
+      },
+      {
+        "area": "course_repeatability",
+        "status": "open",
+        "authoritativeField": "Other Information",
+        "issue": "The 2026 official page does not publish permission to receive credit more than once for different topics.",
+        "action": "Do not double-count repeated COMP4620 enrolments unless the School confirms that repeat credit is permitted."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "12 units of 3000 and/or 4000 level COMP courses. Additional Prerequisite courses for the Advanced Topic will be listed on the SoCo website (Special Topics in Computing page) when the course topic is announced. Students who meet the pre-requisites can request a permission code following the instructions for Enrolling in CSS courses. Incompatible with COMP8620. You will need to contact the School of Computing to request a permission code to enrol in this course.",
+    "prerequisiteRule": {
+      "type": "subjectUnits",
+      "subject": "COMP",
+      "minimumUnits": 12,
+      "minimumLevel": 3000,
+      "maximumLevel": 4000,
+      "minimumStatus": "completed"
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP8620"
+    ],
+    "otherConditions": [
+      {
+        "type": "topicSpecificPrerequisites",
+        "officialText": "Additional Prerequisite courses for the Advanced Topic will be listed on the SoCo website (Special Topics in Computing page) when the course topic is announced.",
+        "sourceSection": "Requisite and Incompatibility",
+        "planningEnforcement": "manual_review"
+      },
+      {
+        "type": "permissionCode",
+        "officialText": "You will need to contact the School of Computing to request a permission code to enrol in this course.",
+        "sourceSection": "Requisite and Incompatibility",
+        "planningEnforcement": "ignored"
+      },
+      {
+        "type": "assumedKnowledge",
+        "officialText": "Students are assumed to have solid background knowledge in general computer science (e.g., programming experience, basic theoretical CS, and basic mathematics), but no specialist knowledge.",
+        "sourceSection": "Assumed Knowledge",
+        "planningEnforcement": "ignored"
+      }
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP8620"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP4620",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}

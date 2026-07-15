@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 2,
+  "code": "COMP3500",
+  "title": "Software Engineering Project",
+  "units": 12,
+  "unitDisplay": "6+6 units (annual course)",
+  "annualCourse": {
+    "required": true,
+    "officialHeaderUnitValue": 6,
+    "totalUnits": 12,
+    "unitsPerSemester": 6,
+    "requiredCompletions": 2,
+    "requiredConsecutiveSemesters": 2,
+    "officialText": "COMP3500 is an annual course (6+6) that must be completed twice, in consecutive semesters.",
+    "workloadOfficialText": "Annual course. COMP3500 must be taken in two consecutive semesters.",
+    "planningEnforcement": "manual_review"
+  },
+  "libraryGroup": "BCOMP",
+  "courseSubject": "Computer Science",
+  "inherentRequirements": {
+    "status": "explicit_none",
+    "officialText": "None",
+    "planningEnforcement": "none",
+    "manualReviewRequired": false
+  },
+  "programRequirement": {
+    "programCode": "BACCT-BCOMP",
+    "component": "BCOMP",
+    "role": "major_course",
+    "requiredUnits": 48
+  },
+  "offerings": [
+    {
+      "year": 2026,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2026",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2026",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2027",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2027",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "sessions": [
+        {
+          "name": "First Semester",
+          "label": "First Semester 2028",
+          "planningTerm": "S1",
+          "planningEnabled": true
+        },
+        {
+          "name": "Second Semester",
+          "label": "Second Semester 2028",
+          "planningTerm": "S2",
+          "planningEnabled": true
+        }
+      ]
+    }
+  ],
+  "offeringProjection": {
+    "strategy": "repeat_latest_published_pattern",
+    "basedOnPublishedYear": 2028,
+    "appliesFromYear": 2029,
+    "appliesUntil": "open-ended",
+    "sessions": [
+      {
+        "name": "First Semester",
+        "planningTerm": "S1",
+        "planningEnabled": true
+      },
+      {
+        "name": "Second Semester",
+        "planningTerm": "S2",
+        "planningEnabled": true
+      }
+    ],
+    "manualReviewRequired": false,
+    "manualReviewReason": null
+  },
+  "manualReview": {
+    "required": true,
+    "items": [
+      {
+        "area": "annual_course_structure",
+        "status": "open",
+        "authoritativeField": "Introduction and Workload",
+        "issue": "The official header lists 6 units, while the course text defines an annual 6+6 course that must be completed twice in consecutive semesters. This package records the complete pathway as 12 units.",
+        "action": "Place the two 6-unit completions in consecutive semesters and count 12 units only after the annual course sequence is complete."
+      },
+      {
+        "area": "project_eligibility",
+        "status": "open",
+        "authoritativeField": "Requisite and Incompatibility",
+        "issue": "Eligibility includes membership of a student project group before the end of week 1 and approval of that project by the convener; these conditions cannot be derived from course history.",
+        "action": "Verify project-group membership and convener approval manually before enrolment."
+      }
+    ]
+  },
+  "requisiteAndIncompatibility": {
+    "status": "present",
+    "officialText": "To enrol in this course you must meet the eligibility criteria, which includes membership of a student project group before the end of week 1, where the project has been approved by the convener. You must also be studying: Bachelor of Engineering (Honours) in Software Engineering (AENSE) OR Bachelor of Computing (BCOMP) AND have completed: COMP2100 AND COMP2120. You are not able to enrol in this course if you have previously completed COMP3100 or if you have previously or are currently enrolled in COMP3820 or COMP4500 or COMP4820.",
+    "prerequisiteRule": {
+      "type": "allOf",
+      "rules": [
+        {
+          "type": "anyOf",
+          "rules": [
+            {
+              "type": "programEnrollment",
+              "programCode": "AENSE",
+              "programTitle": "Bachelor of Engineering (Honours) in Software Engineering",
+              "minimumStatus": "enrolled"
+            },
+            {
+              "type": "programEnrollment",
+              "programCode": "BCOMP",
+              "programTitle": "Bachelor of Computing",
+              "minimumStatus": "enrolled"
+            }
+          ]
+        },
+        {
+          "type": "course",
+          "courseCode": "COMP2100",
+          "minimumStatus": "completed"
+        },
+        {
+          "type": "course",
+          "courseCode": "COMP2120",
+          "minimumStatus": "completed"
+        }
+      ]
+    },
+    "conditionalPrerequisiteRules": [],
+    "incompatibilities": [
+      "COMP3100",
+      "COMP3820",
+      "COMP4500",
+      "COMP4820"
+    ],
+    "otherConditions": [
+      {
+        "type": "projectGroupEligibility",
+        "officialText": "Membership of a student project group before the end of week 1, where the project has been approved by the convener.",
+        "sourceSection": "Requisite and Incompatibility",
+        "planningEnforcement": "ignored"
+      }
+    ]
+  },
+  "postrequisiteRestrictions": {
+    "status": "from_official_requisite_and_incompatibility",
+    "blockedByCompletedCourses": [
+      "COMP3100",
+      "COMP3820",
+      "COMP4500",
+      "COMP4820"
+    ],
+    "planningEffect": "block_this_course_if_any_listed_course_is_already_completed"
+  },
+  "source": {
+    "coursePage": "https://programsandcourses.anu.edu.au/2026/course/COMP3500",
+    "programPage": "https://programsandcourses.anu.edu.au/2026/program/BACCT-BCOMP",
+    "academicYear": 2026,
+    "verifiedAt": "2026-07-13",
+    "futureOfferingsIndicative": true
+  }
+}
