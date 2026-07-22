@@ -41,8 +41,8 @@ function setBusy(busy) {
 function friendlyError(error) {
   const message = String(error?.message || error || "未知错误");
   if (/invalid login credentials/i.test(message)) return "邮箱或密码不正确。";
-  if (/email address not authorized/i.test(message)) return "此邮箱尚未获准接收登录邮件；请配置 Supabase 自定义 SMTP，或使用项目团队邮箱。";
-  if (/email rate limit|rate limit|too many requests/i.test(message)) return "登录邮件发送过于频繁，请稍后再试。";
+  if (/email address not authorized/i.test(message)) return "此邮箱尚未获准接收验证码；请配置 Supabase 自定义 SMTP，或使用项目团队邮箱。";
+  if (/email rate limit|rate limit|too many requests/i.test(message)) return "验证码发送过于频繁，请稍后再试。";
   if (/token.*expired|invalid.*token|otp.*expired/i.test(message)) return "验证码无效或已过期，请重新发送。";
   if (/failed to fetch|network/i.test(message)) return "无法连接云端，请检查网络后重试。";
   return `登录失败：${message}`;
@@ -78,10 +78,6 @@ function safeNextUrl() {
   } catch {
     return fallback;
   }
-}
-
-function loginCallbackUrl() {
-  return new URL("course-builder-login.html", window.location.href).toString();
 }
 
 function saveAnonymousSession(session) {
@@ -357,7 +353,7 @@ function showLoginForm() {
   passwordInput.value = "";
   pendingEmail = "";
   emailInput.focus();
-  setStatus("请输入邮箱和密码，或发送登录邮件。");
+  setStatus("请输入邮箱和密码，或发送邮箱验证码。");
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -395,12 +391,11 @@ otpSendButton.addEventListener("click", async () => {
   if (!email || !anonymousSessionReady) return;
 
   setBusy(true);
-  setStatus("正在发送登录邮件…");
+  setStatus("正在发送验证码…");
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      shouldCreateUser: true,
-      emailRedirectTo: loginCallbackUrl()
+      shouldCreateUser: true
     }
   });
   setBusy(false);
@@ -411,7 +406,7 @@ otpSendButton.addEventListener("click", async () => {
   }
 
   showOtpForm(email);
-  setStatus("登录邮件已发送。请输入验证码，或点击邮件中的登录链接。", "success");
+  setStatus("验证码已发送，请查看邮箱并输入 6 位验证码。", "success");
 });
 
 otpForm.addEventListener("submit", async (event) => {
@@ -482,9 +477,8 @@ async function initialiseLogin() {
       }
     }
 
-    const callbackError = new URLSearchParams(window.location.hash.slice(1)).get("error_description");
     setBusy(false);
-    setStatus(callbackError || "请输入邮箱和密码，或发送登录邮件。", callbackError ? "error" : "");
+    setStatus("请输入邮箱和密码，或发送邮箱验证码。");
     emailInput.focus();
   } catch (error) {
     console.error(error);
