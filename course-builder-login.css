@@ -115,14 +115,9 @@ body[data-page="course-builder-login"] [hidden] {
   box-shadow: 0 0 0 3px rgba(7, 86, 158, 0.12);
 }
 
-.course-login-otp input {
-  letter-spacing: 0.28em;
-  font-variant-numeric: tabular-nums;
-}
-
 .course-login-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
   margin-top: 13px;
 }

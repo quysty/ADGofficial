@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>登录 Course Builder | ANU Explore</title>
-  <link rel="stylesheet" href="course-builder-login.css?v=course-builder-login-v1" />
+  <link rel="stylesheet" href="course-builder-login.css?v=course-builder-login-v2" />
 </head>
 <body data-page="course-builder-login">
   <main class="course-login-page">
@@ -37,34 +37,14 @@
           name="password"
           type="password"
           autocomplete="current-password"
-          placeholder="已有账户可直接输入密码"
+          placeholder="请输入密码"
+          required
         />
 
         <div class="course-login-actions">
           <button id="courseLoginPasswordButton" class="course-login-button course-login-button--primary" type="submit">密码登录</button>
-          <button id="courseLoginOtpSend" class="course-login-button" type="button">发送验证码</button>
         </div>
-        <p class="course-login-help">没有密码可使用邮箱验证码；首次使用验证码会自动创建账户。</p>
-      </form>
-
-      <form id="courseLoginOtpForm" class="course-login-form course-login-otp" hidden novalidate>
-        <label for="courseLoginOtp">6 位邮箱验证码</label>
-        <input
-          id="courseLoginOtp"
-          name="otp"
-          type="text"
-          inputmode="numeric"
-          autocomplete="one-time-code"
-          maxlength="6"
-          pattern="[0-9]{6}"
-          placeholder="000000"
-          required
-        />
-        <div class="course-login-actions">
-          <button id="courseLoginOtpVerify" class="course-login-button course-login-button--primary" type="submit">验证并登录</button>
-          <button id="courseLoginOtpBack" class="course-login-button" type="button">更换邮箱</button>
-        </div>
-        <p class="course-login-help">请输入邮件中最新的 6 位验证码。</p>
+        <p class="course-login-help">仅支持已有 Course Builder 账户使用邮箱和密码登录。</p>
       </form>
 
       <button id="courseLoginRetry" class="course-login-button course-login-retry" type="button" hidden>重试同步并进入</button>
@@ -72,11 +52,11 @@
 
       <footer class="course-login-footer">
         <span>每个账户最多保存 3 个方案</span>
-        <span>Supabase 云端同步</span>
+        <span>云端同步</span>
       </footer>
     </section>
   </main>
 
-  <script type="module" src="course-builder-login.js?v=course-builder-login-v2"></script>
+  <script type="module" src="course-builder-login.js?v=course-builder-login-v3"></script>
 </body>
 </html>
