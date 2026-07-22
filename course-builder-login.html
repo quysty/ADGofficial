@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 Course Builder | ANU Explore</title>
+  <link rel="stylesheet" href="course-builder-login.css?v=course-builder-login-v1" />
+</head>
+<body data-page="course-builder-login">
+  <main class="course-login-page">
+    <section class="course-login-card" aria-labelledby="courseLoginTitle">
+      <header class="course-login-header">
+        <span class="course-login-kicker">ANU Explore</span>
+        <h1 id="courseLoginTitle">Course Builder</h1>
+        <p>登录后，课程方案只保存在云端。同一账户可在任意电脑读取相同的方案列表。</p>
+      </header>
+
+      <aside id="courseLoginMigration" class="course-login-migration" hidden>
+        <strong>已找到当前电脑的临时云端方案</strong>
+        <p id="courseLoginMigrationText"></p>
+      </aside>
+
+      <form id="courseLoginForm" class="course-login-form" novalidate>
+        <label for="courseLoginEmail">邮箱</label>
+        <input
+          id="courseLoginEmail"
+          name="email"
+          type="email"
+          autocomplete="email"
+          placeholder="name@example.com"
+          required
+        />
+
+        <label for="courseLoginPassword">密码</label>
+        <input
+          id="courseLoginPassword"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          placeholder="已有账户可直接输入密码"
+        />
+
+        <div class="course-login-actions">
+          <button id="courseLoginPasswordButton" class="course-login-button course-login-button--primary" type="submit">登录</button>
+          <button id="courseLoginOtpSend" class="course-login-button" type="button">发送登录邮件</button>
+        </div>
+        <p class="course-login-help">首次使用可发送登录邮件；收到验证码可在本页输入，收到链接可直接点击。</p>
+      </form>
+
+      <form id="courseLoginOtpForm" class="course-login-form course-login-otp" hidden novalidate>
+        <label for="courseLoginOtp">6 位邮箱验证码（如邮件提供）</label>
+        <input
+          id="courseLoginOtp"
+          name="otp"
+          type="text"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="6"
+          pattern="[0-9]{6}"
+          placeholder="000000"
+          required
+        />
+        <div class="course-login-actions">
+          <button id="courseLoginOtpVerify" class="course-login-button course-login-button--primary" type="submit">验证并登录</button>
+          <button id="courseLoginOtpBack" class="course-login-button" type="button">更换邮箱</button>
+        </div>
+        <p class="course-login-help">请使用邮件中最新的验证码；如果邮件提供登录链接，也可直接点击链接。</p>
+      </form>
+
+      <button id="courseLoginRetry" class="course-login-button course-login-retry" type="button" hidden>重试同步并进入</button>
+      <p id="courseLoginStatus" class="course-login-status" role="status" aria-live="polite">正在检查登录状态…</p>
+
+      <footer class="course-login-footer">
+        <span>每个账户最多保存 3 个方案</span>
+        <span>Supabase 云端同步</span>
+      </footer>
+    </section>
+  </main>
+
+  <script type="module" src="course-builder-login.js?v=course-builder-login-v1"></script>
+</body>
+</html>
