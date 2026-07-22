@@ -9,18 +9,12 @@ const loginForm = document.querySelector("#courseLoginForm");
 const emailInput = document.querySelector("#courseLoginEmail");
 const passwordInput = document.querySelector("#courseLoginPassword");
 const passwordButton = document.querySelector("#courseLoginPasswordButton");
-const otpSendButton = document.querySelector("#courseLoginOtpSend");
-const otpForm = document.querySelector("#courseLoginOtpForm");
-const otpInput = document.querySelector("#courseLoginOtp");
-const otpVerifyButton = document.querySelector("#courseLoginOtpVerify");
-const otpBackButton = document.querySelector("#courseLoginOtpBack");
 const retryButton = document.querySelector("#courseLoginRetry");
 const migrationBanner = document.querySelector("#courseLoginMigration");
 const migrationText = document.querySelector("#courseLoginMigrationText");
 const status = document.querySelector("#courseLoginStatus");
 
 let supabase = null;
-let pendingEmail = "";
 let finishingLogin = false;
 let anonymousSessionReady = true;
 let authSubscription = null;
@@ -32,7 +26,7 @@ function setStatus(message, type = "") {
 }
 
 function setBusy(busy) {
-  [emailInput, passwordInput, passwordButton, otpSendButton, otpInput, otpVerifyButton, otpBackButton, retryButton]
+  [emailInput, passwordInput, passwordButton, retryButton]
     .forEach((element) => {
       element.disabled = busy;
     });
@@ -41,9 +35,6 @@ function setBusy(busy) {
 function friendlyError(error) {
   const message = String(error?.message || error || "未知错误");
   if (/invalid login credentials/i.test(message)) return "邮箱或密码不正确。";
-  if (/email address not authorized/i.test(message)) return "此邮箱尚未获准接收验证码；请配置 Supabase 自定义 SMTP，或使用项目团队邮箱。";
-  if (/email rate limit|rate limit|too many requests/i.test(message)) return "验证码发送过于频繁，请稍后再试。";
-  if (/token.*expired|invalid.*token|otp.*expired/i.test(message)) return "验证码无效或已过期，请重新发送。";
   if (/failed to fetch|network/i.test(message)) return "无法连接云端，请检查网络后重试。";
   return `登录失败：${message}`;
 }
@@ -338,24 +329,6 @@ async function showAnonymousMigration(session) {
   }
 }
 
-function showOtpForm(email) {
-  pendingEmail = email;
-  loginForm.hidden = true;
-  otpForm.hidden = false;
-  otpInput.value = "";
-  otpInput.focus();
-}
-
-function showLoginForm() {
-  otpForm.hidden = true;
-  loginForm.hidden = false;
-  otpInput.value = "";
-  passwordInput.value = "";
-  pendingEmail = "";
-  emailInput.focus();
-  setStatus("请输入邮箱和密码，或发送邮箱验证码。");
-}
-
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const email = normaliseEmail();
@@ -363,7 +336,7 @@ loginForm.addEventListener("submit", async (event) => {
   if (!email) return;
   if (!password) {
     passwordInput.focus();
-    setStatus("请输入密码；没有密码可改用邮箱验证码。", "error");
+    setStatus("请输入密码。", "error");
     return;
   }
   if (!anonymousSessionReady) return;
@@ -385,62 +358,6 @@ loginForm.addEventListener("submit", async (event) => {
   }
   await finishLogin();
 });
-
-otpSendButton.addEventListener("click", async () => {
-  const email = normaliseEmail();
-  if (!email || !anonymousSessionReady) return;
-
-  setBusy(true);
-  setStatus("正在发送验证码…");
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: true
-    }
-  });
-  setBusy(false);
-
-  if (error) {
-    setStatus(friendlyError(error), "error");
-    return;
-  }
-
-  showOtpForm(email);
-  setStatus("验证码已发送，请查看邮箱并输入 6 位验证码。", "success");
-});
-
-otpForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const token = otpInput.value.trim().replace(/\s+/g, "");
-  if (!pendingEmail || !/^\d{6}$/.test(token)) {
-    otpInput.focus();
-    setStatus("请输入邮件中的 6 位验证码。", "error");
-    return;
-  }
-
-  setBusy(true);
-  setStatus("正在验证…");
-  try {
-    await refreshAnonymousBackupBeforeSwitch();
-  } catch (error) {
-    setBusy(false);
-    setStatus(`无法安全切换账户：${friendlyError(error)}`, "error");
-    return;
-  }
-  const { error } = await supabase.auth.verifyOtp({
-    email: pendingEmail,
-    token,
-    type: "email"
-  });
-  if (error) {
-    setBusy(false);
-    setStatus(friendlyError(error), "error");
-    return;
-  }
-  await finishLogin();
-});
-
-otpBackButton.addEventListener("click", showLoginForm);
 retryButton.addEventListener("click", finishLogin);
 
 async function initialiseLogin() {
@@ -478,7 +395,7 @@ async function initialiseLogin() {
     }
 
     setBusy(false);
-    setStatus("请输入邮箱和密码，或发送邮箱验证码。");
+    setStatus("请输入邮箱和密码。");
     emailInput.focus();
   } catch (error) {
     console.error(error);
