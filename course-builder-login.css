@@ -1,0 +1,208 @@
+html {
+  color-scheme: light;
+}
+
+body[data-page="course-builder-login"],
+body[data-page="course-builder-login"] * {
+  box-sizing: border-box;
+}
+
+body[data-page="course-builder-login"] {
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(7, 86, 158, 0.06), transparent 46%),
+    #f7f6f2;
+  color: #171717;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body[data-page="course-builder-login"] [hidden] {
+  display: none !important;
+}
+
+.course-login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+}
+
+.course-login-card {
+  width: min(100%, 480px);
+  padding: 38px;
+  border: 1px solid #c9c8c3;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 22px 55px rgba(23, 23, 23, 0.11);
+}
+
+.course-login-kicker {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #07569e;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.course-login-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.course-login-header p {
+  margin: 18px 0 0;
+  color: #555;
+  font-size: 0.93rem;
+  line-height: 1.65;
+}
+
+.course-login-migration {
+  margin-top: 24px;
+  padding: 13px 14px;
+  border: 1px solid #d9a33a;
+  border-radius: 6px;
+  background: #fff8e8;
+}
+
+.course-login-migration strong,
+.course-login-migration p {
+  display: block;
+}
+
+.course-login-migration strong {
+  font-size: 0.82rem;
+}
+
+.course-login-migration p {
+  margin: 4px 0 0;
+  color: #6a5220;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.course-login-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+.course-login-form label {
+  margin-top: 8px;
+  color: #414141;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.course-login-form input {
+  width: 100%;
+  height: 44px;
+  padding: 9px 11px;
+  border: 1px solid #9d9d9d;
+  border-radius: 5px;
+  background: #fff;
+  color: #171717;
+  font: inherit;
+  font-size: 0.93rem;
+  outline: none;
+}
+
+.course-login-form input:focus {
+  border-color: #07569e;
+  box-shadow: 0 0 0 3px rgba(7, 86, 158, 0.12);
+}
+
+.course-login-otp input {
+  letter-spacing: 0.28em;
+  font-variant-numeric: tabular-nums;
+}
+
+.course-login-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.course-login-button {
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #8f8f8f;
+  border-radius: 5px;
+  background: #fff;
+  color: #171717;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.course-login-button--primary {
+  border-color: #07569e;
+  background: #07569e;
+  color: #fff;
+}
+
+.course-login-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.course-login-help {
+  margin: 2px 0 0;
+  color: #707070;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.course-login-retry {
+  width: 100%;
+  margin-top: 18px;
+  border-color: #07569e;
+  color: #07569e;
+}
+
+.course-login-status {
+  min-height: 1.4em;
+  margin: 18px 0 0;
+  color: #656565;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.course-login-status.is-error {
+  color: #991b1b;
+}
+
+.course-login-status.is-success {
+  color: #087a70;
+}
+
+.course-login-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #e0dfda;
+  color: #777;
+  font-size: 0.65rem;
+}
+
+@media (max-width: 540px) {
+  .course-login-page {
+    place-items: start center;
+    padding: 18px 12px;
+  }
+
+  .course-login-card {
+    padding: 28px 20px;
+  }
+
+  .course-login-actions {
+    grid-template-columns: 1fr;
+  }
+}

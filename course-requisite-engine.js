@@ -206,9 +206,19 @@
     }
   }
 
+  function courseCodesInRule(rule) {
+    if (!rule) return [];
+    if (rule.type === "course") return rule.courseCode ? [rule.courseCode] : [];
+    if (rule.type === "allOf" || rule.type === "anyOf") {
+      return uniqueMessages((rule.rules || []).flatMap(courseCodesInRule));
+    }
+    return [];
+  }
+
   function whenMatches(when, context) {
     if (!when) return true;
     const program = context.program || {};
+    const academicYear = Number(context.targetEntry?.academicYear ?? context.academicYear);
     if (
       when.programCodes?.length &&
       !when.programCodes.some((code) => (program.codes || []).includes(code))
@@ -227,13 +237,30 @@
     ) {
       return false;
     }
-    if (when.academicYearFrom && context.targetEntry.academicYear < when.academicYearFrom) {
+    if (
+      when.academicYearFrom &&
+      (!Number.isFinite(academicYear) || academicYear < when.academicYearFrom)
+    ) {
       return false;
     }
-    if (when.academicYearTo && context.targetEntry.academicYear > when.academicYearTo) {
+    if (
+      when.academicYearTo &&
+      (!Number.isFinite(academicYear) || academicYear > when.academicYearTo)
+    ) {
       return false;
     }
     return true;
+  }
+
+  function prerequisiteCourseCodes(coursePackage, context = {}) {
+    const requisite = coursePackage?.requisiteAndIncompatibility || {};
+    const rules = [
+      requisite.prerequisiteRule,
+      ...(requisite.conditionalPrerequisiteRules || [])
+        .filter((conditionalRule) => whenMatches(conditionalRule.when, context))
+        .map((conditionalRule) => conditionalRule.prerequisiteRule || conditionalRule)
+    ];
+    return uniqueMessages(rules.flatMap(courseCodesInRule));
   }
 
   function evaluateConditionalRule(conditionalRule, context) {
@@ -325,6 +352,7 @@
   window.CourseRequisiteEngine = {
     STATUS,
     evaluateRule,
+    prerequisiteCourseCodes,
     ruleDescription,
     validateCourse
   };

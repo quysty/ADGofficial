@@ -6,7 +6,15 @@ const courseBuilderGridOverlay = document.querySelector("#courseBuilderGrid");
 const courseBuilderGridToggle = document.querySelector("#courseBuilderGridToggle");
 const PLANNING_START_YEAR = 2026;
 const PLANNING_END_YEAR = 2029;
+const TERM_SEQUENCE = ["S1", "S2", "SPRING", "SUMMER"];
+const TERM_LABELS = {
+  S1: "Semester 1",
+  S2: "Semester 2",
+  SPRING: "Spring Session",
+  SUMMER: "Summer Session"
+};
 const currentProgramContext = {
+  academicYear: PLANNING_START_YEAR,
   codes: ["BACCT-BCOMP", "BACCT", "BCOMP"],
   groups: ["CBE degree"],
   types: []
@@ -60,21 +68,35 @@ let dragPointerOffset = null;
 let dragPreview = null;
 let dragStarted = false;
 let courseOfferingDataReady = false;
+let selectedRelationshipCourseCode = "";
 
 function assignShelfSlotTerms(startYear = PLANNING_START_YEAR) {
   degreeYears.forEach((yearElement, yearIndex) => {
     const academicYear = startYear + yearIndex;
+    const termSlotIndexes = new Map();
     const yearSlots = yearElement.querySelectorAll(".course-slot");
+    const standardSlots = Array.from(
+      yearElement.querySelectorAll(":scope > .course-rack > .course-slot")
+    );
     yearElement.dataset.academicYear = String(academicYear);
 
-    yearSlots.forEach((slot, slotIndex) => {
-      const planningTerm = slotIndex < 5 ? "S1" : "S2";
-      const columnIndex = slotIndex % 5;
-      const programComponent = columnIndex < 2 ? "BACCT" : columnIndex < 4 ? "BCOMP" : "EXTRA";
+    yearSlots.forEach((slot) => {
+      const shortSession = slot.closest(".course-short-session");
+      const standardSlotIndex = standardSlots.indexOf(slot);
+      const planningTerm =
+        shortSession?.dataset.planningTerm || (standardSlotIndex < 5 ? "S1" : "S2");
+      const termSlotIndex = termSlotIndexes.get(planningTerm) || 0;
+      const columnIndex = standardSlotIndex % 5;
+      const programComponent = !shortSession && columnIndex === 4 ? "EXTRA" : "";
       slot.dataset.academicYear = String(academicYear);
       slot.dataset.planningTerm = planningTerm;
+      slot.dataset.planSlotId = `Y${yearIndex + 1}:${planningTerm}:${termSlotIndex + 1}`;
       slot.dataset.programComponent = programComponent;
-      slot.setAttribute("aria-label", `${academicYear} ${planningTerm} course slot`);
+      termSlotIndexes.set(planningTerm, termSlotIndex + 1);
+      slot.setAttribute(
+        "aria-label",
+        `${academicYear} ${TERM_LABELS[planningTerm] || planningTerm} course slot`
+      );
     });
   });
 }
@@ -105,6 +127,139 @@ librarySlots.forEach((slot, index) => {
     course.dataset.courseCode = course.querySelector("strong")?.textContent.trim() || "";
   }
 });
+
+function exportCoursePlanState() {
+  const majorCode = document.querySelector("#bcompMajorSelect")?.value || "";
+  const placements = Array.from(shelfSlots).flatMap((slot) => {
+    const card = slot.querySelector(":scope > .course-card");
+    if (!card) return [];
+
+    return [
+      {
+        slotId: slot.dataset.planSlotId,
+        courseCode: courseCodeFor(card),
+        libraryOrigin: card.dataset.libraryOrigin || "",
+        majorCode: card.dataset.majorCode || "",
+        majorRequirementGroup: card.dataset.majorRequirementGroup || "",
+        planningComponent: card.dataset.planningComponent || "",
+        choiceGroupOverride: card.hasAttribute("data-choice-group-override")
+          ? card.dataset.choiceGroupOverride
+          : null
+      }
+    ];
+  });
+
+  return {
+    schemaVersion: 1,
+    programCode: currentProgramContext.codes[0] || "BACCT-BCOMP",
+    planningStartYear: currentProgramContext.academicYear,
+    majorCode,
+    placements
+  };
+}
+
+function returnShelfCoursesToLibrary() {
+  Array.from(shelfSlots).forEach((slot) => {
+    const card = slot.querySelector(":scope > .course-card");
+    const originId = card?.dataset.libraryOrigin;
+    if (!card || !originId) return;
+
+    const originSlot = Array.from(librarySlots).find(
+      (librarySlot) => librarySlot.dataset.librarySlotId === originId
+    );
+    if (originSlot && !originSlot.querySelector(":scope > .course-card")) {
+      originSlot.appendChild(card);
+    }
+  });
+}
+
+function libraryCardForPlacement(placement) {
+  const expectedCode = String(placement?.courseCode || "").trim().toUpperCase();
+  const expectedMajorCode = String(placement?.majorCode || "");
+  const expectedRequirementGroup = String(placement?.majorRequirementGroup || "");
+  const expectedPlanningComponent = String(placement?.planningComponent || "");
+  const expectedChoiceGroupOverride = placement?.choiceGroupOverride;
+  const originId = String(placement?.libraryOrigin || "");
+  const originSlot = Array.from(librarySlots).find(
+    (slot) => slot.dataset.librarySlotId === originId
+  );
+  const originCard = originSlot?.querySelector(":scope > .course-card");
+
+  function isSemanticMatch(card) {
+    return (
+      courseCodeFor(card) === expectedCode &&
+      (card.dataset.majorCode || "") === expectedMajorCode &&
+      (card.dataset.majorRequirementGroup || "") === expectedRequirementGroup &&
+      (card.dataset.planningComponent || "") === expectedPlanningComponent &&
+      card.hasAttribute("data-choice-group-override") ===
+        (expectedChoiceGroupOverride !== null && expectedChoiceGroupOverride !== undefined) &&
+      (expectedChoiceGroupOverride === null ||
+        expectedChoiceGroupOverride === undefined ||
+        card.dataset.choiceGroupOverride === expectedChoiceGroupOverride)
+    );
+  }
+
+  if (originCard && isSemanticMatch(originCard)) return originCard;
+
+  const availableMatches = Array.from(
+    document.querySelectorAll(".course-library-slot > .course-card")
+  ).filter((card) => courseCodeFor(card) === expectedCode);
+  const semanticMatch = availableMatches.find(isSemanticMatch);
+  if (semanticMatch) return semanticMatch;
+
+  const majorMatches = expectedMajorCode
+    ? availableMatches.filter((card) => card.dataset.majorCode === expectedMajorCode)
+    : [];
+  if (majorMatches.length === 1) return majorMatches[0];
+  return availableMatches.length === 1 ? availableMatches[0] : null;
+}
+
+function importCoursePlanState(planState) {
+  if (
+    !planState ||
+    Number(planState.schemaVersion) !== 1 ||
+    !Array.isArray(planState.placements)
+  ) {
+    throw new Error("Unsupported course plan data.");
+  }
+
+  clearDragState();
+  selectedRelationshipCourseCode = "";
+  returnShelfCoursesToLibrary();
+
+  const majorSelect = document.querySelector("#bcompMajorSelect");
+  if (majorSelect) {
+    const savedMajorCode = String(planState.majorCode || "");
+    const hasSavedMajor = Array.from(majorSelect.options).some(
+      (option) => option.value === savedMajorCode
+    );
+    majorSelect.value = hasSavedMajor ? savedMajorCode : "";
+    majorSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  const shelfSlotsById = new Map(
+    Array.from(shelfSlots).map((slot) => [slot.dataset.planSlotId, slot])
+  );
+  let restored = 0;
+  let skipped = 0;
+
+  planState.placements.forEach((placement) => {
+    const destinationSlot = shelfSlotsById.get(String(placement?.slotId || ""));
+    const card = libraryCardForPlacement(placement);
+    if (!destinationSlot || !card || destinationSlot.querySelector(":scope > .course-card")) {
+      skipped += 1;
+      return;
+    }
+
+    destinationSlot.appendChild(card);
+    restored += 1;
+  });
+
+  syncChoiceGroupState();
+  validateShelfPlan();
+  syncCourseRelationshipHighlights();
+  return { restored, skipped };
+}
 
 function syncChoiceGroupState() {
   const selectedCourses = Array.from(shelfSlots)
@@ -140,7 +295,7 @@ function enabledPlanningTerms(sessions) {
       .filter(
         (session) =>
           session?.planningEnabled === true &&
-          (session.planningTerm === "S1" || session.planningTerm === "S2")
+          TERM_SEQUENCE.includes(session.planningTerm)
       )
       .map((session) => session.planningTerm)
   );
@@ -184,11 +339,104 @@ function courseLevelFor(courseCode) {
   return Number.isFinite(courseNumber) ? Math.floor(courseNumber / 1000) * 1000 : null;
 }
 
+function libraryCourseCards() {
+  return Array.from(document.querySelectorAll(".course-library-slot > .course-card"));
+}
+
+function prerequisiteCodesFor(coursePackage) {
+  const engine = window.CourseRequisiteEngine;
+  if (!engine?.prerequisiteCourseCodes || !coursePackage) return [];
+  return engine.prerequisiteCourseCodes(coursePackage, {
+    academicYear: currentProgramContext.academicYear,
+    program: currentProgramContext
+  });
+}
+
+function clearCourseRelationshipHighlights() {
+  libraryCourseCards().forEach((card) => {
+    card.classList.remove(
+      "is-relation-selected",
+      "is-relation-prerequisite",
+      "is-relation-postrequisite"
+    );
+    delete card.dataset.courseRelation;
+    card.removeAttribute("aria-description");
+  });
+}
+
+function syncCourseRelationshipHighlights() {
+  clearCourseRelationshipHighlights();
+  if (!selectedRelationshipCourseCode) return;
+
+  const selectedPackage = coursePackageByCode.get(selectedRelationshipCourseCode);
+  if (!selectedPackage) return;
+
+  const requiredCodes = new Set(prerequisiteCodesFor(selectedPackage));
+  const prerequisiteCodes = new Set(requiredCodes);
+  const satisfiedBySelected = new Set([
+    selectedRelationshipCourseCode,
+    ...(selectedPackage.prerequisiteEquivalences || [])
+  ]);
+  const postrequisiteCodes = new Set();
+
+  coursePackageByCode.forEach((coursePackage, code) => {
+    const satisfiesCodes = [code, ...(coursePackage.prerequisiteEquivalences || [])];
+    if (satisfiesCodes.some((satisfiedCode) => requiredCodes.has(satisfiedCode))) {
+      prerequisiteCodes.add(code);
+    }
+
+    if (
+      code !== selectedRelationshipCourseCode &&
+      prerequisiteCodesFor(coursePackage).some((requiredCode) =>
+        satisfiedBySelected.has(requiredCode)
+      )
+    ) {
+      postrequisiteCodes.add(code);
+    }
+  });
+
+  libraryCourseCards().forEach((card) => {
+    const code = courseCodeFor(card);
+    const isSelected = code === selectedRelationshipCourseCode;
+    const isPrerequisite = !isSelected && prerequisiteCodes.has(code);
+    const isPostrequisite = !isSelected && postrequisiteCodes.has(code);
+
+    card.classList.toggle("is-relation-selected", isSelected);
+    card.classList.toggle("is-relation-prerequisite", isPrerequisite);
+    card.classList.toggle("is-relation-postrequisite", isPostrequisite);
+
+    if (isSelected) {
+      card.dataset.courseRelation = "当前";
+      card.setAttribute("aria-description", "当前选中的课程");
+    } else if (isPrerequisite && isPostrequisite) {
+      card.dataset.courseRelation = "前置 / 后置";
+      card.setAttribute(
+        "aria-description",
+        `既是 ${selectedRelationshipCourseCode} 的前置课程，也是其后置课程`
+      );
+    } else if (isPrerequisite) {
+      card.dataset.courseRelation = "前置";
+      card.setAttribute("aria-description", `${selectedRelationshipCourseCode} 的前置课程`);
+    } else if (isPostrequisite) {
+      card.dataset.courseRelation = "后置";
+      card.setAttribute("aria-description", `${selectedRelationshipCourseCode} 的后置课程`);
+    }
+  });
+}
+
+function toggleCourseRelationshipSelection(card) {
+  if (!card.parentElement?.classList.contains("course-library-slot")) return;
+  const code = courseCodeFor(card);
+  selectedRelationshipCourseCode = selectedRelationshipCourseCode === code ? "" : code;
+  syncCourseRelationshipHighlights();
+}
+
 function termRankForSlot(slot) {
   const academicYear = Number(slot?.dataset.academicYear);
   const planningTerm = slot?.dataset.planningTerm;
-  if (!Number.isFinite(academicYear) || !["S1", "S2"].includes(planningTerm)) return null;
-  return (academicYear - PLANNING_START_YEAR) * 2 + (planningTerm === "S2" ? 1 : 0);
+  const termIndex = TERM_SEQUENCE.indexOf(planningTerm);
+  if (!Number.isFinite(academicYear) || termIndex < 0) return null;
+  return (academicYear - PLANNING_START_YEAR) * TERM_SEQUENCE.length + termIndex;
 }
 
 function plannedCourseEntries() {
@@ -254,16 +502,18 @@ function validateShelfPlan() {
       entries,
       program: currentProgramContext
     });
-    if (result.status === engine.STATUS.VALID) return;
+    const messages = [...result.messages];
+    const status = result.status;
+    if (status === engine.STATUS.VALID) return;
 
-    const message = result.messages.join("\n");
+    const message = messages.join("\n");
     entry.card.classList.add(
-      result.status === engine.STATUS.INVALID ? "is-requisite-invalid" : "is-requisite-manual"
+      status === engine.STATUS.INVALID ? "is-requisite-invalid" : "is-requisite-manual"
     );
-    entry.card.dataset.requisiteStatus = result.status;
+    entry.card.dataset.requisiteStatus = status;
     entry.card.dataset.requisiteMessage = message;
     entry.card.title = message;
-    entry.card.setAttribute("aria-invalid", String(result.status === engine.STATUS.INVALID));
+    entry.card.setAttribute("aria-invalid", String(status === engine.STATUS.INVALID));
     entry.card.setAttribute("aria-description", message);
     entry.card.tabIndex = 0;
   });
@@ -301,7 +551,9 @@ function applyCourseIndex(data) {
     data.coursePackages.map((coursePackage) => [coursePackage.code, coursePackage])
   );
 
-  assignShelfSlotTerms(Number(data.program?.academicYear) || PLANNING_START_YEAR);
+  currentProgramContext.academicYear =
+    Number(data.program?.academicYear) || PLANNING_START_YEAR;
+  assignShelfSlotTerms(currentProgramContext.academicYear);
   currentProgramContext.codes = [
     data.program?.code,
     ...(data.program?.componentCodes || [])
@@ -384,6 +636,7 @@ async function loadCourseMetadata() {
     installFallbackCoursePackages();
     courseOfferingDataReady = coursePackageByCode.size > 0;
     validateShelfPlan();
+    syncCourseRelationshipHighlights();
   }
 }
 
@@ -406,6 +659,7 @@ shelfSlots.forEach((slot) => {
     originSlot.appendChild(course);
     syncChoiceGroupState();
     validateShelfPlan();
+    syncCourseRelationshipHighlights();
   });
 });
 
@@ -514,15 +768,27 @@ function moveCourseToSlot(course, destinationSlot) {
     return false;
   }
   if (sourceSlot.classList.contains("course-library-slot") && destinationCourse) return;
+  if (
+    sourceSlot.classList.contains("course-library-slot") &&
+    courseCodeFor(course) === selectedRelationshipCourseCode
+  ) {
+    selectedRelationshipCourseCode = "";
+  }
   if (destinationCourse) sourceSlot.appendChild(destinationCourse);
   destinationSlot.appendChild(course);
   syncChoiceGroupState();
   validateShelfPlan();
+  syncCourseRelationshipHighlights();
   return true;
 }
 
 courseCards.forEach((card) => {
   card.draggable = false;
+
+  card.addEventListener("pointerup", (event) => {
+    if (event.button !== 0 || dragStarted) return;
+    toggleCourseRelationshipSelection(card);
+  });
 
   card.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
@@ -584,7 +850,8 @@ document.addEventListener("pointermove", (event) => {
 
 document.addEventListener("pointerup", (event) => {
   if (event.pointerId !== activePointerId) return;
-  if (dragStarted && draggedCourse && targetSlot) moveCourseToSlot(draggedCourse, targetSlot);
+  const completedDrag = dragStarted;
+  if (completedDrag && draggedCourse && targetSlot) moveCourseToSlot(draggedCourse, targetSlot);
   clearDragState();
 });
 
@@ -593,3 +860,15 @@ document.addEventListener("pointercancel", (event) => {
 });
 
 window.addEventListener("blur", clearDragState);
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !selectedRelationshipCourseCode) return;
+  selectedRelationshipCourseCode = "";
+  syncCourseRelationshipHighlights();
+});
+
+window.CourseBuilderPlanState = Object.freeze({
+  exportPlan: exportCoursePlanState,
+  importPlan: importCoursePlanState
+});
+window.dispatchEvent(new CustomEvent("coursebuilder:plan-state-ready"));
