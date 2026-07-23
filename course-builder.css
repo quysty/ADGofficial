@@ -514,7 +514,7 @@ body[data-page="course-builder"] {
   padding-left: 20px;
   border-left: 2px solid #b5b5b5;
   display: grid;
-  grid-template-rows: 644px minmax(0, 1fr);
+  grid-template-rows: max-content minmax(0, 1fr);
   gap: 10px;
   overflow: hidden;
 }
@@ -1035,6 +1035,7 @@ body[data-page="course-builder"] {
   .course-library {
     height: auto;
     min-height: 0;
+    grid-template-rows: max-content max-content;
     align-self: auto;
     margin: 28px 14px 0;
     padding: 20px 0 0;
