@@ -43,6 +43,14 @@
       "role": "tool"
     },
     {
+      "key": "ledger",
+      "label": "生活记账",
+      "href": "ledger.html",
+      "status": "public",
+      "showInNavigation": true,
+      "role": "tool"
+    },
+    {
       "key": "map-tool",
       "label": "地图工具",
       "href": "map-tool.html",

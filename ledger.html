@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#121a16" />
+  <meta name="description" content="ANU Explore 本机留学生活记账工具，支持 AUD、CNY、USD 分类统计与 JSON 备份。" />
+  <title>生活记账 | ANU Explore</title>
+  <style>
+    :root {
+      --ink: #121a16;
+      --surface: #1a241f;
+      --surface-2: #222e28;
+      --line: #2e3c35;
+      --text: #e6eae5;
+      --muted: #8b9992;
+      --faint: #5c6a63;
+      --aud: #e0a73e;
+      --cny: #cf4a40;
+      --usd: #5fa684;
+      --danger: #e16d62;
+      --mono: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --pad: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--ink);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: calc(210px + env(safe-area-inset-bottom));
+    }
+    .wrap { width: min(100%, 920px); margin: 0 auto; padding: 0 var(--pad); }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; }
+    button:disabled { cursor: default; }
+    :focus-visible { outline: 2px solid var(--aud); outline-offset: 2px; border-radius: 3px; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .top {
+      padding: 24px 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .15em;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    .brand-link:hover { color: var(--text); }
+    .brand-link span { color: var(--faint); }
+    .tools { display: flex; gap: 14px; }
+    .tools button {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .tools button:hover { color: var(--text); }
+
+    .monthbar { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+    .monthbar h1 { margin: 0; font-family: var(--mono); font-size: clamp(22px, 6vw, 28px); font-weight: 600; }
+    .nav { display: flex; gap: 6px; margin-left: auto; }
+    .nav button { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted); }
+    .nav button:hover { border-color: var(--muted); color: var(--text); }
+
+    .storage-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin: 14px 0 0;
+      color: var(--faint);
+      font-size: 12px;
+    }
+    .storage-note::before { content: "LOCAL"; color: var(--usd); font: 700 10px/1.7 var(--mono); letter-spacing: .1em; }
+
+    .ledgers { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: 20px 0 8px; }
+    .led { background: var(--surface); padding: 16px 16px 14px; position: relative; }
+    .led::before { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: var(--c); }
+    .led-code { color: var(--c); font: 700 12px/1.4 var(--mono); letter-spacing: .2em; }
+    .led-total { margin: 6px 0 12px; font: 600 27px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
+    .led-total .cy { margin-right: 3px; color: var(--muted); font-size: 14px; font-weight: 400; }
+    .led.empty .led-total { color: var(--faint); }
+    .bar { display: flex; height: 9px; overflow: hidden; background: var(--surface-2); }
+    .seg-self { background: var(--c); }
+    .seg-card { background: repeating-linear-gradient(-45deg, var(--c) 0 2px, transparent 2px 5px); }
+    .splits { display: flex; gap: 20px; margin-top: 10px; color: var(--muted); font: 11.5px/1.45 var(--mono); }
+    .splits b { display: block; margin-top: 2px; color: var(--text); font-size: 13px; font-weight: 500; }
+
+    .ref { margin: 0 0 28px; }
+    .ref-toggle { color: var(--faint); font: 11px/1.5 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    .ref-toggle:hover { color: var(--muted); }
+    .ref-box { display: none; margin-top: 10px; padding: 12px 14px; border: 1px dashed var(--faint); border-radius: 3px; color: var(--muted); }
+    .ref-box.on { display: block; }
+    .ref-num { color: var(--muted); font: 19px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+    .ref-note { margin-top: 6px; color: var(--faint); font-size: 11.5px; }
+    .ref-rates { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .ref-rates label { display: flex; align-items: center; gap: 5px; color: var(--faint); font: 11px/1.4 var(--mono); }
+    .ref-rates input { width: 76px; padding: 5px 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 3px; font-family: var(--mono); font-size: 12px; }
+
+    section { margin-bottom: 34px; }
+    .head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .head h2 { margin: 0; color: var(--muted); font: 600 11px/1.4 var(--mono); letter-spacing: .2em; text-transform: uppercase; }
+    .head .rule { flex: 1; height: 1px; background: var(--line); }
+    .tabs { display: flex; gap: 2px; }
+    .tabs button { padding: 5px 9px; border: 1px solid transparent; color: var(--faint); font: 11px/1.4 var(--mono); letter-spacing: .08em; }
+    .tabs button[aria-pressed="true"] { color: var(--tc); border-color: var(--line); background: var(--surface); }
+
+    .dist { display: flex; flex-direction: column; gap: 9px; }
+    .row { display: grid; grid-template-columns: 76px 1fr auto; align-items: center; gap: 12px; }
+    .row .lbl { overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+    .track { height: 20px; background: var(--surface); }
+    .fill { display: flex; height: 100%; }
+    .row .amt { min-width: 84px; text-align: right; font: 13px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+    .row .pct { margin-left: 6px; color: var(--faint); font-size: 11px; }
+
+    .trend-row { margin-bottom: 16px; }
+    .trend-code { margin-bottom: 6px; color: var(--c); font: 700 11px/1.4 var(--mono); letter-spacing: .18em; }
+    .bars { display: flex; align-items: flex-end; gap: 5px; height: 70px; }
+    .bcol { position: relative; display: flex; flex: 1; flex-direction: column; justify-content: flex-end; gap: 1px; height: 100%; }
+    .bcol .b-card, .bcol .b-self { width: 100%; }
+    .bcol .b-self { background: var(--c); }
+    .bcol .b-card { background: repeating-linear-gradient(-45deg, var(--c) 0 2px, transparent 2px 5px); }
+    .bcol.now { background: linear-gradient(to top, rgb(255 255 255 / 4%), transparent); }
+    .blabels { display: flex; gap: 5px; margin-top: 5px; }
+    .blabels span { flex: 1; color: var(--faint); text-align: center; font: 10px/1.4 var(--mono); }
+
+    .legend { display: flex; gap: 16px; margin-bottom: 18px; color: var(--muted); font: 11px/1.4 var(--mono); }
+    .legend i { display: inline-block; width: 16px; height: 9px; margin-right: 6px; vertical-align: -1px; }
+    .legend .l-self { background: var(--muted); }
+    .legend .l-card { background: repeating-linear-gradient(-45deg, var(--muted) 0 2px, transparent 2px 5px); }
+
+    .day { margin-bottom: 16px; }
+    .day-h { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--line); color: var(--faint); font: 11px/1.4 var(--mono); letter-spacing: .1em; }
+    .tx { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 11px; padding: 9px 0; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.self { background: var(--c); }
+    .dot.card { width: 9px; height: 9px; border: 1.5px solid var(--c); background: transparent; }
+    .tx-main { min-width: 0; }
+    .tx-cat { font-size: 14px; }
+    .tx-note { overflow: hidden; color: var(--faint); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .tx-amt { color: var(--c); font: 14px/1.4 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tx-del { min-width: 32px; min-height: 32px; margin-left: 3px; color: var(--faint); font-family: var(--mono); font-size: 17px; }
+    .tx-del:hover { color: var(--danger); }
+    .empty-state { padding: 18px 0; border-top: 1px solid var(--line); color: var(--faint); font-size: 13px; }
+
+    .addbar { position: fixed; z-index: 20; inset: auto 0 0; padding: 12px var(--pad) calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 96%, transparent); backdrop-filter: blur(14px); }
+    .addbar .wrap { padding: 0; }
+    .line1 { display: flex; align-items: center; gap: 8px; }
+    .amount { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface-2); font: 19px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+    .amount::placeholder, .noteinput::placeholder { color: var(--faint); }
+    .seg { display: flex; flex-shrink: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 3px; }
+    .seg button { padding: 11px 10px; color: var(--faint); font: 11.5px/1.4 var(--mono); letter-spacing: .05em; }
+    .seg button[aria-pressed="true"] { color: var(--sc); background: var(--surface-2); }
+    .submit { flex-shrink: 0; padding: 11px 18px; border-radius: 3px; background: var(--text); color: var(--ink); font-weight: 650; }
+    .submit:disabled { opacity: .3; }
+    .chips { display: flex; gap: 5px; overflow-x: auto; padding: 9px 0 1px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { padding: 7px 11px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+    .chip[aria-pressed="true"] { border-color: var(--text); background: var(--text); color: var(--ink); }
+    .line2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 9px; }
+    .line2 .seg button { padding: 7px 10px; }
+    .dateinput, .noteinput { padding: 7px 9px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface-2); }
+    .dateinput { color: var(--muted); font: 12px/1.4 var(--mono); }
+    .noteinput { flex: 1; min-width: 130px; font-size: 13px; }
+
+    .toast {
+      position: fixed;
+      z-index: 40;
+      left: 50%;
+      bottom: calc(196px + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      max-width: calc(100vw - 32px);
+      padding: 10px 12px;
+      transform: translate(-50%, 16px);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #26342d;
+      color: var(--text);
+      box-shadow: 0 12px 35px rgb(0 0 0 / 35%);
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+    .toast button { color: var(--aud); font: 700 11px/1.4 var(--mono); letter-spacing: .08em; }
+
+    @media (min-width: 680px) {
+      body { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+      .ledgers { grid-template-columns: repeat(3, 1fr); }
+      .toast { bottom: calc(145px + env(safe-area-inset-bottom)); }
+    }
+    @media (max-width: 460px) {
+      .brand-link span { display: none; }
+      .tools { gap: 11px; }
+      .row { grid-template-columns: 68px 1fr auto; gap: 8px; }
+      .row .amt { min-width: 76px; }
+      .submit { padding-inline: 14px; }
+      .seg button { padding-inline: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body data-page="ledger">
+  <div class="wrap">
+    <header class="top">
+      <a class="brand-link" href="explore.html" aria-label="返回 ANU Explore 地图">
+        ← ANU Explore <span>· Ledger</span>
+      </a>
+      <div class="tools" aria-label="数据工具">
+        <button id="btn-export" type="button">导出</button>
+        <button id="btn-import" type="button">导入</button>
+      </div>
+    </header>
+
+    <div class="monthbar">
+      <h1 id="month-title">—</h1>
+      <div class="nav" aria-label="切换月份">
+        <button id="prev" type="button" aria-label="上个月">‹</button>
+        <button id="next" type="button" aria-label="下个月">›</button>
+      </div>
+    </div>
+
+    <p class="storage-note">数据仅保存在当前设备的这个浏览器中；换设备或清除网站数据前，请先导出 JSON 备份。</p>
+    <div class="ledgers" id="ledgers"></div>
+
+    <div class="ref">
+      <button class="ref-toggle" id="ref-toggle" type="button" aria-expanded="false">＋ 折算参考</button>
+      <div class="ref-box" id="ref-box">
+        <div class="ref-num" id="ref-num">—</div>
+        <div class="ref-note">仅供粗略参考。三种货币独立统计，分类分布与趋势不使用折算值。</div>
+        <div class="ref-rates">
+          <label>1 AUD = <input type="number" min="0.0001" step="0.01" id="rate-cny" inputmode="decimal" /> CNY</label>
+          <label>1 AUD = <input type="number" min="0.0001" step="0.01" id="rate-usd" inputmode="decimal" /> USD</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend" aria-label="资金来源图例">
+      <span><i class="l-self"></i>自己存款</span>
+      <span><i class="l-card"></i>父母副卡</span>
+    </div>
+
+    <main>
+      <section aria-labelledby="dist-title">
+        <div class="head">
+          <h2 id="dist-title">分类分布</h2>
+          <div class="rule"></div>
+          <div class="tabs" id="dist-tabs" aria-label="分类分布币种"></div>
+        </div>
+        <div class="dist" id="dist"></div>
+      </section>
+
+      <section aria-labelledby="trend-title">
+        <div class="head"><h2 id="trend-title">近半年趋势</h2><div class="rule"></div></div>
+        <div id="trend"></div>
+      </section>
+
+      <section aria-labelledby="list-title">
+        <div class="head">
+          <h2 id="list-title">本月明细</h2>
+          <div class="rule"></div>
+          <div class="tabs" id="list-tabs" aria-label="按资金来源筛选"></div>
+        </div>
+        <div id="list"></div>
+      </section>
+    </main>
+  </div>
+
+  <form class="addbar" id="entry-form">
+    <div class="wrap">
+      <div class="line1">
+        <label class="sr-only" for="amt">金额</label>
+        <input class="amount" id="amt" type="number" min="0.01" max="999999999" inputmode="decimal" step="0.01" placeholder="0.00" autocomplete="off" />
+        <div class="seg" id="cur-seg" aria-label="币种"></div>
+        <button class="submit" id="save" type="submit" disabled>记一笔</button>
+      </div>
+      <div class="chips" id="cat-chips" aria-label="消费分类"></div>
+      <div class="line2">
+        <div class="seg" id="src-seg" aria-label="资金来源"></div>
+        <label class="sr-only" for="date">日期</label>
+        <input class="dateinput" id="date" type="date" />
+        <label class="sr-only" for="note">备注</label>
+        <input class="noteinput" id="note" type="text" maxlength="200" placeholder="备注（可选）" autocomplete="off" />
+      </div>
+    </div>
+  </form>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span id="toast-message"></span>
+    <button id="toast-action" type="button" hidden></button>
+  </div>
+  <input type="file" id="file" accept="application/json,.json" hidden />
+
+  <script>
+    const CURRENCIES = [
+      { code: "AUD", sym: "A$", color: "#E0A73E" },
+      { code: "CNY", sym: "¥", color: "#CF4A40" },
+      { code: "USD", sym: "US$", color: "#5FA684" }
+    ];
+    const SOURCES = [
+      { key: "self", label: "自己" },
+      { key: "card", label: "副卡" }
+    ];
+    const CATEGORIES = ["房租水电", "餐饮", "交通", "学习", "社交娱乐", "日用购物", "医疗", "通讯", "旅行", "其他"];
+    const DB_NAME = "anuexplore-ledger";
+    const STORE = "tx";
+    const KV = "kv";
+    const DEFAULT_RATES = { cny: 4.70, usd: 0.65 };
+
+    let db;
+    let rows = [];
+    let rates = { ...DEFAULT_RATES };
+    let cursor = new Date();
+    let distCur = "AUD";
+    let listSrc = "all";
+    let toastTimer;
+    let pendingDeleted = null;
+    const draft = { cur: "AUD", src: "self", cat: "餐饮" };
+    cursor.setDate(1);
+
+    const pad = (value) => String(value).padStart(2, "0");
+    const ymd = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    const monthKey = (dateText) => dateText.slice(0, 7);
+    const currencyInfo = (code) => CURRENCIES.find((item) => item.code === code);
+    const formatAmount = (value) => value.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;"
+    }[char]));
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (event) => {
+          const database = event.target.result;
+          if (!database.objectStoreNames.contains(STORE)) {
+            const store = database.createObjectStore(STORE, { keyPath: "id" });
+            store.createIndex("date", "date");
+          }
+          if (!database.objectStoreNames.contains(KV)) database.createObjectStore(KV);
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function objectStore(name, mode) {
+      return db.transaction(name, mode).objectStore(name);
+    }
+
+    function requestResult(request) {
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    const putRecord = (record) => requestResult(objectStore(STORE, "readwrite").put(record));
+    const deleteRecord = (id) => requestResult(objectStore(STORE, "readwrite").delete(id));
+    const getAllRecords = () => requestResult(objectStore(STORE, "readonly").getAll());
+    const getSetting = (key) => requestResult(objectStore(KV, "readonly").get(key));
+    const putSetting = (key, value) => requestResult(objectStore(KV, "readwrite").put(value, key));
+
+    function isValidDate(value) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const [year, month, day] = value.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+    }
+
+    function normalizeRecord(input) {
+      if (!input || typeof input !== "object") return null;
+      const amount = Number(input.amount);
+      const idTypeIsValid =
+        (typeof input.id === "string" && input.id.trim().length > 0 && input.id.length <= 100) ||
+        (Number.isSafeInteger(input.id) && input.id > 0);
+      const note = typeof input.note === "string" ? input.note.slice(0, 200) : "";
+      if (
+        !idTypeIsValid || !isValidDate(input.date) ||
+        !Number.isFinite(amount) || amount <= 0 || amount > 999999999 ||
+        !currencyInfo(input.currency) || !SOURCES.some((item) => item.key === input.source) ||
+        !CATEGORIES.includes(input.category)
+      ) return null;
+      return {
+        id: input.id,
+        date: input.date,
+        amount: Math.round(amount * 100) / 100,
+        currency: input.currency,
+        source: input.source,
+        category: input.category,
+        note
+      };
+    }
+
+    function normalizeRates(input) {
+      const cny = Number(input?.cny);
+      const usd = Number(input?.usd);
+      return {
+        cny: Number.isFinite(cny) && cny > 0 ? cny : DEFAULT_RATES.cny,
+        usd: Number.isFinite(usd) && usd > 0 ? usd : DEFAULT_RATES.usd
+      };
+    }
+
+    function monthRows() {
+      const current = monthKey(ymd(cursor));
+      return rows.filter((record) => monthKey(record.date) === current);
+    }
+
+    function renderLedgers() {
+      const records = monthRows();
+      document.getElementById("ledgers").innerHTML = CURRENCIES.map((currency) => {
+        const matching = records.filter((record) => record.currency === currency.code);
+        const self = matching.filter((record) => record.source === "self").reduce((sum, record) => sum + record.amount, 0);
+        const card = matching.filter((record) => record.source === "card").reduce((sum, record) => sum + record.amount, 0);
+        const total = self + card;
+        const width = (value) => total ? `${(value / total * 100).toFixed(2)}%` : "0%";
+        return `<div class="led ${total ? "" : "empty"}" style="--c:${currency.color}">
+          <div class="led-code">${currency.code}</div>
+          <div class="led-total"><span class="cy">${currency.sym}</span>${formatAmount(total)}</div>
+          <div class="bar" aria-label="自己存款 ${formatAmount(self)}，父母副卡 ${formatAmount(card)}">
+            <div class="seg-self" style="width:${width(self)}"></div>
+            <div class="seg-card" style="width:${width(card)}"></div>
+          </div>
+          <div class="splits"><div>自己存款<b>${formatAmount(self)}</b></div><div>父母副卡<b>${formatAmount(card)}</b></div></div>
+        </div>`;
+      }).join("");
+      renderReference(records);
+    }
+
+    function renderReference(records) {
+      const sum = (code) => records.filter((record) => record.currency === code).reduce((total, record) => total + record.amount, 0);
+      const aud = sum("AUD") + sum("CNY") / rates.cny + sum("USD") / rates.usd;
+      document.getElementById("ref-num").textContent = `≈ A$ ${formatAmount(aud)}`;
+    }
+
+    function renderDistribution() {
+      const records = monthRows().filter((record) => record.currency === distCur);
+      const currency = currencyInfo(distCur);
+      const grouped = {};
+      records.forEach((record) => {
+        grouped[record.category] ??= { self: 0, card: 0 };
+        grouped[record.category][record.source] += record.amount;
+      });
+      const list = Object.entries(grouped).map(([category, values]) => [category, values, values.self + values.card]).sort((a, b) => b[2] - a[2]);
+      const maximum = list.length ? list[0][2] : 0;
+      const total = list.reduce((sum, item) => sum + item[2], 0);
+      document.getElementById("dist").innerHTML = list.length ? list.map(([category, values, amount]) => `
+        <div class="row" style="--c:${currency.color}">
+          <div class="lbl" title="${escapeHtml(category)}">${escapeHtml(category)}</div>
+          <div class="track"><div class="fill" style="width:${(amount / maximum * 100).toFixed(2)}%">
+            <div class="seg-self" style="width:${(values.self / amount * 100).toFixed(2)}%"></div>
+            <div class="seg-card" style="width:${(values.card / amount * 100).toFixed(2)}%"></div>
+          </div></div>
+          <div class="amt">${formatAmount(amount)}<span class="pct">${(amount / total * 100).toFixed(0)}%</span></div>
+        </div>`).join("") : `<div class="empty-state">本月没有 ${distCur} 的记录。</div>`;
+    }
+
+    function renderTrend() {
+      const months = [];
+      const base = new Date(cursor);
+      for (let offset = 5; offset >= 0; offset -= 1) {
+        const month = new Date(base.getFullYear(), base.getMonth() - offset, 1);
+        months.push(`${month.getFullYear()}-${pad(month.getMonth() + 1)}`);
+      }
+      document.getElementById("trend").innerHTML = CURRENCIES.map((currency) => {
+        const data = months.map((month) => {
+          const matching = rows.filter((record) => monthKey(record.date) === month && record.currency === currency.code);
+          return {
+            self: matching.filter((record) => record.source === "self").reduce((sum, record) => sum + record.amount, 0),
+            card: matching.filter((record) => record.source === "card").reduce((sum, record) => sum + record.amount, 0)
+          };
+        });
+        const maximum = Math.max(...data.map((item) => item.self + item.card), 1);
+        return `<div class="trend-row" style="--c:${currency.color}">
+          <div class="trend-code">${currency.code}</div>
+          <div class="bars">${data.map((item, index) => {
+            const total = item.self + item.card;
+            return `<div class="bcol ${months[index] === monthKey(ymd(cursor)) ? "now" : ""}" title="${months[index]} · ${formatAmount(total)}" aria-label="${months[index]} ${currency.code} ${formatAmount(total)}">
+              <div class="b-card" style="height:${(item.card / maximum * 100).toFixed(2)}%"></div>
+              <div class="b-self" style="height:${(item.self / maximum * 100).toFixed(2)}%"></div>
+            </div>`;
+          }).join("")}</div>
+          <div class="blabels">${months.map((month) => `<span>${Number(month.slice(5))}月</span>`).join("")}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderList() {
+      let records = monthRows();
+      if (listSrc !== "all") records = records.filter((record) => record.source === listSrc);
+      records.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+      const list = document.getElementById("list");
+      if (!records.length) {
+        list.innerHTML = '<div class="empty-state">还没有记录。用下方输入框记第一笔。</div>';
+        return;
+      }
+      const days = [...new Set(records.map((record) => record.date))];
+      list.innerHTML = days.map((day) => `<div class="day"><div class="day-h">${escapeHtml(day)}</div>${records.filter((record) => record.date === day).map((record) => {
+        const currency = currencyInfo(record.currency);
+        return `<div class="tx" style="--c:${currency.color}">
+          <span class="dot ${record.source}" aria-hidden="true"></span>
+          <div class="tx-main"><div class="tx-cat">${escapeHtml(record.category)}</div>${record.note ? `<div class="tx-note">${escapeHtml(record.note)}</div>` : ""}</div>
+          <div><span class="tx-amt">${currency.sym}${formatAmount(record.amount)}</span><button class="tx-del" type="button" data-del="${escapeHtml(record.id)}" aria-label="删除 ${escapeHtml(record.category)} ${formatAmount(record.amount)}">×</button></div>
+        </div>`;
+      }).join("")}</div>`).join("");
+    }
+
+    function renderAll() {
+      document.getElementById("month-title").textContent = `${cursor.getFullYear()} 年 ${cursor.getMonth() + 1} 月`;
+      renderLedgers();
+      renderDistribution();
+      renderTrend();
+      renderList();
+    }
+
+    function buildControls() {
+      document.getElementById("cur-seg").innerHTML = CURRENCIES.map((currency) => `<button type="button" data-cur="${currency.code}" style="--sc:${currency.color}" aria-pressed="${draft.cur === currency.code}">${currency.code}</button>`).join("");
+      document.getElementById("src-seg").innerHTML = SOURCES.map((source) => `<button type="button" data-src="${source.key}" style="--sc:var(--text)" aria-pressed="${draft.src === source.key}">${source.label}</button>`).join("");
+      document.getElementById("cat-chips").innerHTML = CATEGORIES.map((category) => `<button class="chip" type="button" data-cat="${category}" aria-pressed="${draft.cat === category}">${category}</button>`).join("");
+      document.getElementById("dist-tabs").innerHTML = CURRENCIES.map((currency) => `<button type="button" data-dist="${currency.code}" style="--tc:${currency.color}" aria-pressed="${distCur === currency.code}">${currency.code}</button>`).join("");
+      document.getElementById("list-tabs").innerHTML = `<button type="button" data-lsrc="all" style="--tc:var(--text)" aria-pressed="${listSrc === "all"}">全部</button>${SOURCES.map((source) => `<button type="button" data-lsrc="${source.key}" style="--tc:var(--text)" aria-pressed="${listSrc === source.key}">${source.label}</button>`).join("")}`;
+    }
+
+    function press(containerId, attribute, value) {
+      [...document.getElementById(containerId).children].forEach((button) => button.setAttribute("aria-pressed", button.dataset[attribute] === value));
+    }
+
+    function showToast(message, actionLabel = "", action = null) {
+      const toast = document.getElementById("toast");
+      const actionButton = document.getElementById("toast-action");
+      window.clearTimeout(toastTimer);
+      document.getElementById("toast-message").textContent = message;
+      actionButton.hidden = !actionLabel;
+      actionButton.textContent = actionLabel;
+      actionButton.onclick = action;
+      toast.classList.add("show");
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 5000);
+    }
+
+    async function handleDelete(id) {
+      const record = rows.find((item) => String(item.id) === id);
+      if (!record) return;
+      pendingDeleted = record;
+      await deleteRecord(record.id);
+      rows = rows.filter((item) => item.id !== record.id);
+      renderAll();
+      showToast("已删除 1 笔记录", "撤销", async () => {
+        if (!pendingDeleted) return;
+        await putRecord(pendingDeleted);
+        rows.push(pendingDeleted);
+        pendingDeleted = null;
+        renderAll();
+        showToast("已恢复记录");
+      });
+    }
+
+    document.body.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      if (button.dataset.cur) { draft.cur = button.dataset.cur; press("cur-seg", "cur", draft.cur); }
+      if (button.dataset.src) { draft.src = button.dataset.src; press("src-seg", "src", draft.src); }
+      if (button.dataset.cat) { draft.cat = button.dataset.cat; press("cat-chips", "cat", draft.cat); }
+      if (button.dataset.dist) { distCur = button.dataset.dist; press("dist-tabs", "dist", distCur); renderDistribution(); }
+      if (button.dataset.lsrc) { listSrc = button.dataset.lsrc; press("list-tabs", "lsrc", listSrc); renderList(); }
+      if (button.dataset.del) handleDelete(button.dataset.del).catch(() => showToast("删除失败，请稍后再试"));
+    });
+
+    document.getElementById("prev").addEventListener("click", () => { cursor.setMonth(cursor.getMonth() - 1); renderAll(); });
+    document.getElementById("next").addEventListener("click", () => { cursor.setMonth(cursor.getMonth() + 1); renderAll(); });
+
+    const amountInput = document.getElementById("amt");
+    const saveButton = document.getElementById("save");
+    amountInput.addEventListener("input", () => {
+      const amount = Number(amountInput.value);
+      saveButton.disabled = !(Number.isFinite(amount) && amount > 0 && amount <= 999999999);
+    });
+
+    document.getElementById("entry-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (saveButton.disabled) return;
+      const record = normalizeRecord({
+        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        date: document.getElementById("date").value || ymd(new Date()),
+        amount: amountInput.value,
+        currency: draft.cur,
+        source: draft.src,
+        category: draft.cat,
+        note: document.getElementById("note").value.trim()
+      });
+      if (!record) { showToast("请检查金额和日期"); return; }
+      saveButton.disabled = true;
+      try {
+        await putRecord(record);
+        rows.push(record);
+        amountInput.value = "";
+        document.getElementById("note").value = "";
+        cursor = new Date(Number(record.date.slice(0, 4)), Number(record.date.slice(5, 7)) - 1, 1);
+        renderAll();
+        showToast("已记入 1 笔");
+        amountInput.focus();
+      } catch (error) {
+        showToast("保存失败，请先导出备份后刷新页面");
+        saveButton.disabled = false;
+      }
+    });
+
+    const refBox = document.getElementById("ref-box");
+    const refButton = document.getElementById("ref-toggle");
+    refButton.addEventListener("click", () => {
+      const isOpen = refBox.classList.toggle("on");
+      refButton.setAttribute("aria-expanded", isOpen);
+      refButton.textContent = `${isOpen ? "－" : "＋"} 折算参考`;
+    });
+
+    ["cny", "usd"].forEach((key) => {
+      document.getElementById(`rate-${key}`).addEventListener("change", async (event) => {
+        const value = Number(event.target.value);
+        if (!Number.isFinite(value) || value <= 0) {
+          event.target.value = rates[key];
+          showToast("汇率必须大于 0");
+          return;
+        }
+        rates[key] = value;
+        await putSetting("rates", rates);
+        renderLedgers();
+      });
+    });
+
+    document.getElementById("btn-export").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify({ v: 1, exportedAt: new Date().toISOString(), rates, rows }, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `anuexplore-ledger-${ymd(new Date())}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      showToast("备份已导出");
+    });
+
+    document.getElementById("btn-import").addEventListener("click", () => document.getElementById("file").click());
+    document.getElementById("file").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        if (!data || data.v !== 1 || !Array.isArray(data.rows)) throw new Error("invalid schema");
+        const normalizedRows = data.rows.map(normalizeRecord);
+        if (normalizedRows.some((record) => record === null)) throw new Error("invalid record");
+        const seen = new Set(rows.map((record) => String(record.id)));
+        let imported = 0;
+        for (const record of normalizedRows) {
+          if (seen.has(String(record.id))) continue;
+          await putRecord(record);
+          rows.push(record);
+          seen.add(String(record.id));
+          imported += 1;
+        }
+        if (data.rates) {
+          rates = normalizeRates(data.rates);
+          await putSetting("rates", rates);
+          syncRates();
+        }
+        renderAll();
+        showToast(imported ? `已导入 ${imported} 笔记录` : "没有发现新的记录");
+      } catch (error) {
+        showToast("导入失败：请选择本工具导出的有效 JSON 文件");
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    function syncRates() {
+      document.getElementById("rate-cny").value = rates.cny;
+      document.getElementById("rate-usd").value = rates.usd;
+    }
+
+    async function initialize() {
+      try {
+        db = await openDatabase();
+        const storedRows = await getAllRecords();
+        rows = storedRows.map(normalizeRecord).filter(Boolean);
+        rates = normalizeRates(await getSetting("rates"));
+        syncRates();
+        document.getElementById("date").value = ymd(new Date());
+        buildControls();
+        renderAll();
+      } catch (error) {
+        document.getElementById("date").value = ymd(new Date());
+        buildControls();
+        renderAll();
+        amountInput.disabled = true;
+        saveButton.disabled = true;
+        showToast("无法打开本地账本，请检查浏览器隐私设置");
+      }
+    }
+
+    initialize();
+  </script>
+</body>
+</html>
