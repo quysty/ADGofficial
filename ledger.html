@@ -1,729 +1,1059 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#121a16" />
-  <meta name="description" content="ANU Explore 本机留学生活记账工具，支持 AUD、CNY、USD 分类统计与 JSON 备份。" />
-  <title>生活记账 | ANU Explore</title>
-  <style>
-    :root {
-      --ink: #121a16;
-      --surface: #1a241f;
-      --surface-2: #222e28;
-      --line: #2e3c35;
-      --text: #e6eae5;
-      --muted: #8b9992;
-      --faint: #5c6a63;
-      --aud: #e0a73e;
-      --cny: #cf4a40;
-      --usd: #5fa684;
-      --danger: #e16d62;
-      --mono: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      --pad: 18px;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="ANU Explore 本机生活记账工具，支持多账户、多币种、定期项目与 JSON 备份。">
+<title>生活记账 | ANU Explore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF; --panel:#FAFAF9; --line:#EBEBE7; --line-2:#DDDDD8;
+  --ink:#1A1A18; --muted:#76766F; --faint:#ABABA4; --soft:#C9C9C3;
+  --pos:#2F7358; --neg:#B04138;
+  --aud:#2F7358; --cny:#B04138;
+  --num:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --sans:"Noto Sans SC","Space Grotesk",system-ui,-apple-system,"PingFang SC",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.n{font-family:var(--num);font-variant-numeric:tabular-nums}
 
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; }
-    body {
-      min-height: 100vh;
-      background: var(--ink);
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 15px;
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-      padding-bottom: calc(210px + env(safe-area-inset-bottom));
-    }
-    .wrap { width: min(100%, 920px); margin: 0 auto; padding: 0 var(--pad); }
-    button, input { font: inherit; color: inherit; }
-    button { cursor: pointer; background: none; border: 0; }
-    button:disabled { cursor: default; }
-    :focus-visible { outline: 2px solid var(--aud); outline-offset: 2px; border-radius: 3px; }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
+.app{max-width:1240px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:30}
+.mark{font-family:var(--num);font-size:13px;font-weight:600}
+.mark{color:inherit;text-decoration:none}
+@media(max-width:420px){.mark span{display:none}}
+@media(max-width:360px){.mark{display:none}}
+.mark span{color:var(--faint);font-weight:400}
+.switch{display:flex;background:var(--panel);border-radius:8px;padding:3px;margin-left:auto}
+.switch button{padding:6px 11px;border-radius:6px;font-size:12.5px;color:var(--muted);font-weight:500;white-space:nowrap}
+.switch button[aria-pressed="true"]{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06),0 0 0 1px var(--line)}
+.links{display:flex;gap:11px}
+.links button{font-size:12.5px;color:var(--faint)}
+.links button:hover{color:var(--ink)}
 
-    .top {
-      padding: 24px 0 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-    }
-    .brand-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: .15em;
-      text-decoration: none;
-      text-transform: uppercase;
-    }
-    .brand-link:hover { color: var(--text); }
-    .brand-link span { color: var(--faint); }
-    .tools { display: flex; gap: 14px; }
-    .tools button {
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-    .tools button:hover { color: var(--text); }
+.cols{flex:1}
+#entry,#stats,#flow,#admin{display:none;flex-direction:column}
+#entry{max-width:520px;width:100%;margin:0 auto;padding-top:6px}
+#stats,#flow,#admin{padding:20px 20px 70px;max-width:960px;width:100%;margin:0 auto}
+body[data-view="entry"] #entry{display:flex}
+body[data-view="stats"] #stats{display:flex}
+body[data-view="flow"] #flow{display:flex}
+body[data-view="admin"] #admin{display:flex}
+.e-scroll{display:flex;flex-direction:column}
 
-    .monthbar { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
-    .monthbar h1 { margin: 0; font-family: var(--mono); font-size: clamp(22px, 6vw, 28px); font-weight: 600; }
-    .nav { display: flex; gap: 6px; margin-left: auto; }
-    .nav button { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted); }
-    .nav button:hover { border-color: var(--muted); color: var(--text); }
+/* ── 记账 ── */
+.mode{display:flex;border-bottom:1px solid var(--line)}
+.mode button{flex:1;padding:12px 0;font-size:14px;color:var(--faint);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.mode button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.amt-zone{padding:20px 20px 12px}
+.amt-line{display:flex;align-items:baseline;gap:7px}
+.amt-sign{font-family:var(--num);font-size:25px;font-weight:600;color:var(--sgn,var(--ink))}
+.amt-sym{font-family:var(--num);font-size:19px;font-weight:500;color:var(--faint)}
+.amt-in{flex:1;min-width:0;width:100%;border:none;background:transparent;padding:0;
+  font-family:var(--num);font-size:40px;font-weight:600;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.amt-in:focus{outline:none}
+.amt-in::placeholder{color:var(--faint)}
+.amt-in::-webkit-outer-spin-button,.amt-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.acct-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:14px}
+.acct{padding:6px 11px;border-radius:6px;font-size:12.5px;color:var(--muted);background:var(--panel);display:flex;align-items:center;gap:6px}
+.acct[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.acct em{font-style:normal;font-family:var(--num);font-size:10.5px;opacity:.6}
+.cats{padding:12px 20px 12px}
+.cat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.more-grid{margin-top:6px}
+.cat{padding:11px 2px;border-radius:8px;font-size:13px;color:var(--muted);background:var(--panel)}
+.cat[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.more{width:100%;margin-top:8px;padding:7px;border-radius:7px;font-size:12px;color:var(--faint)}
+.more:hover{color:var(--ink);background:var(--panel)}
+.more .arw{font-size:9px;margin-left:3px}
+.meta{display:flex;gap:8px;padding:0 20px 14px}
+.meta input{background:var(--panel);border:1px solid transparent;border-radius:7px;padding:9px 11px;font-size:13px;min-width:0}
+.meta input:focus{border-color:var(--line-2);background:var(--bg);outline:none}
+#date{width:134px;font-family:var(--num);color:var(--muted)}
+#note{flex:1}
+#note::placeholder{color:var(--faint)}
+.submit-wrap{padding:0 20px 20px;margin-top:auto}
+.submit{width:100%;background:var(--ink);color:var(--bg);border-radius:9px;padding:14px;font-size:15px;font-weight:600}
+.submit:disabled{background:var(--panel);color:var(--faint);cursor:default}
+.submit:active:not(:disabled){opacity:.85}
+.toast{position:fixed;left:50%;top:68px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:.18s;z-index:60}
+.toast.on{opacity:1;transform:translateX(-50%)}
 
-    .storage-note {
-      display: flex;
-      align-items: flex-start;
-      gap: 9px;
-      margin: 14px 0 0;
-      color: var(--faint);
-      font-size: 12px;
-    }
-    .storage-note::before { content: "LOCAL"; color: var(--usd); font: 700 10px/1.7 var(--mono); letter-spacing: .1em; }
+/* ── 通用 ── */
+.mhead{display:flex;align-items:center;gap:10px;margin:26px 0 16px}
+.mhead h1{margin:0;font-family:var(--num);font-size:20px;font-weight:600}
+.mhead .nav{display:flex;gap:4px;margin-left:auto}
+.mhead .nav button{width:30px;height:30px;border-radius:6px;color:var(--muted);font-size:16px}
+.mhead .nav button:hover{background:var(--panel);color:var(--ink)}
+.sec{margin-bottom:34px}
+.sec-h{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.sec-h h2{margin:0;font-size:13px;font-weight:600}
+.sec-h .rule{flex:1;height:1px;background:var(--line);min-width:20px}
+.hint{font-size:11.5px;color:var(--faint);margin:-6px 0 14px;line-height:1.6}
+.tabs{display:flex;gap:3px}
+.tabs button{font-size:12px;font-weight:500;padding:4px 9px;border-radius:5px;color:var(--faint)}
+.tabs button[aria-pressed="true"]{background:var(--panel);color:var(--tc,var(--ink))}
+.tabs.mono button{font-family:var(--num);letter-spacing:.06em;font-size:11.5px}
+.blank{color:var(--faint);font-size:13px;padding:18px 0}
 
-    .ledgers { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: 20px 0 8px; }
-    .led { background: var(--surface); padding: 16px 16px 14px; position: relative; }
-    .led::before { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: var(--c); }
-    .led-code { color: var(--c); font: 700 12px/1.4 var(--mono); letter-spacing: .2em; }
-    .led-total { margin: 6px 0 12px; font: 600 27px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
-    .led-total .cy { margin-right: 3px; color: var(--muted); font-size: 14px; font-weight: 400; }
-    .led.empty .led-total { color: var(--faint); }
-    .bar { display: flex; height: 9px; overflow: hidden; background: var(--surface-2); }
-    .seg-self { background: var(--c); }
-    .seg-card { background: repeating-linear-gradient(-45deg, var(--c) 0 2px, transparent 2px 5px); }
-    .splits { display: flex; gap: 20px; margin-top: 10px; color: var(--muted); font: 11.5px/1.45 var(--mono); }
-    .splits b { display: block; margin-top: 2px; color: var(--text); font-size: 13px; font-weight: 500; }
+/* ── 账户余额总览 ── */
+.wallet{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.w-tot{display:flex;flex-wrap:wrap;gap:26px;padding:16px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+.w-tot div .k{font-size:11.5px;color:var(--faint)}
+.w-tot div .v{font-family:var(--num);font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}
+.w-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+.w-row:last-child{border-bottom:none}
+.w-name{font-size:14px}
+.w-sub{font-size:11.5px;color:var(--faint);margin-top:1px}
+.w-val{font-family:var(--num);font-size:15px;font-variant-numeric:tabular-nums;text-align:right}
+.w-val small{display:block;font-family:var(--sans);font-size:10.5px;color:var(--faint);margin-top:1px}
+.w-row.card .w-val{color:var(--muted)}
 
-    .ref { margin: 0 0 28px; }
-    .ref-toggle { color: var(--faint); font: 11px/1.5 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
-    .ref-toggle:hover { color: var(--muted); }
-    .ref-box { display: none; margin-top: 10px; padding: 12px 14px; border: 1px dashed var(--faint); border-radius: 3px; color: var(--muted); }
-    .ref-box.on { display: block; }
-    .ref-num { color: var(--muted); font: 19px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
-    .ref-note { margin-top: 6px; color: var(--faint); font-size: 11.5px; }
-    .ref-rates { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-    .ref-rates label { display: flex; align-items: center; gap: 5px; color: var(--faint); font: 11px/1.4 var(--mono); }
-    .ref-rates input { width: 76px; padding: 5px 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 3px; font-family: var(--mono); font-size: 12px; }
+/* ── 账户变动 ── */
+.flow{overflow-x:auto;border-top:1px solid var(--line)}
+.fgrid{min-width:430px}
+.frow{display:grid;grid-template-columns:44px repeat(5,1fr);gap:8px;align-items:baseline;
+  padding:11px 0;border-bottom:1px solid var(--line)}
+.frow.fh{padding:7px 0 6px;border-bottom:1px solid var(--line-2)}
+.frow.fh span{font-size:10.5px;color:var(--faint);text-align:right}
+.frow.fh span:first-child{text-align:left}
+.fcode{font-family:var(--num);font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--muted)}
+.fv{font-family:var(--num);font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.fv.big{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.fv.pos,.fv.neg{color:var(--muted)}
+.fv.mut{color:var(--faint)}
 
-    section { margin-bottom: 34px; }
-    .head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-    .head h2 { margin: 0; color: var(--muted); font: 600 11px/1.4 var(--mono); letter-spacing: .2em; text-transform: uppercase; }
-    .head .rule { flex: 1; height: 1px; background: var(--line); }
-    .tabs { display: flex; gap: 2px; }
-    .tabs button { padding: 5px 9px; border: 1px solid transparent; color: var(--faint); font: 11px/1.4 var(--mono); letter-spacing: .08em; }
-    .tabs button[aria-pressed="true"] { color: var(--tc); border-color: var(--line); background: var(--surface); }
+/* ── 日记账 ── */
+.jhead{display:none}
+@media(min-width:760px){
+  .jhead{display:grid;grid-template-columns:132px 1fr 96px 96px 112px;gap:10px;
+    padding:0 0 7px;border-bottom:1px solid var(--line-2);font-size:11px;color:var(--faint)}
+  .jhead span:nth-child(n+3){text-align:right}
+}
+.jday{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  padding:13px 0 7px;border-bottom:1px solid var(--line)}
+.jday .d{font-family:var(--num);font-size:12px;color:var(--muted);letter-spacing:.02em}
+.jday .d b{color:var(--ink);font-weight:600}
+.jday .e{font-family:var(--num);font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+.jday .e{font-family:var(--num);font-size:11px;font-variant-numeric:tabular-nums;
+  display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.jc{color:var(--c)}
+.jrow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:baseline;
+  padding:10px 0;border-bottom:1px solid var(--line)}
+.j-acct{font-size:11.5px;color:var(--faint);font-family:var(--num)}
+.j-cur{font-size:9px;font-weight:600;letter-spacing:.06em;color:var(--c);
+  border:1px solid currentColor;border-radius:3px;padding:0 3px;margin-right:6px}
+.j-desc{font-size:14px}
+.j-desc small{color:var(--faint);font-size:12px;font-weight:400}
+.j-nums{display:flex;gap:14px;align-items:baseline;justify-content:flex-end}
+.j-amt{font-family:var(--num);font-size:14px;font-variant-numeric:tabular-nums;
+  min-width:74px;text-align:right;color:var(--c)}
+.j-bal{font-family:var(--num);font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums;min-width:86px;text-align:right}
+.j-del{color:#DCDCD6;font-size:16px;padding:0 2px;line-height:1}
+.j-del:hover{color:var(--neg)}
+@media(min-width:760px){
+  .jrow{grid-template-columns:132px 1fr 96px 96px 112px 20px;gap:10px}
+  .j-acct{align-self:baseline}
+  .j-nums{display:contents}
+  .j-amt{min-width:0}
+  .j-bal{min-width:0;font-size:13px}
+}
+.j-none{color:#D8D8D2}
 
-    .dist { display: flex; flex-direction: column; gap: 9px; }
-    .row { display: grid; grid-template-columns: 76px 1fr auto; align-items: center; gap: 12px; }
-    .row .lbl { overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-    .track { height: 20px; background: var(--surface); }
-    .fill { display: flex; height: 100%; }
-    .row .amt { min-width: 84px; text-align: right; font: 13px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
-    .row .pct { margin-left: 6px; color: var(--faint); font-size: 11px; }
+/* ── 分布 / 趋势 ── */
+.dist-wrap{display:grid;grid-template-columns:1fr;gap:22px;align-items:center}
+@media(min-width:700px){.dist-wrap{grid-template-columns:190px 1fr;gap:32px}}
+.pie-wrap{position:relative;width:180px;margin:0 auto}
+.pie{width:100%;height:auto;display:block}
+.seg{transition:stroke-width .14s}
+.seg:hover{stroke-width:27}
+.pie-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;pointer-events:none;text-align:center;padding:0 26px}
+.pc-v{font-family:var(--num);font-size:17px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.pc-k{font-size:11px;color:var(--faint);margin-top:2px;line-height:1.35}
+.swatch{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px}
+.dist{display:flex;flex-direction:column;gap:11px}
+.drow{display:grid;grid-template-columns:70px 1fr auto;align-items:center;gap:14px}
+.drow .lbl{font-size:13px;color:var(--muted)}
+.track{height:16px;border-radius:3px;background:var(--panel);overflow:hidden}
+.fill{height:100%;display:flex}
+.f-self{background:var(--ink)}.f-card{background:var(--soft)}
+.drow .amt{font-family:var(--num);font-size:13.5px;font-variant-numeric:tabular-nums;text-align:right}
+.drow .pct{color:var(--faint);font-size:11px;margin-left:7px}
+.legend{display:flex;gap:15px;margin:14px 0 30px;font-size:11.5px;color:var(--faint)}
+.legend i{display:inline-block;width:11px;height:5px;border-radius:3px;margin-right:6px;vertical-align:2px}
+.legend .a{background:var(--ink)}.legend .b{background:var(--soft)}
+.trend-key{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--faint);margin-bottom:12px}
+.trend-key i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.rate-inline input{width:56px;background:var(--panel);border:1px solid transparent;border-radius:5px;
+  padding:3px 6px;font-family:var(--num);font-size:11.5px;margin:0 2px}
+.rate-inline input:focus{border-color:var(--line-2);background:var(--bg);outline:none}
+.tr-head{display:flex;justify-content:flex-end;margin-bottom:6px}
+.tr-sel{font-family:var(--num);font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.bars{display:flex;align-items:flex-end;gap:6px;height:136px}
+.bc{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;
+  border-radius:4px 4px 0 0;cursor:pointer;transition:background .12s;padding:0}
+.bc:hover,.bc.now{background:var(--panel)}
+.bval{font-family:var(--num);font-size:9.5px;color:var(--faint);text-align:center;
+  height:16px;line-height:16px;font-variant-numeric:tabular-nums;white-space:nowrap;transition:opacity .12s}
+.bc.now .bval{color:var(--ink);font-weight:600}
+.bstack{display:flex;flex-direction:column;justify-content:flex-end;width:100%;
+  border-radius:3px 3px 0 0;overflow:hidden}
+.s-cny{background:var(--cny);width:100%}
+.s-aud{background:var(--aud);width:100%}
+.bars.dense .bval{opacity:0}
+.bars.dense .bc.now .bval,.bars.dense .bc:hover .bval{opacity:1}
+.blab{display:flex;gap:6px;margin-top:6px}
+.mlab{flex:1;text-align:center;font-family:var(--num);font-size:10.5px;color:var(--faint);
+  padding:3px 0;border-radius:4px;border-top:2px solid transparent}
+.mlab:hover{color:var(--ink)}
+.mlab.now{color:var(--ink);font-weight:600;border-top-color:var(--ink)}
+.mlab em{font-style:normal;display:block;font-size:9px;opacity:.7;font-weight:400;margin-top:1px}
 
-    .trend-row { margin-bottom: 16px; }
-    .trend-code { margin-bottom: 6px; color: var(--c); font: 700 11px/1.4 var(--mono); letter-spacing: .18em; }
-    .bars { display: flex; align-items: flex-end; gap: 5px; height: 70px; }
-    .bcol { position: relative; display: flex; flex: 1; flex-direction: column; justify-content: flex-end; gap: 1px; height: 100%; }
-    .bcol .b-card, .bcol .b-self { width: 100%; }
-    .bcol .b-self { background: var(--c); }
-    .bcol .b-card { background: repeating-linear-gradient(-45deg, var(--c) 0 2px, transparent 2px 5px); }
-    .bcol.now { background: linear-gradient(to top, rgb(255 255 255 / 4%), transparent); }
-    .blabels { display: flex; gap: 5px; margin-top: 5px; }
-    .blabels span { flex: 1; color: var(--faint); text-align: center; font: 10px/1.4 var(--mono); }
-
-    .legend { display: flex; gap: 16px; margin-bottom: 18px; color: var(--muted); font: 11px/1.4 var(--mono); }
-    .legend i { display: inline-block; width: 16px; height: 9px; margin-right: 6px; vertical-align: -1px; }
-    .legend .l-self { background: var(--muted); }
-    .legend .l-card { background: repeating-linear-gradient(-45deg, var(--muted) 0 2px, transparent 2px 5px); }
-
-    .day { margin-bottom: 16px; }
-    .day-h { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--line); color: var(--faint); font: 11px/1.4 var(--mono); letter-spacing: .1em; }
-    .tx { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 11px; padding: 9px 0; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .dot.self { background: var(--c); }
-    .dot.card { width: 9px; height: 9px; border: 1.5px solid var(--c); background: transparent; }
-    .tx-main { min-width: 0; }
-    .tx-cat { font-size: 14px; }
-    .tx-note { overflow: hidden; color: var(--faint); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-    .tx-amt { color: var(--c); font: 14px/1.4 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .tx-del { min-width: 32px; min-height: 32px; margin-left: 3px; color: var(--faint); font-family: var(--mono); font-size: 17px; }
-    .tx-del:hover { color: var(--danger); }
-    .empty-state { padding: 18px 0; border-top: 1px solid var(--line); color: var(--faint); font-size: 13px; }
-
-    .addbar { position: fixed; z-index: 20; inset: auto 0 0; padding: 12px var(--pad) calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 96%, transparent); backdrop-filter: blur(14px); }
-    .addbar .wrap { padding: 0; }
-    .line1 { display: flex; align-items: center; gap: 8px; }
-    .amount { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface-2); font: 19px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
-    .amount::placeholder, .noteinput::placeholder { color: var(--faint); }
-    .seg { display: flex; flex-shrink: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 3px; }
-    .seg button { padding: 11px 10px; color: var(--faint); font: 11.5px/1.4 var(--mono); letter-spacing: .05em; }
-    .seg button[aria-pressed="true"] { color: var(--sc); background: var(--surface-2); }
-    .submit { flex-shrink: 0; padding: 11px 18px; border-radius: 3px; background: var(--text); color: var(--ink); font-weight: 650; }
-    .submit:disabled { opacity: .3; }
-    .chips { display: flex; gap: 5px; overflow-x: auto; padding: 9px 0 1px; scrollbar-width: none; }
-    .chips::-webkit-scrollbar { display: none; }
-    .chip { padding: 7px 11px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
-    .chip[aria-pressed="true"] { border-color: var(--text); background: var(--text); color: var(--ink); }
-    .line2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 9px; }
-    .line2 .seg button { padding: 7px 10px; }
-    .dateinput, .noteinput { padding: 7px 9px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface-2); }
-    .dateinput { color: var(--muted); font: 12px/1.4 var(--mono); }
-    .noteinput { flex: 1; min-width: 130px; font-size: 13px; }
-
-    .toast {
-      position: fixed;
-      z-index: 40;
-      left: 50%;
-      bottom: calc(196px + env(safe-area-inset-bottom));
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      max-width: calc(100vw - 32px);
-      padding: 10px 12px;
-      transform: translate(-50%, 16px);
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      background: #26342d;
-      color: var(--text);
-      box-shadow: 0 12px 35px rgb(0 0 0 / 35%);
-      font-size: 13px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .18s ease, transform .18s ease;
-    }
-    .toast.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
-    .toast button { color: var(--aud); font: 700 11px/1.4 var(--mono); letter-spacing: .08em; }
-
-    @media (min-width: 680px) {
-      body { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
-      .ledgers { grid-template-columns: repeat(3, 1fr); }
-      .toast { bottom: calc(145px + env(safe-area-inset-bottom)); }
-    }
-    @media (max-width: 460px) {
-      .brand-link span { display: none; }
-      .tools { gap: 11px; }
-      .row { grid-template-columns: 68px 1fr auto; gap: 8px; }
-      .row .amt { min-width: 76px; }
-      .submit { padding-inline: 14px; }
-      .seg button { padding-inline: 8px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      * { scroll-behavior: auto !important; transition: none !important; }
-    }
-  </style>
+/* ── 定期 / 设置 ── */
+.sums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.sum{background:var(--bg);padding:14px 16px}
+.sum .k{font-size:11.5px;color:var(--faint)}
+.sum .v{font-family:var(--num);font-size:20px;font-weight:600;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums}
+.ritem{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 0;border-bottom:1px solid var(--line);align-items:center}
+.ritem.off{opacity:.45}
+.rname{font-size:14px;font-weight:500}
+.rmeta{font-size:11.5px;color:var(--faint);margin-top:2px}
+.rright{display:flex;align-items:center;gap:10px;text-align:right}
+.ramt{font-family:var(--num);font-size:14px;font-variant-numeric:tabular-nums}
+.rmo{font-size:11px;color:var(--faint);margin-top:2px}
+.ract{color:var(--faint);font-size:12px;padding:2px 5px}
+.ract:hover{color:var(--ink)}
+.form{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:var(--panel);border-radius:10px;padding:14px;margin-top:14px}
+.form input,.form select{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px 10px;font-size:13.5px;width:100%}
+.form input:focus,.form select:focus{border-color:var(--line-2);outline:none}
+.form .full{grid-column:span 2}
+.form button.go{grid-column:span 2;background:var(--ink);color:var(--bg);border-radius:7px;padding:11px;font-size:14px;font-weight:600}
+.flab{font-size:11.5px;color:var(--faint);margin-bottom:4px;display:block}
+.aitem{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+.aitem input{background:var(--panel);border:1px solid transparent;border-radius:6px;padding:6px 9px;font-size:13px;width:118px;font-family:var(--num)}
+.aitem input:focus{border-color:var(--line-2);background:var(--bg);outline:none}
+.aitem input.txt{font-family:var(--sans);width:150px}
+.ameta{font-size:11.5px;color:var(--faint);margin-top:2px}
+.tsearch{width:100%;max-width:320px;background:var(--panel);border:1px solid transparent;
+  border-radius:7px;padding:9px 11px;font-size:13px;margin-bottom:6px}
+.tsearch:focus{border-color:var(--line-2);background:var(--bg);outline:none}
+.trow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+  padding:11px 0;border-bottom:1px solid var(--line)}
+.t-main{font-size:14px}
+.t-main small{color:var(--faint);font-size:12px}
+.t-sub{font-size:11.5px;color:var(--faint);margin-top:2px;font-family:var(--num)}
+.t-amt{font-family:var(--num);font-size:14px;font-variant-numeric:tabular-nums;color:var(--c);margin-right:10px}
+.t-act{display:flex;align-items:center}
+.t-act button{color:var(--faint);font-size:12px;padding:3px 6px;border-radius:5px}
+.t-act button:hover{color:var(--ink);background:var(--panel)}
+.t-act button.warn:hover{color:var(--neg)}
+.tedit{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;padding:12px 0}
+.tedit input,.tedit select{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 9px;font-size:13px;width:100%}
+.tedit .full{grid-column:span 2}
+.trow.editing{background:var(--panel);border-radius:9px;padding:4px 12px 8px;
+  grid-template-columns:1fr;border-bottom:1px solid var(--line)}
+.bk{display:flex;gap:10px}
+.bk button{background:var(--panel);border-radius:7px;padding:10px 16px;font-size:13.5px;color:var(--ink)}
+.bk button:hover{background:var(--line)}
+.ref-n{font-family:var(--num);font-size:19px;color:var(--muted);font-variant-numeric:tabular-nums}
+.setnote{font-size:11.5px;color:var(--faint);margin-top:8px;max-width:46em;line-height:1.65}
+</style>
 </head>
-<body data-page="ledger">
-  <div class="wrap">
-    <header class="top">
-      <a class="brand-link" href="explore.html" aria-label="返回 ANU Explore 地图">
-        ← ANU Explore <span>· Ledger</span>
-      </a>
-      <div class="tools" aria-label="数据工具">
-        <button id="btn-export" type="button">导出</button>
-        <button id="btn-import" type="button">导入</button>
-      </div>
-    </header>
+<body data-page="ledger" data-view="entry">
 
-    <div class="monthbar">
-      <h1 id="month-title">—</h1>
-      <div class="nav" aria-label="切换月份">
-        <button id="prev" type="button" aria-label="上个月">‹</button>
-        <button id="next" type="button" aria-label="下个月">›</button>
+<div class="app">
+  <div class="bar">
+    <a class="mark" href="index.html?home=1" aria-label="返回 ANU Explore 首页">anuexplore <span>/ 记账</span></a>
+    <div class="switch" role="group" aria-label="记账视图">
+      <button data-view="entry" aria-pressed="true">记账</button>
+      <button data-view="stats" aria-pressed="false">数据</button>
+      <button data-view="flow" aria-pressed="false">流水</button>
+      <button data-view="admin" aria-pressed="false">管理</button>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- ══ 记账 ══ -->
+    <div id="entry">
+      <div class="e-scroll">
+      <div class="mode" id="mode" role="group" aria-label="收支类型">
+        <button data-mode="expense" aria-pressed="true">支出</button>
+        <button data-mode="income" aria-pressed="false">收入</button>
+      </div>
+      <div class="amt-zone">
+        <div class="amt-line"><span class="amt-sign" id="sign">−</span>
+          <span class="amt-sym" id="sym">A$</span>
+          <input class="amt-in" id="amt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" aria-label="金额"></div>
+        <div class="acct-row" id="acct-row"></div>
+      </div>
+      <div class="cats" id="cats"></div>
+      <div class="meta"><input id="date" type="date" aria-label="日期"><input id="note" type="text" maxlength="200" placeholder="摘要 / 商户" aria-label="摘要或商户"></div>
+      <div class="submit-wrap"><button class="submit" id="done" disabled>记一笔</button></div>
       </div>
     </div>
 
-    <p class="storage-note">数据仅保存在当前设备的这个浏览器中；换设备或清除网站数据前，请先导出 JSON 备份。</p>
-    <div class="ledgers" id="ledgers"></div>
+    <!-- ══ 统计 ══ -->
+    <div id="stats">
+      <div class="sec-h" style="margin-top:2px"><h2>账户余额</h2><div class="rule"></div></div>
+      <div class="hint">所有平台和卡的当前状态，汇总在一处。</div>
+      <div class="wallet" id="wallet"></div>
 
-    <div class="ref">
-      <button class="ref-toggle" id="ref-toggle" type="button" aria-expanded="false">＋ 折算参考</button>
-      <div class="ref-box" id="ref-box">
-        <div class="ref-num" id="ref-num">—</div>
-        <div class="ref-note">仅供粗略参考。三种货币独立统计，分类分布与趋势不使用折算值。</div>
-        <div class="ref-rates">
-          <label>1 AUD = <input type="number" min="0.0001" step="0.01" id="rate-cny" inputmode="decimal" /> CNY</label>
-          <label>1 AUD = <input type="number" min="0.0001" step="0.01" id="rate-usd" inputmode="decimal" /> USD</label>
+      <div class="sec-h" style="margin-top:28px"><h2>定期项目</h2><div class="rule"></div></div>
+      <div class="hint">订阅与固定收入。新增在「管理」页。</div>
+      <div class="sums" id="rsums"></div>
+      <div class="hint" id="rprepaid"></div>
+      <div id="rlist" style="margin-top:6px"></div>
+
+      <div class="mhead"><h1 id="mtitle">—</h1>
+        <div class="nav"><button data-step="-1" aria-label="上个月">‹</button><button data-step="1" aria-label="下个月">›</button></div></div>
+
+      <div class="sec-h"><h2>账户变动</h2><div class="rule"></div></div>
+      <div class="hint">现金基础。副卡支出不进余额，单列。</div>
+      <div class="flow" id="stmts"></div>
+
+      <div class="sec">
+        <div class="sec-h"><h2>费用分布</h2><div class="rule"></div>
+          <div class="tabs mono" id="dist-tabs"></div></div>
+        <div class="hint">现金基础，按实际扣款月份计入，与上面的账户变动口径一致。</div>
+        <div class="dist-wrap"><div id="pie"></div><div class="dist" id="dist"></div></div>
+        <div class="legend"><span><i class="a"></i>自己存款</span><span><i class="b"></i>父母副卡</span></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h"><h2>月度趋势</h2><div class="rule"></div>
+          <div class="tabs" id="range-tabs"></div></div>
+        <div class="trend-key">
+          <span><i style="background:var(--aud)"></i>澳币</span>
+          <span><i style="background:var(--cny)"></i>人民币</span>
+          <span class="rate-inline">折算 1 AUD = <input id="rate-trend" type="number" step="0.01"> CNY，仅供参考</span>
         </div>
-      </div>
-    </div>
-
-    <div class="legend" aria-label="资金来源图例">
-      <span><i class="l-self"></i>自己存款</span>
-      <span><i class="l-card"></i>父母副卡</span>
-    </div>
-
-    <main>
-      <section aria-labelledby="dist-title">
-        <div class="head">
-          <h2 id="dist-title">分类分布</h2>
-          <div class="rule"></div>
-          <div class="tabs" id="dist-tabs" aria-label="分类分布币种"></div>
-        </div>
-        <div class="dist" id="dist"></div>
-      </section>
-
-      <section aria-labelledby="trend-title">
-        <div class="head"><h2 id="trend-title">近半年趋势</h2><div class="rule"></div></div>
+        <div class="hint">柱高为按上述汇率折算后的 AUD 与 CNY 人民币合计；USD 仍在余额、账户变动、费用分布与流水中独立显示。点任意月份，整页统计切到那个月。</div>
         <div id="trend"></div>
-      </section>
-
-      <section aria-labelledby="list-title">
-        <div class="head">
-          <h2 id="list-title">本月明细</h2>
-          <div class="rule"></div>
-          <div class="tabs" id="list-tabs" aria-label="按资金来源筛选"></div>
-        </div>
-        <div id="list"></div>
-      </section>
-    </main>
-  </div>
-
-  <form class="addbar" id="entry-form">
-    <div class="wrap">
-      <div class="line1">
-        <label class="sr-only" for="amt">金额</label>
-        <input class="amount" id="amt" type="number" min="0.01" max="999999999" inputmode="decimal" step="0.01" placeholder="0.00" autocomplete="off" />
-        <div class="seg" id="cur-seg" aria-label="币种"></div>
-        <button class="submit" id="save" type="submit" disabled>记一笔</button>
-      </div>
-      <div class="chips" id="cat-chips" aria-label="消费分类"></div>
-      <div class="line2">
-        <div class="seg" id="src-seg" aria-label="资金来源"></div>
-        <label class="sr-only" for="date">日期</label>
-        <input class="dateinput" id="date" type="date" />
-        <label class="sr-only" for="note">备注</label>
-        <input class="noteinput" id="note" type="text" maxlength="200" placeholder="备注（可选）" autocomplete="off" />
       </div>
     </div>
-  </form>
 
-  <div class="toast" id="toast" role="status" aria-live="polite">
-    <span id="toast-message"></span>
-    <button id="toast-action" type="button" hidden></button>
+    <!-- ══ 流水 ══ -->
+    <div id="flow">
+      <div class="mhead"><h1 id="ftitle">—</h1>
+        <div class="nav"><button data-step="-1" aria-label="上个月">‹</button><button data-step="1" aria-label="下个月">›</button></div></div>
+      <div class="sec-h"><h2>流水日记账</h2><div class="rule"></div>
+        <div class="tabs" id="j-acct-tabs"></div></div>
+      <div class="hint">多个币种在同一条流水里，用颜色区分。余额是该币种自己存款在这笔之后的结余，副卡不影响余额。</div>
+      <div class="jhead"><span>账户</span><span>摘要</span><span>支出</span><span>收入</span><span>余额</span></div>
+      <div id="journal"></div>
+    </div>
+
+    <!-- ══ 管理 ══ -->
+    <div id="admin">
+      <div class="mhead"><h1>后台管理</h1></div>
+      <div class="hint" style="margin-top:-10px">每个卡、钱包、平台建一个账户。期初余额填开始记账那天的实际数，之前的流水不用补录。</div>
+      <div id="alist"></div>
+      <div class="form">
+        <div class="full"><span class="flab">名称</span><input id="a-name" type="text" placeholder="CommBank / 支付宝 / 父母副卡"></div>
+        <div><span class="flab">归属</span><select id="a-owner"><option value="self">自己存款</option><option value="card">父母副卡</option></select></div>
+        <div><span class="flab">货币</span><select id="a-cur"></select></div>
+        <div><span class="flab">期初余额</span><input id="a-open" type="number" step="0.01" placeholder="0.00"></div>
+        <div><span class="flab">起算日</span><input id="a-date" type="date"></div>
+        <button class="go" id="a-add">添加账户</button>
+      </div>
+
+      <div class="sec" style="margin-top:34px">
+        <div class="sec-h"><h2>添加定期项目</h2><div class="rule"></div></div>
+        <div class="hint">订阅与固定收入。添好之后清单显示在统计页，到期自动按实际金额生成流水。</div>
+        <div class="form">
+          <div class="full"><span class="flab">名称</span><input id="r-name" type="text" placeholder="Spotify / 家里生活费"></div>
+          <div><span class="flab">类型</span><select id="r-kind"><option value="expense">定期支出（订阅）</option><option value="income">固定收入</option></select></div>
+          <div><span class="flab">周期</span><select id="r-cycle"><option value="1">每月</option><option value="3">每季</option><option value="6">每半年</option><option value="12">每年</option></select></div>
+          <div><span class="flab">金额</span><input id="r-amt" type="number" step="0.01" placeholder="0.00"></div>
+          <div><span class="flab">扣费 / 到账账户</span><select id="r-acct"></select></div>
+          <div><span class="flab">首次日期</span><input id="r-date" type="date"></div>
+          <div><span class="flab">分类</span><select id="r-cat"></select></div>
+          <button class="go" id="r-add">添加</button>
+        </div>
+      </div>
+
+      <div class="sec" style="margin-top:34px">
+        <div class="sec-h"><h2>修改流水</h2><div class="rule"></div></div>
+        <div class="hint">最近 80 条，可改可删。删掉自动生成的订阅流水后不会再被补回来。</div>
+        <input id="tq" type="text" placeholder="搜索分类或摘要" class="tsearch">
+        <div id="tlist"></div>
+      </div>
+
+      <div class="sec" style="margin-top:34px">
+        <div class="sec-h"><h2>备份</h2><div class="rule"></div></div>
+        <div class="hint">数据仅保存在当前设备的这个浏览器中。删除不可撤销；换设备、清除网站数据或进行较大改动前，请先导出一份。</div>
+        <div class="bk"><button id="btn-export">导出 JSON</button><button id="btn-import">导入 JSON</button></div>
+      </div>
+
+      <div class="sec" style="margin-top:34px">
+        <div class="sec-h"><h2>折算参考</h2><div class="rule"></div></div>
+        <div class="ref-n" id="ref-n">—</div>
+        <div class="setnote">仅供粗略参考。多种货币各自独立记账，所有余额、分布与趋势都不经过折算。</div>
+        <div style="margin-top:10px"><span class="flab">1 AUD = ? CNY</span>
+          <input id="rate-cny" type="number" step="0.01" style="width:120px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-family:var(--num)"></div>
+      </div>
+    </div>
   </div>
-  <input type="file" id="file" accept="application/json,.json" hidden />
+</div>
 
-  <script>
-    const CURRENCIES = [
-      { code: "AUD", sym: "A$", color: "#E0A73E" },
-      { code: "CNY", sym: "¥", color: "#CF4A40" },
-      { code: "USD", sym: "US$", color: "#5FA684" }
-    ];
-    const SOURCES = [
-      { key: "self", label: "自己" },
-      { key: "card", label: "副卡" }
-    ];
-    const CATEGORIES = ["房租水电", "餐饮", "交通", "学习", "社交娱乐", "日用购物", "医疗", "通讯", "旅行", "其他"];
-    const DB_NAME = "anuexplore-ledger";
-    const STORE = "tx";
-    const KV = "kv";
-    const DEFAULT_RATES = { cny: 4.70, usd: 0.65 };
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="file" accept="application/json" hidden>
 
-    let db;
-    let rows = [];
-    let rates = { ...DEFAULT_RATES };
-    let cursor = new Date();
-    let distCur = "AUD";
-    let listSrc = "all";
-    let toastTimer;
-    let pendingDeleted = null;
-    const draft = { cur: "AUD", src: "self", cat: "餐饮" };
-    cursor.setDate(1);
+<script>
+/* ═══ 配置 ═══ */
+const CURRENCIES=[
+  {code:'AUD',sym:'A$',color:'#2F7358'},
+  {code:'CNY',sym:'¥',color:'#B04138'},
+  {code:'USD',sym:'US$',color:'#5F6FA6'}
+];
+const CAT_EXPENSE_MAIN=['餐饮','交通','日用','娱乐','学习'];
+const CAT_EXPENSE_MORE=['房租','医疗','订阅','旅行','通讯','人情','其他'];
+const CAT_INCOME_MAIN=['家里','工资','兼职','奖学金','退款'];
+const CAT_INCOME_MORE=['报销','红包','卖闲置','利息','其他'];
+const CAT_EXPENSE=[...CAT_EXPENSE_MAIN,...CAT_EXPENSE_MORE];
+const CAT_INCOME=[...CAT_INCOME_MAIN,...CAT_INCOME_MORE];
+const CYCLES={1:'每月',3:'每季',6:'每半年',12:'每年'};
+const SEED=[
+  {name:'CommBank',owner:'self',currency:'AUD'},
+  {name:'现金 AUD',owner:'self',currency:'AUD'},
+  {name:'支付宝',owner:'self',currency:'CNY'},
+  {name:'微信',owner:'self',currency:'CNY'},
+  {name:'父母副卡',owner:'card',currency:'AUD'}];
 
-    const pad = (value) => String(value).padStart(2, "0");
-    const ymd = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    const monthKey = (dateText) => dateText.slice(0, 7);
-    const currencyInfo = (code) => CURRENCIES.find((item) => item.code === code);
-    const formatAmount = (value) => value.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;"
-    }[char]));
+/* ═══ 存储 ═══ */
+const DB='anuexplore-ledger',TX='tx',RC='rec',AC='acct',KV='kv';let db;
+const memory={[TX]:new Map(),[RC]:new Map(),[AC]:new Map(),[KV]:new Map()};
+const openDB=()=>new Promise(res=>{
+  if(!window.indexedDB){res(null);return}
+  try{const r=indexedDB.open(DB,3);
+    r.onupgradeneeded=e=>{const d=e.target.result;
+      if(!d.objectStoreNames.contains(TX))d.createObjectStore(TX,{keyPath:'id'});
+      if(!d.objectStoreNames.contains(RC))d.createObjectStore(RC,{keyPath:'id'});
+      if(!d.objectStoreNames.contains(AC))d.createObjectStore(AC,{keyPath:'id'});
+      if(!d.objectStoreNames.contains(KV))d.createObjectStore(KV)};
+    r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null)
+  }catch{res(null)}});
+const os=(s,m)=>db.transaction(s,m).objectStore(s);
+const rq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const put=(s,r)=>db?rq(os(s,'readwrite').put(r)):Promise.resolve(memory[s].set(r.id,{...r}));
+const del=(s,i)=>db?rq(os(s,'readwrite').delete(i)):Promise.resolve(memory[s].delete(i));
+const txPut=r=>put(TX,r),txDel=i=>del(TX,i);
+const rcPut=r=>put(RC,r),rcDel=i=>del(RC,i);
+const acPut=r=>put(AC,r),acDel=i=>del(AC,i);
+const allOf=s=>db?rq(os(s,'readonly').getAll()):Promise.resolve([...memory[s].values()]);
+const kvGet=k=>db?rq(os(KV,'readonly').get(k)):Promise.resolve(memory[KV].get(k));
+const kvPut=(k,v)=>db?rq(os(KV,'readwrite').put(v,k)):Promise.resolve(memory[KV].set(k,v));
 
-    function openDatabase() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = (event) => {
-          const database = event.target.result;
-          if (!database.objectStoreNames.contains(STORE)) {
-            const store = database.createObjectStore(STORE, { keyPath: "id" });
-            store.createIndex("date", "date");
-          }
-          if (!database.objectStoreNames.contains(KV)) database.createObjectStore(KV);
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
+/* ═══ 状态 ═══ */
+let rows=[],recs=[],accts=[],skip=[],rateCny=4.70;
+let cursor=new Date();cursor.setDate(1);
+let distCur='AUD',jAcct='all',trendRange=6;
+const draft={mode:'expense',acct:null,cat:'餐饮'};
+
+const p2=n=>String(n).padStart(2,'0');
+const ymd=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+const mk=s=>s.slice(0,7);
+const ci=c=>CURRENCIES.find(x=>x.code===c)||CURRENCIES[0];
+const ai=id=>accts.find(a=>String(a.id)===String(id));
+const fmt=n=>n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[<>&"]/g,m=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]));
+const validDate=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(s||''))return false;
+  const [y,m,d]=s.split('-').map(Number),x=new Date(y,m-1,d);
+  return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d};
+const validId=id=>(typeof id==='string'&&id.length>0&&id.length<=160)||
+  (Number.isSafeInteger(id)&&id>0);
+const newId=p=>window.crypto?.randomUUID?`${p}${window.crypto.randomUUID()}`:
+  `${p}${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const monthsDiff=(a,b)=>(+b.slice(0,4)-+a.slice(0,4))*12+(+b.slice(5,7)-+a.slice(5,7));
+function addMonths(iso,n){const y=+iso.slice(0,4),m=+iso.slice(5,7)-1,d=+iso.slice(8,10);
+  const t=new Date(y,m+n,1),last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();
+  return `${t.getFullYear()}-${p2(t.getMonth()+1)}-${p2(Math.min(d,last))}`}
+const seq=r=>r.date+'#'+String(r.id);
+
+function normalizeAccount(input){
+  if(!input||typeof input!=='object'||!validId(input.id))return null;
+  const name=typeof input.name==='string'?input.name.trim().slice(0,80):'';
+  const owner=input.owner==='self'||input.owner==='card'?input.owner:null;
+  const currency=CURRENCIES.some(c=>c.code===input.currency)?input.currency:null;
+  const opening=Number(input.opening||0);
+  const openDate=validDate(input.openDate)?input.openDate:'';
+  if(!name||!owner||!currency||!Number.isFinite(opening)||Math.abs(opening)>999999999)return null;
+  return{id:input.id,name,owner,currency,opening:Math.round(opening*100)/100,openDate};
+}
+function normalizeRow(input){
+  if(!input||typeof input!=='object'||!validId(input.id)||!validDate(input.date))return null;
+  const amount=Number(input.amount);
+  if(!Number.isFinite(amount)||amount<=0||amount>999999999)return null;
+  const fallbackOwner=input.source==='card'?'card':'self';
+  const acct=ai(input.acctId)||accts.find(a=>a.currency===input.currency&&a.owner===fallbackOwner);
+  if(!acct)return null;
+  const type=input.type==='income'||input.type==='expense'?input.type:
+    (input.source==='self'||input.source==='card'?'expense':null);
+  const category=typeof input.category==='string'?input.category.trim().slice(0,50):'';
+  if(!type||!category)return null;
+  const spread=[1,3,6,12].includes(Number(input.spread))?Number(input.spread):1;
+  const out={id:input.id,date:input.date,type,amount:Math.round(amount*100)/100,
+    currency:acct.currency,acctId:acct.id,category,
+    note:typeof input.note==='string'?input.note.trim().slice(0,200):'',spread};
+  if(typeof input.recId==='string'&&input.recId.length<=160)out.recId=input.recId;
+  return out;
+}
+function normalizeRecurring(input){
+  if(!input||typeof input!=='object'||!validId(input.id))return null;
+  const acct=ai(input.acctId),amount=Number(input.amount),cycle=Number(input.cycle);
+  const name=typeof input.name==='string'?input.name.trim().slice(0,80):'';
+  const category=typeof input.category==='string'?input.category.trim().slice(0,50):'';
+  if(!acct||!name||!category||!validDate(input.firstDate)||
+    !Number.isFinite(amount)||amount<=0||amount>999999999||![1,3,6,12].includes(cycle)||
+    !['income','expense'].includes(input.kind))return null;
+  return{id:input.id,name,kind:input.kind,amount:Math.round(amount*100)/100,
+    currency:acct.currency,acctId:acct.id,cycle,firstDate:input.firstDate,
+    category,active:input.active!==false};
+}
+async function ensureLegacyAccounts(inputs){
+  const legacy=inputs.filter(r=>r&&CURRENCIES.some(c=>c.code===r.currency)&&
+    (r.source==='self'||r.source==='card'));
+  for(const input of legacy){
+    const owner=input.source,exists=accts.some(a=>a.currency===input.currency&&a.owner===owner);
+    if(exists)continue;
+    const account={id:newId('a'),name:owner==='card'?`${input.currency} 父母副卡`:`现金 ${input.currency}`,
+      owner,currency:input.currency,opening:0,openDate:validDate(input.date)?input.date:ymd(new Date())};
+    await acPut(account);accts.push(account);
+  }
+}
+
+/* ═══ 定期过账 ═══ */
+async function postDue(){
+  const today=ymd(new Date());
+  for(const r of recs){
+    if(!r.active)continue;
+    for(let i=0;;i++){
+      const d=addMonths(r.firstDate,i*r.cycle);
+      if(d>today)break;
+      const id=`${r.id}#${d}`;
+      if(skip.includes(id)||rows.some(x=>String(x.id)===id))continue;
+      const rec={id,date:d,type:r.kind,amount:r.amount,currency:r.currency,
+        acctId:r.acctId,category:r.category,note:r.name,recId:r.id,spread:r.cycle};
+      await txPut(rec);rows.push(rec);
     }
+  }
+}
 
-    function objectStore(name, mode) {
-      return db.transaction(name, mode).objectStore(name);
-    }
+/* ═══ 记账 ═══ */
+const catsFor=()=>draft.mode==='expense'?CAT_EXPENSE:CAT_INCOME;
+const acctsFor=()=>accts.filter(a=>draft.mode==='expense'||a.owner==='self');
+function paintAmount(){
+  const sg=document.getElementById('sign');
+  sg.textContent=draft.mode==='expense'?'−':'+';
+  sg.style.setProperty('--sgn','var(--ink)');
+  const a=ai(draft.acct);
+  document.getElementById('sym').textContent=a?ci(a.currency).sym:'';
+  document.getElementById('done').disabled=!(parseFloat(document.getElementById('amt').value)>0)||!a;
+}
+let moreOpen=false;
+function buildEntry(){
+  const list=acctsFor();
+  if(!list.some(a=>a.id===draft.acct))draft.acct=list.length?list[0].id:null;
+  document.getElementById('acct-row').innerHTML=list.map(a=>
+    `<button class="acct" data-acct="${a.id}" aria-pressed="${draft.acct===a.id}">${esc(a.name)}<em>${a.currency}</em></button>`).join('')
+    ||`<span class="hint">先到「账户」页添加一个账户。</span>`;
+  const main=draft.mode==='expense'?CAT_EXPENSE_MAIN:CAT_INCOME_MAIN;
+  const more=draft.mode==='expense'?CAT_EXPENSE_MORE:CAT_INCOME_MORE;
+  if(!main.includes(draft.cat)&&!more.includes(draft.cat))draft.cat=main[0];
+  if(more.includes(draft.cat))moreOpen=true;
+  const btn=c=>`<button class="cat" data-cat="${c}" aria-pressed="${draft.cat===c}">${c}</button>`;
+  document.getElementById('cats').innerHTML=
+    `<div class="cat-grid">${main.map(btn).join('')}</div>`+
+    `<button class="more" data-more="1" aria-expanded="${moreOpen}">${moreOpen?'收起':'更多分类'}<span class="arw">${moreOpen?'▲':'▼'}</span></button>`+
+    (moreOpen?`<div class="cat-grid more-grid">${more.map(btn).join('')}</div>`:'');
+}
+let tt;const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1600)};
 
-    function requestResult(request) {
-      return new Promise((resolve, reject) => {
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-    }
+async function commit(){
+  const a=ai(draft.acct),v=parseFloat(document.getElementById('amt').value);
+  if(!a||!(v>0))return;
+  const rec={id:newId('t'),date:document.getElementById('date').value||ymd(new Date()),
+    type:draft.mode,amount:Math.round(v*100)/100,currency:a.currency,
+    acctId:a.id,category:draft.cat,note:document.getElementById('note').value.trim(),spread:1};
+  await txPut(rec);rows.push(rec);
+  toast(`${draft.mode==='expense'?'−':'+'}${ci(a.currency).sym}${fmt(rec.amount)} · ${a.name}`);
+  document.getElementById('amt').value='';document.getElementById('note').value='';
+  paintAmount();document.getElementById('amt').focus();
+  cursor=new Date(+rec.date.slice(0,4),+rec.date.slice(5,7)-1,1);
+  paintAll();
+}
 
-    const putRecord = (record) => requestResult(objectStore(STORE, "readwrite").put(record));
-    const deleteRecord = (id) => requestResult(objectStore(STORE, "readwrite").delete(id));
-    const getAllRecords = () => requestResult(objectStore(STORE, "readonly").getAll());
-    const getSetting = (key) => requestResult(objectStore(KV, "readonly").get(key));
-    const putSetting = (key, value) => requestResult(objectStore(KV, "readwrite").put(value, key));
+/* ═══ 计算 ═══ */
+const ownerOf=r=>{const a=ai(r.acctId);return a?a.owner:(r.source||'self')};
+const inMonth=m=>rows.filter(r=>mk(r.date)===m);
+const curM=()=>mk(ymd(cursor));
 
-    function isValidDate(value) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-      const [year, month, day] = value.split("-").map(Number);
-      const date = new Date(year, month - 1, day);
-      return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-    }
+function acctBalance(a,before){ // before: 可选 'YYYY-MM'，算该月之前
+  let b=a.opening||0;
+  rows.forEach(r=>{
+    if(r.acctId!==a.id)return;
+    if(a.openDate&&r.date<a.openDate)return;
+    if(before&&mk(r.date)>=before)return;
+    b+=r.type==='income'?r.amount:-r.amount;
+  });
+  return b;
+}
+const acctSpent=(a,m)=>rows.filter(r=>r.acctId===a.id&&r.type==='expense'&&(!m||mk(r.date)===m))
+  .reduce((x,y)=>x+y.amount,0);
+const selfBalance=(cur,before)=>accts.filter(a=>a.owner==='self'&&a.currency===cur)
+  .reduce((s,a)=>s+acctBalance(a,before),0);
 
-    function normalizeRecord(input) {
-      if (!input || typeof input !== "object") return null;
-      const amount = Number(input.amount);
-      const idTypeIsValid =
-        (typeof input.id === "string" && input.id.trim().length > 0 && input.id.length <= 100) ||
-        (Number.isSafeInteger(input.id) && input.id > 0);
-      const note = typeof input.note === "string" ? input.note.slice(0, 200) : "";
-      if (
-        !idTypeIsValid || !isValidDate(input.date) ||
-        !Number.isFinite(amount) || amount <= 0 || amount > 999999999 ||
-        !currencyInfo(input.currency) || !SOURCES.some((item) => item.key === input.source) ||
-        !CATEGORIES.includes(input.category)
-      ) return null;
-      return {
-        id: input.id,
-        date: input.date,
-        amount: Math.round(amount * 100) / 100,
-        currency: input.currency,
-        source: input.source,
-        category: input.category,
-        note
-      };
-    }
+function expenseMap(cur,month){
+  const out={};
+  rows.forEach(r=>{
+    if(r.currency!==cur||r.type!=='expense'||mk(r.date)!==month)return;
+    (out[r.category]??={self:0,card:0})[ownerOf(r)]+=r.amount;
+  });
+  return out;
+}
+function prepaid(cur){
+  const now=mk(ymd(new Date()));let s=0;
+  rows.forEach(r=>{if(r.currency!==cur||r.type!=='expense')return;
+    const n=r.spread||1;if(n<2)return;
+    const used=Math.min(n,Math.max(0,monthsDiff(mk(r.date),now)+1));
+    s+=r.amount*(n-used)/n});
+  return s;
+}
 
-    function normalizeRates(input) {
-      const cny = Number(input?.cny);
-      const usd = Number(input?.usd);
-      return {
-        cny: Number.isFinite(cny) && cny > 0 ? cny : DEFAULT_RATES.cny,
-        usd: Number.isFinite(usd) && usd > 0 ? usd : DEFAULT_RATES.usd
-      };
-    }
+/* ═══ 渲染：账户余额 ═══ */
+function paintWallet(){
+  const m=curM();
+  const tot=CURRENCIES.map(c=>`<div><div class="k" style="color:${c.color}">${c.code} 自己存款合计</div>
+    <div class="v">${c.sym}${fmt(selfBalance(c.code))}</div></div>`).join('');
+  const rowsHtml=accts.map(a=>{
+    const c=ci(a.currency);
+    if(a.owner==='card')return `<div class="w-row card">
+      <div><div class="w-name">${esc(a.name)}</div><div class="w-sub">父母副卡 · ${a.currency} · 不进余额</div></div>
+      <div class="w-val">${c.sym}${fmt(acctSpent(a,m))}<small>本月已用 · 累计 ${fmt(acctSpent(a))}</small></div></div>`;
+    return `<div class="w-row">
+      <div><div class="w-name">${esc(a.name)}</div><div class="w-sub">自己存款 · ${a.currency}</div></div>
+      <div class="w-val">${c.sym}${fmt(acctBalance(a))}<small>本月支出 ${fmt(acctSpent(a,m))}</small></div></div>`;
+  }).join('')||`<div class="w-row"><div class="w-name" style="color:var(--faint)">还没有账户</div><div></div></div>`;
+  document.getElementById('wallet').innerHTML=`<div class="w-tot">${tot}</div>${rowsHtml}`;
+  const s=c=>inMonth(m).filter(r=>r.currency===c&&r.type==='expense').reduce((a,b)=>a+b.amount,0);
+  document.getElementById('ref-n').textContent='≈ A$ '+fmt(selfBalance('AUD')+selfBalance('CNY')/rateCny)+'　（仅 AUD 与 CNY）';
+}
 
-    function monthRows() {
-      const current = monthKey(ymd(cursor));
-      return rows.filter((record) => monthKey(record.date) === current);
-    }
+/* ═══ 渲染：账户变动 ═══ */
+function paintStmts(){
+  const m=curM();
+  const body=CURRENCIES.map(c=>{
+    const rs=inMonth(m).filter(r=>r.currency===c.code);
+    const inc=rs.filter(r=>r.type==='income').reduce((a,b)=>a+b.amount,0);
+    const self=rs.filter(r=>r.type==='expense'&&ownerOf(r)==='self').reduce((a,b)=>a+b.amount,0);
+    const card=rs.filter(r=>r.type==='expense'&&ownerOf(r)==='card').reduce((a,b)=>a+b.amount,0);
+    const open=selfBalance(c.code,m);
+    return `<div class="frow"><span class="fcode" style="color:${c.color}">${c.code}</span>
+      <span class="fv mut">${fmt(open)}</span>
+      <span class="fv pos">${inc?'+'+fmt(inc):'—'}</span>
+      <span class="fv neg">${self?'−'+fmt(self):'—'}</span>
+      <span class="fv big">${fmt(open+inc-self)}</span>
+      <span class="fv mut">${card?fmt(card):'—'}</span></div>`}).join('');
+  document.getElementById('stmts').innerHTML=
+    `<div class="fgrid"><div class="frow fh"><span></span><span>期初</span><span>收入</span>
+      <span>支出</span><span>期末余额</span><span>副卡</span></div>${body}</div>`;
+}
 
-    function renderLedgers() {
-      const records = monthRows();
-      document.getElementById("ledgers").innerHTML = CURRENCIES.map((currency) => {
-        const matching = records.filter((record) => record.currency === currency.code);
-        const self = matching.filter((record) => record.source === "self").reduce((sum, record) => sum + record.amount, 0);
-        const card = matching.filter((record) => record.source === "card").reduce((sum, record) => sum + record.amount, 0);
-        const total = self + card;
-        const width = (value) => total ? `${(value / total * 100).toFixed(2)}%` : "0%";
-        return `<div class="led ${total ? "" : "empty"}" style="--c:${currency.color}">
-          <div class="led-code">${currency.code}</div>
-          <div class="led-total"><span class="cy">${currency.sym}</span>${formatAmount(total)}</div>
-          <div class="bar" aria-label="自己存款 ${formatAmount(self)}，父母副卡 ${formatAmount(card)}">
-            <div class="seg-self" style="width:${width(self)}"></div>
-            <div class="seg-card" style="width:${width(card)}"></div>
+/* ═══ 渲染：日记账 ═══ */
+function paintJournal(){
+  const m=curM();
+  const all=rows.filter(r=>mk(r.date)===m).sort((a,b)=>seq(a).localeCompare(seq(b)));
+  const run={},balOf={};CURRENCIES.forEach(c=>run[c.code]=selfBalance(c.code,m));
+  all.forEach(r=>{const own=ownerOf(r);
+    if(own==='self'){run[r.currency]+=r.type==='income'?r.amount:-r.amount;balOf[r.id]=run[r.currency]}
+    else balOf[r.id]=null});
+  const view=jAcct==='all'?all:all.filter(r=>r.acctId===jAcct);
+  const el=document.getElementById('journal');
+  if(!view.length){el.innerHTML=`<div class="blank">本月没有流水。</div>`;return}
+  const W=['日','一','二','三','四','五','六'];
+  const days=[...new Set(view.map(r=>r.date))].reverse();
+  el.innerHTML=days.map(d=>{
+    const items=view.filter(r=>r.date===d);
+    const caps=CURRENCIES.map(c=>{
+      const dr=items.filter(r=>r.currency===c.code);if(!dr.length)return '';
+      const net=dr.reduce((a,b)=>a+(b.type==='income'?b.amount:-b.amount),0);
+      const last=[...dr].reverse().find(r=>balOf[r.id]!==null&&balOf[r.id]!==undefined);
+      return `<span class="jc" style="--c:${c.color}">${c.code} ${net<0?'−':'+'}${fmt(Math.abs(net))}${
+        last?` → ${fmt(balOf[last.id])}`:''}</span>`}).filter(Boolean).join('');
+    return `<div class="jday"><span class="d"><b>${d.slice(8)}</b> ${d.slice(0,7)} 周${W[new Date(d+'T00:00:00').getDay()]}</span>
+      <span class="e">${caps}</span></div>`
+      +items.slice().reverse().map(r=>{
+        const c=ci(r.currency),a=ai(r.acctId),bal=balOf[r.id];
+        const sub=[r.note?esc(r.note):'',r.spread>1?CYCLES[r.spread]:''].filter(Boolean).join(' · ');
+        const out=r.type==='expense'?fmt(r.amount):'',inn=r.type==='income'?fmt(r.amount):'';
+        return `<div class="jrow" style="--c:${c.color}">
+          <div class="j-acct"><span class="j-cur">${c.code}</span>${a?esc(a.name):'—'}${ownerOf(r)==='card'?' ·副卡':''}</div>
+          <div class="j-desc">${r.category}${sub?` <small>${sub}</small>`:''}</div>
+          <div class="j-nums">
+            <span class="j-amt">${out||'<span class="j-none">—</span>'}</span>
+            <span class="j-amt">${inn||'<span class="j-none">—</span>'}</span>
+            <span class="j-bal">${bal==null?'<span class="j-none">—</span>':fmt(bal)}</span>
           </div>
-          <div class="splits"><div>自己存款<b>${formatAmount(self)}</b></div><div>父母副卡<b>${formatAmount(card)}</b></div></div>
-        </div>`;
-      }).join("");
-      renderReference(records);
+          </div>`}).join('')}).join('');
+}
+
+/* ═══ 渲染：分布 / 趋势 ═══ */
+let pieDefault='';
+function paintDist(){
+  const map=expenseMap(distCur,curM()),c=ci(distCur);
+  const L=Object.entries(map).map(([k,v])=>[k,v,v.self+v.card]).sort((a,b)=>b[2]-a[2]);
+  const max=L.length?L[0][2]:1,tot=L.reduce((a,b)=>a+b[2],0)||1,n=L.length;
+  const shade=i=>{const g=Math.round(26+(212-26)*(n<2?0:i/(n-1)));return `rgb(${g},${g},${Math.max(g-4,0)})`};
+  const C=2*Math.PI*54;let off=0;
+  const segs=L.map(([cat,,t],i)=>{
+    const len=t/tot*C,dash=Math.max(len-1.6,0.6);
+    const s=`<circle class="seg" cx="70" cy="70" r="54" fill="none" stroke="${shade(i)}" stroke-width="22"
+      stroke-dasharray="${dash} ${C-dash}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"
+      data-cat="${cat}" data-amt="${fmt(t)}" data-sym="${c.sym}" data-pct="${(t/tot*100).toFixed(0)}"
+      ><title>${cat} ${c.sym}${fmt(t)}</title></circle>`;
+    off+=len;return s}).join('');
+  pieDefault=`<div class="pc-v">${c.sym}${fmt(tot)}</div><div class="pc-k">${curM().slice(0,4)}年${+curM().slice(5)}月费用合计</div>`;
+  document.getElementById('pie').innerHTML=L.length?
+    `<div class="pie-wrap"><svg viewBox="0 0 140 140" class="pie" role="img" aria-label="费用分类占比">
+      <circle cx="70" cy="70" r="54" fill="none" stroke="var(--panel)" stroke-width="22"/>${segs}</svg>
+      <div class="pie-center" id="pie-center">${pieDefault}</div></div>`:'';
+  document.getElementById('dist').innerHTML=L.length?L.map(([cat,v,t],i)=>`
+    <div class="drow"><div class="lbl"><span class="swatch" style="background:${shade(i)}"></span>${cat}</div>
+      <div class="track"><div class="fill" style="width:${(t/max*100).toFixed(2)}%">
+        <div class="f-self" style="width:${(v.self/t*100).toFixed(2)}%"></div>
+        <div class="f-card" style="width:${(v.card/t*100).toFixed(2)}%"></div></div></div>
+      <div class="amt">${fmt(t)}<span class="pct">${(t/tot*100).toFixed(0)}%</span></div></div>`).join('')
+    :`<div class="blank">本月没有 ${distCur} 的费用。</div>`;
+}
+function paintTrend(){
+  const today=mk(ymd(new Date())),cur=curM();
+  const endKey=cur>today?cur:today;
+  let sd=new Date(+endKey.slice(0,4),+endKey.slice(5,7)-1-(trendRange-1),1);
+  const sk=`${sd.getFullYear()}-${p2(sd.getMonth()+1)}`;
+  if(cur<sk)sd=new Date(+cur.slice(0,4),+cur.slice(5,7)-1,1);
+  const ms=[];for(let i=0;i<trendRange;i++){const d=new Date(sd.getFullYear(),sd.getMonth()+i,1);
+    ms.push(`${d.getFullYear()}-${p2(d.getMonth()+1)}`)}
+
+  const mExp=(c,m)=>rows.filter(r=>r.currency===c&&r.type==='expense'&&mk(r.date)===m)
+    .reduce((a,b)=>a+b.amount,0);
+  const data=ms.map(m=>{const aud=mExp('AUD',m),cny=mExp('CNY',m),conv=aud*rateCny;
+    return{aud,cny,conv,total:conv+cny}});
+  const max=Math.max(...data.map(d=>d.total),1);
+  const i0=ms.indexOf(cur),sel=i0>=0?data[i0]:{aud:0,cny:0,conv:0,total:0};
+  const r0=n=>Math.round(n).toLocaleString('en-AU');
+
+  document.getElementById('trend').innerHTML=`
+    <div class="tr-head"><span class="tr-sel">${cur.slice(0,4)}年${+cur.slice(5)}月 ≈ ¥${r0(sel.total)}
+      （A$${fmt(sel.aud)} + ¥${fmt(sel.cny)}）</span></div>
+    <div class="bars${ms.length>8?' dense':''}">${data.map((x,i)=>{
+      const h=(x.total/max).toFixed(4);
+      const pc=x.total?(x.cny/x.total*100).toFixed(2):0;
+      return `<button class="bc ${ms[i]===cur?'now':''}" data-jump="${ms[i]}"
+        title="${ms[i]} · A$${fmt(x.aud)} + ¥${fmt(x.cny)} ≈ ¥${r0(x.total)}">
+        <span class="bval">${x.total?r0(x.total):''}</span>
+        <span class="bstack" style="height:calc((100% - 16px) * ${h})">
+          <span class="s-cny" style="height:${pc}%"></span>
+          <span class="s-aud" style="height:${(100-pc).toFixed(2)}%"></span>
+        </span></button>`}).join('')}</div>
+    <div class="blab">${ms.map((m,i)=>{
+      const yr=i===0||m.slice(5)==='01';
+      return `<button class="mlab ${m===cur?'now':''}" data-jump="${m}">${+m.slice(5)}月${
+        yr?`<em>${m.slice(0,4)}</em>`:'<em>&nbsp;</em>'}</button>`}).join('')}</div>`;
+}
+
+/* ═══ 渲染：定期 / 账户 ═══ */
+function paintRecur(){
+  document.getElementById('rsums').innerHTML=CURRENCIES.map(c=>{
+    const ex=recs.filter(r=>r.active&&r.kind==='expense'&&r.currency===c.code).reduce((a,b)=>a+b.amount/b.cycle,0);
+    const inc=recs.filter(r=>r.active&&r.kind==='income'&&r.currency===c.code).reduce((a,b)=>a+b.amount/b.cycle,0);
+    return `<div class="sum"><div class="k">${c.code} 月均订阅支出</div><div class="v">${c.sym}${fmt(ex)}</div></div>
+      <div class="sum"><div class="k">${c.code} 月均固定收入</div><div class="v" style="color:var(--pos)">${c.sym}${fmt(inc)}</div></div>`}).join('');
+  document.getElementById('rprepaid').textContent='未摊销预付费用：'+
+    CURRENCIES.map(c=>`${c.sym}${fmt(prepaid(c.code))}`).join(' / ')+'　（已付款但尚未消耗的订阅期间）';
+  const today=ymd(new Date());
+  document.getElementById('rlist').innerHTML=recs.length?recs.map(r=>{
+    let nx=r.firstDate;for(let i=0;nx<=today;i++)nx=addMonths(r.firstDate,(i+1)*r.cycle);
+    const c=ci(r.currency),a=ai(r.acctId);
+    return `<div class="ritem ${r.active?'':'off'}">
+      <div><div class="rname">${esc(r.name)}</div>
+        <div class="rmeta">${CYCLES[r.cycle]} · ${a?esc(a.name):'—'} · ${r.category} · 下次 ${nx}</div></div>
+      <div class="rright"><div>
+        <div class="ramt" style="${r.kind==='income'?'color:var(--pos)':''}">${r.kind==='income'?'+':'−'}${c.sym}${fmt(r.amount)}</div>
+        <div class="rmo">月均 ${fmt(r.amount/r.cycle)}</div></div>
+        <button class="ract" data-rtog="${esc(r.id)}">${r.active?'暂停':'启用'}</button>
+        <button class="ract" data-rdel="${esc(r.id)}">删除</button></div></div>`}).join('')
+    :`<div class="blank">还没有定期项目。</div>`;
+  document.getElementById('r-acct').innerHTML=accts.map(a=>
+    `<option value="${a.id}">${esc(a.name)} · ${a.currency}</option>`).join('');
+}
+function paintAccts(){
+  document.getElementById('alist').innerHTML=accts.length?accts.map(a=>{
+    const c=ci(a.currency);
+    return `<div class="aitem">
+      <div><input class="txt" data-aname="${a.id}" value="${esc(a.name)}">
+        <div class="ameta">${a.owner==='self'?'自己存款':'父母副卡'} · ${a.currency} · 当前 ${c.sym}${fmt(a.owner==='self'?acctBalance(a):acctSpent(a))}${a.owner==='card'?'（累计已用）':''}</div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${a.owner==='self'?`<input data-aopen="${a.id}" type="number" step="0.01" value="${a.opening||0}" title="期初余额">
+          <input data-adate="${a.id}" type="date" value="${a.openDate||''}" style="width:140px" title="起算日">`:''}
+        <button class="ract" data-adel="${a.id}">删除</button></div></div>`}).join('')
+    :`<div class="blank">还没有账户。</div>`;
+}
+
+/* ═══ 管理：流水编辑 ═══ */
+let editId=null;
+function paintAdminTx(){
+  const q=(document.getElementById('tq').value||'').trim().toLowerCase();
+  let rs=rows.slice().sort((a,b)=>b.date.localeCompare(a.date)||String(b.id).localeCompare(String(a.id)));
+  if(q)rs=rs.filter(r=>(r.category+' '+(r.note||'')).toLowerCase().includes(q));
+  rs=rs.slice(0,80);
+  const el=document.getElementById('tlist');
+  if(!rs.length){el.innerHTML=`<div class="blank">没有匹配的流水。</div>`;return}
+  const opt=(list,v)=>list.map(x=>`<option value="${esc(x)}" ${x===v?'selected':''}>${esc(x)}</option>`).join('');
+  el.innerHTML=rs.map(r=>{
+    const c=ci(r.currency),a=ai(r.acctId);
+    if(editId===String(r.id)){
+      const cats=r.type==='expense'?CAT_EXPENSE:CAT_INCOME;
+      return `<div class="trow editing" data-row="${esc(r.id)}">
+        <div class="tedit">
+          <input type="date" data-f="date" value="${r.date}">
+          <input type="number" step="0.01" data-f="amount" value="${r.amount}">
+          <select data-f="type"><option value="expense" ${r.type==='expense'?'selected':''}>支出</option>
+            <option value="income" ${r.type==='income'?'selected':''}>收入</option></select>
+          <select data-f="acctId">${accts.map(x=>`<option value="${x.id}" ${x.id===r.acctId?'selected':''}>${esc(x.name)} · ${x.currency}</option>`).join('')}</select>
+          <select data-f="category">${opt(cats,r.category)}</select>
+          <input type="text" data-f="note" value="${esc(r.note||'')}" placeholder="摘要">
+          <div class="full t-act" style="gap:8px;margin-top:2px">
+            <button data-save="${esc(r.id)}" style="color:var(--ink);font-weight:600">保存</button>
+            <button data-cancel="1">取消</button></div>
+        </div></div>`;
     }
+    return `<div class="trow">
+      <div><div class="t-main">${r.category}${r.note?` <small>${esc(r.note)}</small>`:''}</div>
+        <div class="t-sub">${r.date} · ${a?esc(a.name):'—'}${r.recId?' · 定期':''}</div></div>
+      <div class="t-act" style="--c:${c.color}">
+        <span class="t-amt">${r.type==='income'?'+':'−'}${c.sym}${fmt(r.amount)}</span>
+        <button data-edit="${esc(r.id)}">改</button>
+        <button class="warn" data-del="${esc(r.id)}">删</button></div></div>`}).join('');
+}
 
-    function renderReference(records) {
-      const sum = (code) => records.filter((record) => record.currency === code).reduce((total, record) => total + record.amount, 0);
-      const aud = sum("AUD") + sum("CNY") / rates.cny + sum("USD") / rates.usd;
-      document.getElementById("ref-num").textContent = `≈ A$ ${formatAmount(aud)}`;
+/* ═══ 汇总渲染 ═══ */
+function paintAll(){
+  document.getElementById('mtitle').textContent=`${cursor.getFullYear()} 年 ${cursor.getMonth()+1} 月`;
+  document.getElementById('dist-tabs').innerHTML=CURRENCIES.map(c=>
+    `<button data-dist="${c.code}" style="--tc:${c.color}" aria-pressed="${distCur===c.code}">${c.code}</button>`).join('');
+  document.getElementById('j-acct-tabs').innerHTML=
+    `<button data-jacct="all" aria-pressed="${jAcct==='all'}">全部账户</button>`+
+    accts.map(a=>`<button data-jacct="${a.id}" aria-pressed="${jAcct===a.id}">${esc(a.name)}</button>`).join('');
+  document.getElementById('range-tabs').innerHTML=[6,12,24].map(n=>
+    `<button data-range="${n}" aria-pressed="${trendRange===n}">${n} 个月</button>`).join('');
+  document.getElementById('ftitle').textContent=`${cursor.getFullYear()} 年 ${cursor.getMonth()+1} 月`;
+  paintWallet();paintStmts();paintJournal();paintDist();paintTrend();paintRecur();paintAccts();paintAdminTx();
+}
+
+/* ═══ 事件 ═══ */
+const setPressed=(id,attr,val)=>[...document.getElementById(id).children]
+  .forEach(b=>b.dataset&&b.setAttribute('aria-pressed',b.dataset[attr]===val));
+
+document.body.addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.mode){draft.mode=d.mode;setPressed('mode','mode',d.mode);buildEntry();paintAmount()}
+  if(d.acct){draft.acct=d.acct;setPressed('acct-row','acct',d.acct);paintAmount()}
+  if(d.cat){draft.cat=d.cat;
+    document.querySelectorAll('#cats .cat').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat===d.cat))}
+  if(d.more){moreOpen=!moreOpen;buildEntry()}
+  if(d.dist){distCur=d.dist;setPressed('dist-tabs','dist',distCur);paintDist()}
+  if(d.jump){cursor=new Date(+d.jump.slice(0,4),+d.jump.slice(5,7)-1,1);paintAll();
+    document.getElementById('mtitle').scrollIntoView({behavior:'smooth',block:'start'})}
+  if(d.range){trendRange=+d.range;paintAll()}
+  if(d.step){cursor.setMonth(cursor.getMonth()+ +d.step);paintAll()}
+  if(d.jacct){jAcct=d.jacct;setPressed('j-acct-tabs','jacct',jAcct);paintJournal()}
+  if(d.view){document.body.dataset.view=d.view;
+    document.querySelectorAll('.switch button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.view===d.view))}
+  if(d.del){const id=d.del;await txDel(id);rows=rows.filter(r=>String(r.id)!==id);
+    if(id.includes('#')){skip.push(id);await kvPut('skip',skip)}paintAll()}
+  if(d.edit){editId=d.edit;paintAdminTx();return}
+  if(d.cancel){editId=null;paintAdminTx();return}
+  if(d.save){
+    const box=b.closest('.trow'),g=f=>box.querySelector(`[data-f="${f}"]`).value;
+    const r=rows.find(x=>String(x.id)===d.save);
+    if(r){
+      const acc=ai(g('acctId'))||ai(r.acctId);
+      r.date=g('date')||r.date;
+      r.amount=Math.round((parseFloat(g('amount'))||0)*100)/100;
+      r.type=g('type');r.acctId=acc.id;r.currency=acc.currency;
+      r.category=g('category');r.note=g('note').trim();
+      await txPut(r);
     }
+    editId=null;toast('已保存');paintAll();return}
+  if(d.rtog){const r=recs.find(x=>x.id===d.rtog);r.active=!r.active;await rcPut(r);paintRecur()}
+  if(d.rdel){await rcDel(d.rdel);recs=recs.filter(x=>x.id!==d.rdel);paintRecur()}
+  if(d.adel){
+    const gone=rows.filter(r=>r.acctId===d.adel);
+    const recurring=recs.filter(x=>x.acctId===d.adel);
+    const target=ai(d.adel);
+    if(!target||!window.confirm(`删除账户“${target.name}”？这会同时永久删除 ${gone.length} 条流水和 ${recurring.length} 个定期项目。`))return;
+    for(const r of gone)await txDel(r.id);
+    for(const r of recurring)await rcDel(r.id);
+    await acDel(d.adel);
+    rows=rows.filter(r=>r.acctId!==d.adel);
+    recs=recs.filter(r=>r.acctId!==d.adel);
+    accts=accts.filter(x=>x.id!==d.adel);
+    toast(gone.length?`已删除账户及其 ${gone.length} 条流水`:'已删除账户');
+    buildEntry();paintAll()}
+  if(b.id==='done')commit();
+  if(b.id==='r-add')addRecur();
+  if(b.id==='a-add')addAcct();
+});
 
-    function renderDistribution() {
-      const records = monthRows().filter((record) => record.currency === distCur);
-      const currency = currencyInfo(distCur);
-      const grouped = {};
-      records.forEach((record) => {
-        grouped[record.category] ??= { self: 0, card: 0 };
-        grouped[record.category][record.source] += record.amount;
-      });
-      const list = Object.entries(grouped).map(([category, values]) => [category, values, values.self + values.card]).sort((a, b) => b[2] - a[2]);
-      const maximum = list.length ? list[0][2] : 0;
-      const total = list.reduce((sum, item) => sum + item[2], 0);
-      document.getElementById("dist").innerHTML = list.length ? list.map(([category, values, amount]) => `
-        <div class="row" style="--c:${currency.color}">
-          <div class="lbl" title="${escapeHtml(category)}">${escapeHtml(category)}</div>
-          <div class="track"><div class="fill" style="width:${(amount / maximum * 100).toFixed(2)}%">
-            <div class="seg-self" style="width:${(values.self / amount * 100).toFixed(2)}%"></div>
-            <div class="seg-card" style="width:${(values.card / amount * 100).toFixed(2)}%"></div>
-          </div></div>
-          <div class="amt">${formatAmount(amount)}<span class="pct">${(amount / total * 100).toFixed(0)}%</span></div>
-        </div>`).join("") : `<div class="empty-state">本月没有 ${distCur} 的记录。</div>`;
+document.body.addEventListener('change',async e=>{
+  const t=e.target,d=t.dataset;if(!d)return;
+  if(d.aname){const a=ai(d.aname);a.name=t.value.trim()||a.name;await acPut(a);buildEntry();paintAll()}
+  if(d.aopen){const a=ai(d.aopen);a.opening=parseFloat(t.value)||0;await acPut(a);paintAll()}
+  if(d.adate){const a=ai(d.adate);a.openDate=t.value;await acPut(a);paintAll()}
+});
+
+async function addAcct(){
+  const g=i=>document.getElementById(i).value;
+  if(!g('a-name').trim()){toast('填写账户名称');return}
+  const a={id:newId('a'),name:g('a-name').trim(),owner:g('a-owner'),currency:g('a-cur'),
+    opening:parseFloat(g('a-open'))||0,openDate:g('a-date')||ymd(new Date())};
+  await acPut(a);accts.push(a);
+  document.getElementById('a-name').value='';document.getElementById('a-open').value='';
+  toast('已添加：'+a.name);buildEntry();paintAll();
+}
+async function addRecur(){
+  const g=i=>document.getElementById(i).value;
+  const amt=parseFloat(g('r-amt')),a=ai(g('r-acct'));
+  if(!g('r-name').trim()||!(amt>0)||!a){toast('填写名称、金额和账户');return}
+  const r={id:newId('r'),name:g('r-name').trim(),kind:g('r-kind'),
+    amount:Math.round(amt*100)/100,currency:a.currency,acctId:a.id,cycle:+g('r-cycle'),
+    firstDate:g('r-date')||ymd(new Date()),category:g('r-cat'),active:true};
+  await rcPut(r);recs.push(r);await postDue();
+  document.getElementById('r-name').value='';document.getElementById('r-amt').value='';
+  toast('已添加：'+r.name);paintAll();
+}
+document.getElementById('r-kind').addEventListener('change',()=>{
+  const k=document.getElementById('r-kind').value,cs=k==='expense'?CAT_EXPENSE:CAT_INCOME;
+  document.getElementById('r-cat').innerHTML=cs.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('r-cat').value=k==='expense'?'订阅':'家里'});
+
+document.body.addEventListener('mouseover',e=>{
+  const s=e.target.closest&&e.target.closest('.seg');if(!s)return;
+  const pc=document.getElementById('pie-center');if(!pc)return;
+  pc.innerHTML=`<div class="pc-v">${s.dataset.sym}${s.dataset.amt}</div>
+    <div class="pc-k">${s.dataset.cat} · ${s.dataset.pct}%</div>`;
+});
+document.body.addEventListener('mouseout',e=>{
+  if(!(e.target.closest&&e.target.closest('.pie-wrap')))return;
+  const pc=document.getElementById('pie-center');if(pc)pc.innerHTML=pieDefault;
+});
+
+document.getElementById('amt').addEventListener('input',paintAmount);
+document.getElementById('tq').addEventListener('input',paintAdminTx);
+['amt','note'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();commit()}}));
+
+['rate-cny','rate-trend'].forEach(id=>document.getElementById(id).addEventListener('change',async e=>{
+  const next=parseFloat(e.target.value);
+  if(!(next>0)){e.target.value=rateCny;toast('汇率必须大于 0');return}
+  rateCny=next;await kvPut('rateCny',rateCny);
+  document.getElementById('rate-cny').value=rateCny;document.getElementById('rate-trend').value=rateCny;
+  paintWallet();paintTrend()}));
+
+document.getElementById('btn-export').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({v:3,rateCny,skip,accts,recs,rows},null,2)],{type:'application/json'}));
+  a.download=`ledger-${ymd(new Date())}.json`;a.click();URL.revokeObjectURL(a.href)};
+document.getElementById('btn-import').onclick=()=>document.getElementById('file').click();
+document.getElementById('file').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    if(f.size>5_000_000)throw new Error('large');
+    const data=JSON.parse(await f.text());
+    if(!Array.isArray(data.rows))throw new Error('bad');
+    let invalid=0;
+    if(Array.isArray(data.accts)){const seen=new Set(accts.map(a=>String(a.id)));
+      for(const input of data.accts){
+        if(seen.has(String(input&&input.id)))continue;
+        const account=normalizeAccount(input);
+        if(!account){invalid++;continue}
+        await acPut(account);accts.push(account);seen.add(String(account.id));
+      }}
+    await ensureLegacyAccounts(data.rows);
+    const seen=new Set(rows.map(r=>String(r.id)));let n=0;
+    for(const input of data.rows){
+      if(seen.has(String(input&&input.id)))continue;
+      const row=normalizeRow(input);
+      if(!row){invalid++;continue}
+      await txPut(row);rows.push(row);seen.add(String(row.id));n++;
     }
+    if(Array.isArray(data.recs)){const seenRec=new Set(recs.map(r=>String(r.id)));
+      for(const input of data.recs){
+        if(seenRec.has(String(input&&input.id)))continue;
+        const recurring=normalizeRecurring(input);
+        if(!recurring){invalid++;continue}
+        await rcPut(recurring);recs.push(recurring);seenRec.add(String(recurring.id));
+      }}
+    const importedRate=Number(data.rateCny||data.rates?.cny);
+    if(Number.isFinite(importedRate)&&importedRate>0){rateCny=importedRate;await kvPut('rateCny',rateCny)}
+    if(Array.isArray(data.skip)){skip=[...new Set([...skip,...data.skip.filter(x=>typeof x==='string'&&x.length<=200)])];await kvPut('skip',skip)}
+    await postDue();
+    document.getElementById('rate-cny').value=rateCny;
+    document.getElementById('rate-trend').value=rateCny;
+    buildEntry();paintAll();toast(`已导入 ${n} 条流水${invalid?`，跳过 ${invalid} 条无效数据`:''}`);
+  }catch{toast('这个文件不是本工具导出的数据')}
+  e.target.value='';};
 
-    function renderTrend() {
-      const months = [];
-      const base = new Date(cursor);
-      for (let offset = 5; offset >= 0; offset -= 1) {
-        const month = new Date(base.getFullYear(), base.getMonth() - offset, 1);
-        months.push(`${month.getFullYear()}-${pad(month.getMonth() + 1)}`);
-      }
-      document.getElementById("trend").innerHTML = CURRENCIES.map((currency) => {
-        const data = months.map((month) => {
-          const matching = rows.filter((record) => monthKey(record.date) === month && record.currency === currency.code);
-          return {
-            self: matching.filter((record) => record.source === "self").reduce((sum, record) => sum + record.amount, 0),
-            card: matching.filter((record) => record.source === "card").reduce((sum, record) => sum + record.amount, 0)
-          };
-        });
-        const maximum = Math.max(...data.map((item) => item.self + item.card), 1);
-        return `<div class="trend-row" style="--c:${currency.color}">
-          <div class="trend-code">${currency.code}</div>
-          <div class="bars">${data.map((item, index) => {
-            const total = item.self + item.card;
-            return `<div class="bcol ${months[index] === monthKey(ymd(cursor)) ? "now" : ""}" title="${months[index]} · ${formatAmount(total)}" aria-label="${months[index]} ${currency.code} ${formatAmount(total)}">
-              <div class="b-card" style="height:${(item.card / maximum * 100).toFixed(2)}%"></div>
-              <div class="b-self" style="height:${(item.self / maximum * 100).toFixed(2)}%"></div>
-            </div>`;
-          }).join("")}</div>
-          <div class="blabels">${months.map((month) => `<span>${Number(month.slice(5))}月</span>`).join("")}</div>
-        </div>`;
-      }).join("");
-    }
-
-    function renderList() {
-      let records = monthRows();
-      if (listSrc !== "all") records = records.filter((record) => record.source === listSrc);
-      records.sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
-      const list = document.getElementById("list");
-      if (!records.length) {
-        list.innerHTML = '<div class="empty-state">还没有记录。用下方输入框记第一笔。</div>';
-        return;
-      }
-      const days = [...new Set(records.map((record) => record.date))];
-      list.innerHTML = days.map((day) => `<div class="day"><div class="day-h">${escapeHtml(day)}</div>${records.filter((record) => record.date === day).map((record) => {
-        const currency = currencyInfo(record.currency);
-        return `<div class="tx" style="--c:${currency.color}">
-          <span class="dot ${record.source}" aria-hidden="true"></span>
-          <div class="tx-main"><div class="tx-cat">${escapeHtml(record.category)}</div>${record.note ? `<div class="tx-note">${escapeHtml(record.note)}</div>` : ""}</div>
-          <div><span class="tx-amt">${currency.sym}${formatAmount(record.amount)}</span><button class="tx-del" type="button" data-del="${escapeHtml(record.id)}" aria-label="删除 ${escapeHtml(record.category)} ${formatAmount(record.amount)}">×</button></div>
-        </div>`;
-      }).join("")}</div>`).join("");
-    }
-
-    function renderAll() {
-      document.getElementById("month-title").textContent = `${cursor.getFullYear()} 年 ${cursor.getMonth() + 1} 月`;
-      renderLedgers();
-      renderDistribution();
-      renderTrend();
-      renderList();
-    }
-
-    function buildControls() {
-      document.getElementById("cur-seg").innerHTML = CURRENCIES.map((currency) => `<button type="button" data-cur="${currency.code}" style="--sc:${currency.color}" aria-pressed="${draft.cur === currency.code}">${currency.code}</button>`).join("");
-      document.getElementById("src-seg").innerHTML = SOURCES.map((source) => `<button type="button" data-src="${source.key}" style="--sc:var(--text)" aria-pressed="${draft.src === source.key}">${source.label}</button>`).join("");
-      document.getElementById("cat-chips").innerHTML = CATEGORIES.map((category) => `<button class="chip" type="button" data-cat="${category}" aria-pressed="${draft.cat === category}">${category}</button>`).join("");
-      document.getElementById("dist-tabs").innerHTML = CURRENCIES.map((currency) => `<button type="button" data-dist="${currency.code}" style="--tc:${currency.color}" aria-pressed="${distCur === currency.code}">${currency.code}</button>`).join("");
-      document.getElementById("list-tabs").innerHTML = `<button type="button" data-lsrc="all" style="--tc:var(--text)" aria-pressed="${listSrc === "all"}">全部</button>${SOURCES.map((source) => `<button type="button" data-lsrc="${source.key}" style="--tc:var(--text)" aria-pressed="${listSrc === source.key}">${source.label}</button>`).join("")}`;
-    }
-
-    function press(containerId, attribute, value) {
-      [...document.getElementById(containerId).children].forEach((button) => button.setAttribute("aria-pressed", button.dataset[attribute] === value));
-    }
-
-    function showToast(message, actionLabel = "", action = null) {
-      const toast = document.getElementById("toast");
-      const actionButton = document.getElementById("toast-action");
-      window.clearTimeout(toastTimer);
-      document.getElementById("toast-message").textContent = message;
-      actionButton.hidden = !actionLabel;
-      actionButton.textContent = actionLabel;
-      actionButton.onclick = action;
-      toast.classList.add("show");
-      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 5000);
-    }
-
-    async function handleDelete(id) {
-      const record = rows.find((item) => String(item.id) === id);
-      if (!record) return;
-      pendingDeleted = record;
-      await deleteRecord(record.id);
-      rows = rows.filter((item) => item.id !== record.id);
-      renderAll();
-      showToast("已删除 1 笔记录", "撤销", async () => {
-        if (!pendingDeleted) return;
-        await putRecord(pendingDeleted);
-        rows.push(pendingDeleted);
-        pendingDeleted = null;
-        renderAll();
-        showToast("已恢复记录");
-      });
-    }
-
-    document.body.addEventListener("click", (event) => {
-      const button = event.target.closest("button");
-      if (!button) return;
-      if (button.dataset.cur) { draft.cur = button.dataset.cur; press("cur-seg", "cur", draft.cur); }
-      if (button.dataset.src) { draft.src = button.dataset.src; press("src-seg", "src", draft.src); }
-      if (button.dataset.cat) { draft.cat = button.dataset.cat; press("cat-chips", "cat", draft.cat); }
-      if (button.dataset.dist) { distCur = button.dataset.dist; press("dist-tabs", "dist", distCur); renderDistribution(); }
-      if (button.dataset.lsrc) { listSrc = button.dataset.lsrc; press("list-tabs", "lsrc", listSrc); renderList(); }
-      if (button.dataset.del) handleDelete(button.dataset.del).catch(() => showToast("删除失败，请稍后再试"));
-    });
-
-    document.getElementById("prev").addEventListener("click", () => { cursor.setMonth(cursor.getMonth() - 1); renderAll(); });
-    document.getElementById("next").addEventListener("click", () => { cursor.setMonth(cursor.getMonth() + 1); renderAll(); });
-
-    const amountInput = document.getElementById("amt");
-    const saveButton = document.getElementById("save");
-    amountInput.addEventListener("input", () => {
-      const amount = Number(amountInput.value);
-      saveButton.disabled = !(Number.isFinite(amount) && amount > 0 && amount <= 999999999);
-    });
-
-    document.getElementById("entry-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      if (saveButton.disabled) return;
-      const record = normalizeRecord({
-        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        date: document.getElementById("date").value || ymd(new Date()),
-        amount: amountInput.value,
-        currency: draft.cur,
-        source: draft.src,
-        category: draft.cat,
-        note: document.getElementById("note").value.trim()
-      });
-      if (!record) { showToast("请检查金额和日期"); return; }
-      saveButton.disabled = true;
-      try {
-        await putRecord(record);
-        rows.push(record);
-        amountInput.value = "";
-        document.getElementById("note").value = "";
-        cursor = new Date(Number(record.date.slice(0, 4)), Number(record.date.slice(5, 7)) - 1, 1);
-        renderAll();
-        showToast("已记入 1 笔");
-        amountInput.focus();
-      } catch (error) {
-        showToast("保存失败，请先导出备份后刷新页面");
-        saveButton.disabled = false;
-      }
-    });
-
-    const refBox = document.getElementById("ref-box");
-    const refButton = document.getElementById("ref-toggle");
-    refButton.addEventListener("click", () => {
-      const isOpen = refBox.classList.toggle("on");
-      refButton.setAttribute("aria-expanded", isOpen);
-      refButton.textContent = `${isOpen ? "－" : "＋"} 折算参考`;
-    });
-
-    ["cny", "usd"].forEach((key) => {
-      document.getElementById(`rate-${key}`).addEventListener("change", async (event) => {
-        const value = Number(event.target.value);
-        if (!Number.isFinite(value) || value <= 0) {
-          event.target.value = rates[key];
-          showToast("汇率必须大于 0");
-          return;
-        }
-        rates[key] = value;
-        await putSetting("rates", rates);
-        renderLedgers();
-      });
-    });
-
-    document.getElementById("btn-export").addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify({ v: 1, exportedAt: new Date().toISOString(), rates, rows }, null, 2)], { type: "application/json" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `anuexplore-ledger-${ymd(new Date())}.json`;
-      link.click();
-      URL.revokeObjectURL(link.href);
-      showToast("备份已导出");
-    });
-
-    document.getElementById("btn-import").addEventListener("click", () => document.getElementById("file").click());
-    document.getElementById("file").addEventListener("change", async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-      try {
-        const data = JSON.parse(await file.text());
-        if (!data || data.v !== 1 || !Array.isArray(data.rows)) throw new Error("invalid schema");
-        const normalizedRows = data.rows.map(normalizeRecord);
-        if (normalizedRows.some((record) => record === null)) throw new Error("invalid record");
-        const seen = new Set(rows.map((record) => String(record.id)));
-        let imported = 0;
-        for (const record of normalizedRows) {
-          if (seen.has(String(record.id))) continue;
-          await putRecord(record);
-          rows.push(record);
-          seen.add(String(record.id));
-          imported += 1;
-        }
-        if (data.rates) {
-          rates = normalizeRates(data.rates);
-          await putSetting("rates", rates);
-          syncRates();
-        }
-        renderAll();
-        showToast(imported ? `已导入 ${imported} 笔记录` : "没有发现新的记录");
-      } catch (error) {
-        showToast("导入失败：请选择本工具导出的有效 JSON 文件");
-      } finally {
-        event.target.value = "";
-      }
-    });
-
-    function syncRates() {
-      document.getElementById("rate-cny").value = rates.cny;
-      document.getElementById("rate-usd").value = rates.usd;
-    }
-
-    async function initialize() {
-      try {
-        db = await openDatabase();
-        const storedRows = await getAllRecords();
-        rows = storedRows.map(normalizeRecord).filter(Boolean);
-        rates = normalizeRates(await getSetting("rates"));
-        syncRates();
-        document.getElementById("date").value = ymd(new Date());
-        buildControls();
-        renderAll();
-      } catch (error) {
-        document.getElementById("date").value = ymd(new Date());
-        buildControls();
-        renderAll();
-        amountInput.disabled = true;
-        saveButton.disabled = true;
-        showToast("无法打开本地账本，请检查浏览器隐私设置");
-      }
-    }
-
-    initialize();
-  </script>
+/* ═══ 启动 ═══ */
+(async()=>{
+  db=await openDB();
+  const rawRows=await allOf(TX),rawRecs=await allOf(RC),rawAccts=await allOf(AC);
+  accts=rawAccts.map(normalizeAccount).filter(Boolean);
+  const savedRate=Number(await kvGet('rateCny'));
+  const legacyRates=await kvGet('rates'),legacyRate=Number(legacyRates&&legacyRates.cny);
+  rateCny=savedRate>0?savedRate:(legacyRate>0?legacyRate:rateCny);
+  const savedSkip=await kvGet('skip');
+  skip=Array.isArray(savedSkip)?savedSkip.filter(x=>typeof x==='string'&&x.length<=200):[];
+  if(!accts.length){
+    const dates=rawRows.map(r=>r&&r.date).filter(validDate).sort();
+    const openDate=dates[0]||ymd(new Date());
+    const seeds=rawRows.some(r=>r&&r.currency==='USD')?
+      [...SEED,{name:'现金 USD',owner:'self',currency:'USD'}]:SEED;
+    for(const s of seeds){const a={id:newId('a'),...s,opening:0,openDate};
+      await acPut(a);accts.push(a)}
+  }
+  await ensureLegacyAccounts(rawRows);
+  // v1 记录没有 type、acctId 和 spread；升级时补齐，但不删除无法识别的原始数据。
+  rows=[];
+  for(const input of rawRows){const row=normalizeRow(input);if(row){await txPut(row);rows.push(row)}}
+  recs=[];
+  for(const input of rawRecs){const recurring=normalizeRecurring(input);if(recurring){await rcPut(recurring);recs.push(recurring)}}
+  await postDue();
+  CURRENCIES.forEach(c=>{const o=`<option value="${c.code}">${c.code}</option>`;
+    document.getElementById('a-cur').insertAdjacentHTML('beforeend',o)});
+  document.getElementById('r-cat').innerHTML=CAT_EXPENSE.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('r-cat').value='订阅';
+  document.getElementById('date').value=ymd(new Date());
+  document.getElementById('r-date').value=ymd(new Date());
+  document.getElementById('a-date').value=ymd(new Date());
+  document.getElementById('rate-cny').value=rateCny;
+  document.getElementById('rate-trend').value=rateCny;
+  buildEntry();paintAmount();paintAll();
+  if(!db)toast('当前浏览器为临时模式，请导出备份');
+})();
+</script>
 </body>
 </html>
