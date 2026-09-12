@@ -4,15 +4,15 @@
   "pages": [
     {
       "key": "home",
-      "label": "hero逻辑页（首页）",
+      "label": "Residence Finder",
       "href": "index.html?home=1",
       "status": "public",
       "showInNavigation": true,
-      "role": "homepage"
+      "role": "residence"
     },
     {
       "key": "explore",
-      "label": "地图开发者版本",
+      "label": "Map",
       "href": "explore.html",
       "status": "public",
       "showInNavigation": true,
@@ -44,7 +44,7 @@
     },
     {
       "key": "ledger",
-      "label": "生活记账",
+      "label": "Balance",
       "href": "ledger.html",
       "status": "public",
       "showInNavigation": true,

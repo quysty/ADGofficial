@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Course Builder | ANU Dorm Guide</title>
   <link rel="stylesheet" href="course-builder.css?v=course-builder-v52" />
+  <link rel="stylesheet" href="nav.css?v=product-sidebar-v1" />
 </head>
 <body data-page="course-builder">
+  <div id="site-nav-root"></div>
   <div id="courseBuilderGrid" class="course-builder-grid" aria-hidden="true" hidden>
     <div id="courseBuilderGridXAxis" class="course-builder-grid__axis course-builder-grid__axis--x"></div>
     <div id="courseBuilderGridYAxis" class="course-builder-grid__axis course-builder-grid__axis--y"></div>
@@ -270,6 +272,7 @@
 
   <button id="courseBuilderGridToggle" class="course-grid-toggle" type="button" aria-pressed="false">网格：关</button>
 
+  <script src="nav.js?v=product-sidebar-v1"></script>
   <script src="course-builder-grid.js?v=course-grid-v1"></script>
   <script src="src/data/majors/bcomp-majors.js?v=bcomp-majors-v1"></script>
   <script src="course-builder-majors.js?v=course-builder-majors-v2"></script>
