@@ -4,8 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
-<meta name="description" content="ANU Explore 本机生活记账工具，支持多账户、多币种、定期项目与 JSON 备份。">
-<title>生活记账 | ANU Explore</title>
+<title>记账 · anuexplore</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -30,7 +29,6 @@ button{cursor:pointer;background:none;border:none;padding:0}
 .app{max-width:1240px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
 .bar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:30}
 .mark{font-family:var(--num);font-size:13px;font-weight:600}
-.mark{color:inherit;text-decoration:none}
 @media(max-width:420px){.mark span{display:none}}
 @media(max-width:360px){.mark{display:none}}
 .mark span{color:var(--faint);font-weight:400}
@@ -118,7 +116,6 @@ body[data-view="admin"] #admin{display:flex}
 .w-sub{font-size:11.5px;color:var(--faint);margin-top:1px}
 .w-val{font-family:var(--num);font-size:15px;font-variant-numeric:tabular-nums;text-align:right}
 .w-val small{display:block;font-family:var(--sans);font-size:10.5px;color:var(--faint);margin-top:1px}
-.w-row.card .w-val{color:var(--muted)}
 
 /* ── 账户变动 ── */
 .flow{overflow-x:auto;border-top:1px solid var(--line)}
@@ -264,19 +261,54 @@ body[data-view="admin"] #admin{display:flex}
 .tedit .full{grid-column:span 2}
 .trow.editing{background:var(--panel);border-radius:9px;padding:4px 12px 8px;
   grid-template-columns:1fr;border-bottom:1px solid var(--line)}
+#ai-code{width:100%;min-height:180px;resize:vertical;background:var(--panel);
+  border:1px solid var(--line);border-radius:9px;padding:12px;font-size:12.5px;line-height:1.6;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
+#ai-code:focus{border-color:var(--line-2);background:var(--bg);outline:none}
+#ai-code::placeholder{color:var(--faint)}
+.ai-bar{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.ai-bar button{background:var(--panel);border-radius:7px;padding:8px 14px;font-size:13px;color:var(--ink)}
+.ai-bar button:hover{background:var(--line)}
+.ai-bar button.primary{background:var(--ink);color:var(--bg);font-weight:600}
+.ai-bar button.primary:hover{opacity:.88}
+#ai-out{margin-top:10px;font-size:12px;line-height:1.65;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ao{padding:2px 0;color:var(--muted)}
+.ao.err{color:var(--neg)}
+.ao.ok{color:var(--pos)}
+.ao.warn{color:#9A7B22}
+.ai-confirm{margin-top:10px}
+.ai-confirm button{background:var(--ink);color:var(--bg);border-radius:7px;padding:10px 18px;font-size:13.5px;font-weight:600}
 .bk{display:flex;gap:10px}
 .bk button{background:var(--panel);border-radius:7px;padding:10px 16px;font-size:13.5px;color:var(--ink)}
 .bk button:hover{background:var(--line)}
-.ref-n{font-family:var(--num);font-size:19px;color:var(--muted);font-variant-numeric:tabular-nums}
+#ai-code{width:100%;min-height:180px;resize:vertical;background:var(--panel);
+  border:1px solid var(--line);border-radius:9px;padding:12px;font-size:12.5px;line-height:1.6;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
+#ai-code:focus{border-color:var(--line-2);background:var(--bg);outline:none}
+#ai-code::placeholder{color:var(--faint)}
+.ai-bar{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.ai-bar button{background:var(--panel);border-radius:7px;padding:8px 14px;font-size:13px;color:var(--ink)}
+.ai-bar button:hover{background:var(--line)}
+.ai-bar button.primary{background:var(--ink);color:var(--bg);font-weight:600}
+.ai-bar button.primary:hover{opacity:.88}
+#ai-out{margin-top:10px;font-size:12px;line-height:1.65;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ao{padding:2px 0;color:var(--muted)}
+.ao.err{color:var(--neg)}
+.ao.ok{color:var(--pos)}
+.ao.warn{color:#9A7B22}
+.ai-confirm{margin-top:10px}
+.ai-confirm button{background:var(--ink);color:var(--bg);border-radius:7px;padding:10px 18px;font-size:13.5px;font-weight:600}
 .setnote{font-size:11.5px;color:var(--faint);margin-top:8px;max-width:46em;line-height:1.65}
 </style>
 </head>
-<body data-page="ledger" data-view="entry">
+<body data-view="entry">
 
 <div class="app">
   <div class="bar">
-    <a class="mark" href="index.html?home=1" aria-label="返回 ANU Explore 首页">anuexplore <span>/ 记账</span></a>
-    <div class="switch" role="group" aria-label="记账视图">
+    <div class="mark">anuexplore <span>/ 记账</span></div>
+    <div class="switch">
       <button data-view="entry" aria-pressed="true">记账</button>
       <button data-view="stats" aria-pressed="false">数据</button>
       <button data-view="flow" aria-pressed="false">流水</button>
@@ -288,18 +320,18 @@ body[data-view="admin"] #admin{display:flex}
     <!-- ══ 记账 ══ -->
     <div id="entry">
       <div class="e-scroll">
-      <div class="mode" id="mode" role="group" aria-label="收支类型">
+      <div class="mode" id="mode">
         <button data-mode="expense" aria-pressed="true">支出</button>
         <button data-mode="income" aria-pressed="false">收入</button>
       </div>
       <div class="amt-zone">
         <div class="amt-line"><span class="amt-sign" id="sign">−</span>
           <span class="amt-sym" id="sym">A$</span>
-          <input class="amt-in" id="amt" type="number" inputmode="decimal" step="0.01" placeholder="0.00" aria-label="金额"></div>
+          <input class="amt-in" id="amt" type="number" inputmode="decimal" step="0.01" placeholder="0.00"></div>
         <div class="acct-row" id="acct-row"></div>
       </div>
       <div class="cats" id="cats"></div>
-      <div class="meta"><input id="date" type="date" aria-label="日期"><input id="note" type="text" maxlength="200" placeholder="摘要 / 商户" aria-label="摘要或商户"></div>
+      <div class="meta"><input id="date" type="date"><input id="note" type="text" placeholder="摘要 / 商户"></div>
       <div class="submit-wrap"><button class="submit" id="done" disabled>记一笔</button></div>
       </div>
     </div>
@@ -328,7 +360,7 @@ body[data-view="admin"] #admin{display:flex}
           <div class="tabs mono" id="dist-tabs"></div></div>
         <div class="hint">现金基础，按实际扣款月份计入，与上面的账户变动口径一致。</div>
         <div class="dist-wrap"><div id="pie"></div><div class="dist" id="dist"></div></div>
-        <div class="legend"><span><i class="a"></i>自己存款</span><span><i class="b"></i>父母副卡</span></div>
+        <div class="legend"><span><i class="a"></i>存款</span><span><i class="b"></i>副卡</span></div>
       </div>
 
       <div class="sec">
@@ -339,7 +371,7 @@ body[data-view="admin"] #admin{display:flex}
           <span><i style="background:var(--cny)"></i>人民币</span>
           <span class="rate-inline">折算 1 AUD = <input id="rate-trend" type="number" step="0.01"> CNY，仅供参考</span>
         </div>
-        <div class="hint">柱高为按上述汇率折算后的 AUD 与 CNY 人民币合计；USD 仍在余额、账户变动、费用分布与流水中独立显示。点任意月份，整页统计切到那个月。</div>
+        <div class="hint">柱高为按上述汇率折算后的人民币合计。点任意月份，整页统计切到那个月。</div>
         <div id="trend"></div>
       </div>
     </div>
@@ -350,7 +382,7 @@ body[data-view="admin"] #admin{display:flex}
         <div class="nav"><button data-step="-1" aria-label="上个月">‹</button><button data-step="1" aria-label="下个月">›</button></div></div>
       <div class="sec-h"><h2>流水日记账</h2><div class="rule"></div>
         <div class="tabs" id="j-acct-tabs"></div></div>
-      <div class="hint">多个币种在同一条流水里，用颜色区分。余额是该币种自己存款在这笔之后的结余，副卡不影响余额。</div>
+      <div class="hint">两个币种在同一条流水里，用颜色区分。余额是该币种自己存款在这笔之后的结余，副卡不影响余额。</div>
       <div class="jhead"><span>账户</span><span>摘要</span><span>支出</span><span>收入</span><span>余额</span></div>
       <div id="journal"></div>
     </div>
@@ -361,8 +393,8 @@ body[data-view="admin"] #admin{display:flex}
       <div class="hint" style="margin-top:-10px">每个卡、钱包、平台建一个账户。期初余额填开始记账那天的实际数，之前的流水不用补录。</div>
       <div id="alist"></div>
       <div class="form">
-        <div class="full"><span class="flab">名称</span><input id="a-name" type="text" placeholder="CommBank / 支付宝 / 父母副卡"></div>
-        <div><span class="flab">归属</span><select id="a-owner"><option value="self">自己存款</option><option value="card">父母副卡</option></select></div>
+        <div class="full"><span class="flab">名称</span><input id="a-name" type="text" placeholder="CommBank / 支付宝 / 副卡"></div>
+        <div><span class="flab">归属</span><select id="a-owner"><option value="self">自己存款</option><option value="card">副卡</option></select></div>
         <div><span class="flab">货币</span><select id="a-cur"></select></div>
         <div><span class="flab">期初余额</span><input id="a-open" type="number" step="0.01" placeholder="0.00"></div>
         <div><span class="flab">起算日</span><input id="a-date" type="date"></div>
@@ -385,6 +417,19 @@ body[data-view="admin"] #admin{display:flex}
       </div>
 
       <div class="sec" style="margin-top:34px">
+        <div class="sec-h"><h2>AI 通道</h2><div class="rule"></div>
+          <div class="tabs" id="ai-tabs"></div></div>
+        <div class="hint" id="ai-hint"></div>
+        <div class="ai-bar">
+          <button id="ai-prompt">复制提示词</button>
+          <button id="ai-run" class="primary">解析</button>
+          <button id="ai-clear">清空</button>
+        </div>
+        <textarea id="ai-code" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+        <div id="ai-out"></div>
+      </div>
+
+      <div class="sec" style="margin-top:34px">
         <div class="sec-h"><h2>修改流水</h2><div class="rule"></div></div>
         <div class="hint">最近 80 条，可改可删。删掉自动生成的订阅流水后不会再被补回来。</div>
         <input id="tq" type="text" placeholder="搜索分类或摘要" class="tsearch">
@@ -393,31 +438,20 @@ body[data-view="admin"] #admin{display:flex}
 
       <div class="sec" style="margin-top:34px">
         <div class="sec-h"><h2>备份</h2><div class="rule"></div></div>
-        <div class="hint">数据仅保存在当前设备的这个浏览器中。删除不可撤销；换设备、清除网站数据或进行较大改动前，请先导出一份。</div>
+        <div class="hint">删除不可撤销，改动大之前先导出一份。</div>
         <div class="bk"><button id="btn-export">导出 JSON</button><button id="btn-import">导入 JSON</button></div>
       </div>
 
-      <div class="sec" style="margin-top:34px">
-        <div class="sec-h"><h2>折算参考</h2><div class="rule"></div></div>
-        <div class="ref-n" id="ref-n">—</div>
-        <div class="setnote">仅供粗略参考。多种货币各自独立记账，所有余额、分布与趋势都不经过折算。</div>
-        <div style="margin-top:10px"><span class="flab">1 AUD = ? CNY</span>
-          <input id="rate-cny" type="number" step="0.01" style="width:120px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-family:var(--num)"></div>
-      </div>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="toast" id="toast"></div>
 <input type="file" id="file" accept="application/json" hidden>
 
 <script>
 /* ═══ 配置 ═══ */
-const CURRENCIES=[
-  {code:'AUD',sym:'A$',color:'#2F7358'},
-  {code:'CNY',sym:'¥',color:'#B04138'},
-  {code:'USD',sym:'US$',color:'#5F6FA6'}
-];
+const CURRENCIES=[{code:'AUD',sym:'A$',color:'#2F7358'},{code:'CNY',sym:'¥',color:'#B04138'}];
 const CAT_EXPENSE_MAIN=['餐饮','交通','日用','娱乐','学习'];
 const CAT_EXPENSE_MORE=['房租','医疗','订阅','旅行','通讯','人情','其他'];
 const CAT_INCOME_MAIN=['家里','工资','兼职','奖学金','退款'];
@@ -430,31 +464,24 @@ const SEED=[
   {name:'现金 AUD',owner:'self',currency:'AUD'},
   {name:'支付宝',owner:'self',currency:'CNY'},
   {name:'微信',owner:'self',currency:'CNY'},
-  {name:'父母副卡',owner:'card',currency:'AUD'}];
+  {name:'副卡',owner:'card',currency:'AUD'}];
 
 /* ═══ 存储 ═══ */
 const DB='anuexplore-ledger',TX='tx',RC='rec',AC='acct',KV='kv';let db;
-const memory={[TX]:new Map(),[RC]:new Map(),[AC]:new Map(),[KV]:new Map()};
-const openDB=()=>new Promise(res=>{
-  if(!window.indexedDB){res(null);return}
-  try{const r=indexedDB.open(DB,3);
-    r.onupgradeneeded=e=>{const d=e.target.result;
-      if(!d.objectStoreNames.contains(TX))d.createObjectStore(TX,{keyPath:'id'});
-      if(!d.objectStoreNames.contains(RC))d.createObjectStore(RC,{keyPath:'id'});
-      if(!d.objectStoreNames.contains(AC))d.createObjectStore(AC,{keyPath:'id'});
-      if(!d.objectStoreNames.contains(KV))d.createObjectStore(KV)};
-    r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null)
-  }catch{res(null)}});
+const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open(DB,3);
+  r.onupgradeneeded=e=>{const d=e.target.result;
+    if(!d.objectStoreNames.contains(TX))d.createObjectStore(TX,{keyPath:'id'});
+    if(!d.objectStoreNames.contains(RC))d.createObjectStore(RC,{keyPath:'id'});
+    if(!d.objectStoreNames.contains(AC))d.createObjectStore(AC,{keyPath:'id'});
+    if(!d.objectStoreNames.contains(KV))d.createObjectStore(KV)};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const os=(s,m)=>db.transaction(s,m).objectStore(s);
 const rq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-const put=(s,r)=>db?rq(os(s,'readwrite').put(r)):Promise.resolve(memory[s].set(r.id,{...r}));
-const del=(s,i)=>db?rq(os(s,'readwrite').delete(i)):Promise.resolve(memory[s].delete(i));
-const txPut=r=>put(TX,r),txDel=i=>del(TX,i);
-const rcPut=r=>put(RC,r),rcDel=i=>del(RC,i);
-const acPut=r=>put(AC,r),acDel=i=>del(AC,i);
-const allOf=s=>db?rq(os(s,'readonly').getAll()):Promise.resolve([...memory[s].values()]);
-const kvGet=k=>db?rq(os(KV,'readonly').get(k)):Promise.resolve(memory[KV].get(k));
-const kvPut=(k,v)=>db?rq(os(KV,'readwrite').put(v,k)):Promise.resolve(memory[KV].set(k,v));
+const txPut=r=>rq(os(TX,'readwrite').put(r)),txDel=i=>rq(os(TX,'readwrite').delete(i));
+const rcPut=r=>rq(os(RC,'readwrite').put(r)),rcDel=i=>rq(os(RC,'readwrite').delete(i));
+const acPut=r=>rq(os(AC,'readwrite').put(r)),acDel=i=>rq(os(AC,'readwrite').delete(i));
+const allOf=s=>rq(os(s,'readonly').getAll());
+const kvGet=k=>rq(os(KV,'readonly').get(k)),kvPut=(k,v)=>rq(os(KV,'readwrite').put(v,k));
 
 /* ═══ 状态 ═══ */
 let rows=[],recs=[],accts=[],skip=[],rateCny=4.70;
@@ -466,73 +493,14 @@ const p2=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
 const mk=s=>s.slice(0,7);
 const ci=c=>CURRENCIES.find(x=>x.code===c)||CURRENCIES[0];
-const ai=id=>accts.find(a=>String(a.id)===String(id));
+const ai=id=>accts.find(a=>a.id===id);
 const fmt=n=>n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
 const esc=s=>String(s).replace(/[<>&"]/g,m=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]));
-const validDate=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(s||''))return false;
-  const [y,m,d]=s.split('-').map(Number),x=new Date(y,m-1,d);
-  return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d};
-const validId=id=>(typeof id==='string'&&id.length>0&&id.length<=160)||
-  (Number.isSafeInteger(id)&&id>0);
-const newId=p=>window.crypto?.randomUUID?`${p}${window.crypto.randomUUID()}`:
-  `${p}${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const monthsDiff=(a,b)=>(+b.slice(0,4)-+a.slice(0,4))*12+(+b.slice(5,7)-+a.slice(5,7));
 function addMonths(iso,n){const y=+iso.slice(0,4),m=+iso.slice(5,7)-1,d=+iso.slice(8,10);
   const t=new Date(y,m+n,1),last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();
   return `${t.getFullYear()}-${p2(t.getMonth()+1)}-${p2(Math.min(d,last))}`}
 const seq=r=>r.date+'#'+String(r.id);
-
-function normalizeAccount(input){
-  if(!input||typeof input!=='object'||!validId(input.id))return null;
-  const name=typeof input.name==='string'?input.name.trim().slice(0,80):'';
-  const owner=input.owner==='self'||input.owner==='card'?input.owner:null;
-  const currency=CURRENCIES.some(c=>c.code===input.currency)?input.currency:null;
-  const opening=Number(input.opening||0);
-  const openDate=validDate(input.openDate)?input.openDate:'';
-  if(!name||!owner||!currency||!Number.isFinite(opening)||Math.abs(opening)>999999999)return null;
-  return{id:input.id,name,owner,currency,opening:Math.round(opening*100)/100,openDate};
-}
-function normalizeRow(input){
-  if(!input||typeof input!=='object'||!validId(input.id)||!validDate(input.date))return null;
-  const amount=Number(input.amount);
-  if(!Number.isFinite(amount)||amount<=0||amount>999999999)return null;
-  const fallbackOwner=input.source==='card'?'card':'self';
-  const acct=ai(input.acctId)||accts.find(a=>a.currency===input.currency&&a.owner===fallbackOwner);
-  if(!acct)return null;
-  const type=input.type==='income'||input.type==='expense'?input.type:
-    (input.source==='self'||input.source==='card'?'expense':null);
-  const category=typeof input.category==='string'?input.category.trim().slice(0,50):'';
-  if(!type||!category)return null;
-  const spread=[1,3,6,12].includes(Number(input.spread))?Number(input.spread):1;
-  const out={id:input.id,date:input.date,type,amount:Math.round(amount*100)/100,
-    currency:acct.currency,acctId:acct.id,category,
-    note:typeof input.note==='string'?input.note.trim().slice(0,200):'',spread};
-  if(typeof input.recId==='string'&&input.recId.length<=160)out.recId=input.recId;
-  return out;
-}
-function normalizeRecurring(input){
-  if(!input||typeof input!=='object'||!validId(input.id))return null;
-  const acct=ai(input.acctId),amount=Number(input.amount),cycle=Number(input.cycle);
-  const name=typeof input.name==='string'?input.name.trim().slice(0,80):'';
-  const category=typeof input.category==='string'?input.category.trim().slice(0,50):'';
-  if(!acct||!name||!category||!validDate(input.firstDate)||
-    !Number.isFinite(amount)||amount<=0||amount>999999999||![1,3,6,12].includes(cycle)||
-    !['income','expense'].includes(input.kind))return null;
-  return{id:input.id,name,kind:input.kind,amount:Math.round(amount*100)/100,
-    currency:acct.currency,acctId:acct.id,cycle,firstDate:input.firstDate,
-    category,active:input.active!==false};
-}
-async function ensureLegacyAccounts(inputs){
-  const legacy=inputs.filter(r=>r&&CURRENCIES.some(c=>c.code===r.currency)&&
-    (r.source==='self'||r.source==='card'));
-  for(const input of legacy){
-    const owner=input.source,exists=accts.some(a=>a.currency===input.currency&&a.owner===owner);
-    if(exists)continue;
-    const account={id:newId('a'),name:owner==='card'?`${input.currency} 父母副卡`:`现金 ${input.currency}`,
-      owner,currency:input.currency,opening:0,openDate:validDate(input.date)?input.date:ymd(new Date())};
-    await acPut(account);accts.push(account);
-  }
-}
 
 /* ═══ 定期过账 ═══ */
 async function postDue(){
@@ -585,7 +553,7 @@ let tt;const toast=m=>{const t=document.getElementById('toast');t.textContent=m;
 async function commit(){
   const a=ai(draft.acct),v=parseFloat(document.getElementById('amt').value);
   if(!a||!(v>0))return;
-  const rec={id:newId('t'),date:document.getElementById('date').value||ymd(new Date()),
+  const rec={id:String(Date.now()),date:document.getElementById('date').value||ymd(new Date()),
     type:draft.mode,amount:Math.round(v*100)/100,currency:a.currency,
     acctId:a.id,category:draft.cat,note:document.getElementById('note').value.trim(),spread:1};
   await txPut(rec);rows.push(rec);
@@ -636,20 +604,15 @@ function prepaid(cur){
 /* ═══ 渲染：账户余额 ═══ */
 function paintWallet(){
   const m=curM();
-  const tot=CURRENCIES.map(c=>`<div><div class="k" style="color:${c.color}">${c.code} 自己存款合计</div>
+  const mine=accts.filter(a=>a.owner==='self');
+  const tot=CURRENCIES.map(c=>`<div><div class="k" style="color:${c.color}">${c.code} 存款合计</div>
     <div class="v">${c.sym}${fmt(selfBalance(c.code))}</div></div>`).join('');
-  const rowsHtml=accts.map(a=>{
-    const c=ci(a.currency);
-    if(a.owner==='card')return `<div class="w-row card">
-      <div><div class="w-name">${esc(a.name)}</div><div class="w-sub">父母副卡 · ${a.currency} · 不进余额</div></div>
-      <div class="w-val">${c.sym}${fmt(acctSpent(a,m))}<small>本月已用 · 累计 ${fmt(acctSpent(a))}</small></div></div>`;
+  const rowsHtml=mine.map(a=>{const c=ci(a.currency);
     return `<div class="w-row">
-      <div><div class="w-name">${esc(a.name)}</div><div class="w-sub">自己存款 · ${a.currency}</div></div>
+      <div><div class="w-name">${esc(a.name)}</div><div class="w-sub">${a.currency}</div></div>
       <div class="w-val">${c.sym}${fmt(acctBalance(a))}<small>本月支出 ${fmt(acctSpent(a,m))}</small></div></div>`;
-  }).join('')||`<div class="w-row"><div class="w-name" style="color:var(--faint)">还没有账户</div><div></div></div>`;
+  }).join('')||`<div class="w-row"><div class="w-name" style="color:var(--faint)">还没有存款账户</div><div></div></div>`;
   document.getElementById('wallet').innerHTML=`<div class="w-tot">${tot}</div>${rowsHtml}`;
-  const s=c=>inMonth(m).filter(r=>r.currency===c&&r.type==='expense').reduce((a,b)=>a+b.amount,0);
-  document.getElementById('ref-n').textContent='≈ A$ '+fmt(selfBalance('AUD')+selfBalance('CNY')/rateCny)+'　（仅 AUD 与 CNY）';
 }
 
 /* ═══ 渲染：账户变动 ═══ */
@@ -726,10 +689,12 @@ function paintDist(){
       ><title>${cat} ${c.sym}${fmt(t)}</title></circle>`;
     off+=len;return s}).join('');
   pieDefault=`<div class="pc-v">${c.sym}${fmt(tot)}</div><div class="pc-k">${curM().slice(0,4)}年${+curM().slice(5)}月费用合计</div>`;
-  document.getElementById('pie').innerHTML=L.length?
+  if(!L.length)pieDefault=`<div class="pc-v" style="color:var(--faint)">—</div>
+    <div class="pc-k">${curM().slice(0,4)}年${+curM().slice(5)}月无费用</div>`;
+  document.getElementById('pie').innerHTML=
     `<div class="pie-wrap"><svg viewBox="0 0 140 140" class="pie" role="img" aria-label="费用分类占比">
       <circle cx="70" cy="70" r="54" fill="none" stroke="var(--panel)" stroke-width="22"/>${segs}</svg>
-      <div class="pie-center" id="pie-center">${pieDefault}</div></div>`:'';
+      <div class="pie-center" id="pie-center">${pieDefault}</div></div>`;
   document.getElementById('dist').innerHTML=L.length?L.map(([cat,v,t],i)=>`
     <div class="drow"><div class="lbl"><span class="swatch" style="background:${shade(i)}"></span>${cat}</div>
       <div class="track"><div class="fill" style="width:${(t/max*100).toFixed(2)}%">
@@ -779,8 +744,10 @@ function paintRecur(){
   document.getElementById('rsums').innerHTML=CURRENCIES.map(c=>{
     const ex=recs.filter(r=>r.active&&r.kind==='expense'&&r.currency===c.code).reduce((a,b)=>a+b.amount/b.cycle,0);
     const inc=recs.filter(r=>r.active&&r.kind==='income'&&r.currency===c.code).reduce((a,b)=>a+b.amount/b.cycle,0);
-    return `<div class="sum"><div class="k">${c.code} 月均订阅支出</div><div class="v">${c.sym}${fmt(ex)}</div></div>
-      <div class="sum"><div class="k">${c.code} 月均固定收入</div><div class="v" style="color:var(--pos)">${c.sym}${fmt(inc)}</div></div>`}).join('');
+    return `<div class="sum"><div class="k">${c.code} 月均订阅支出</div>
+        <div class="v" style="color:${c.color}">−${c.sym}${fmt(ex)}</div></div>
+      <div class="sum"><div class="k">${c.code} 月均固定收入</div>
+        <div class="v" style="color:${c.color}">+${c.sym}${fmt(inc)}</div></div>`}).join('');
   document.getElementById('rprepaid').textContent='未摊销预付费用：'+
     CURRENCIES.map(c=>`${c.sym}${fmt(prepaid(c.code))}`).join(' / ')+'　（已付款但尚未消耗的订阅期间）';
   const today=ymd(new Date());
@@ -791,7 +758,7 @@ function paintRecur(){
       <div><div class="rname">${esc(r.name)}</div>
         <div class="rmeta">${CYCLES[r.cycle]} · ${a?esc(a.name):'—'} · ${r.category} · 下次 ${nx}</div></div>
       <div class="rright"><div>
-        <div class="ramt" style="${r.kind==='income'?'color:var(--pos)':''}">${r.kind==='income'?'+':'−'}${c.sym}${fmt(r.amount)}</div>
+        <div class="ramt" style="color:${c.color}">${r.kind==='income'?'+':'−'}${c.sym}${fmt(r.amount)}</div>
         <div class="rmo">月均 ${fmt(r.amount/r.cycle)}</div></div>
         <button class="ract" data-rtog="${esc(r.id)}">${r.active?'暂停':'启用'}</button>
         <button class="ract" data-rdel="${esc(r.id)}">删除</button></div></div>`}).join('')
@@ -804,13 +771,163 @@ function paintAccts(){
     const c=ci(a.currency);
     return `<div class="aitem">
       <div><input class="txt" data-aname="${a.id}" value="${esc(a.name)}">
-        <div class="ameta">${a.owner==='self'?'自己存款':'父母副卡'} · ${a.currency} · 当前 ${c.sym}${fmt(a.owner==='self'?acctBalance(a):acctSpent(a))}${a.owner==='card'?'（累计已用）':''}</div></div>
+        <div class="ameta">${a.owner==='self'?'自己存款':'副卡'} · ${a.currency} · 当前 ${c.sym}${fmt(a.owner==='self'?acctBalance(a):acctSpent(a))}${a.owner==='card'?'（累计已用）':''}</div></div>
       <div style="display:flex;gap:8px;align-items:center">
         ${a.owner==='self'?`<input data-aopen="${a.id}" type="number" step="0.01" value="${a.opening||0}" title="期初余额">
           <input data-adate="${a.id}" type="date" value="${a.openDate||''}" style="width:140px" title="起算日">`:''}
         <button class="ract" data-adel="${a.id}">删除</button></div></div>`}).join('')
     :`<div class="blank">还没有账户。</div>`;
 }
+
+
+
+/* ═══ AI 通道 ═══ */
+const AsyncFn=Object.getPrototypeOf(async function(){}).constructor;
+let aiMode='json',pending=[];
+const aiOut=[];
+const aoClear=()=>{aiOut.length=0;document.getElementById('ai-out').innerHTML=''};
+function ao(msg,cls){aiOut.push(`<div class="ao ${cls||''}">${esc(msg)}</div>`);
+  document.getElementById('ai-out').innerHTML=aiOut.join('')}
+
+const PLACEHOLDER={
+  json:'把 AI 输出的 JSON 数组贴在这里，例如：\n[\n  {"date":"2026-09-03","type":"expense","amount":42.30,"account":"CommBank","category":"餐饮","note":"Woolworths"},\n  {"date":"2026-09-03","type":"expense","amount":18.00,"account":"支付宝","category":"交通","note":"地铁"}\n]',
+  js:'写 JS，用 api 操作账本。例如：\n\n// 把 8 月所有「其他」里含 Uber 的改成交通\nfor (const r of api.find(r => r.category===\'其他\' && /uber/i.test(r.note))) {\n  await api.update(r.id, { category: \'交通\' });\n}\napi.log(\'done\');'};
+
+function paintAI(){
+  document.getElementById('ai-tabs').innerHTML=
+    `<button data-ai="json" aria-pressed="${aiMode==='json'}">数据导入</button>`+
+    `<button data-ai="js" aria-pressed="${aiMode==='js'}">脚本</button>`;
+  document.getElementById('ai-hint').textContent=aiMode==='json'
+    ?'把银行流水交给 AI，让它按下面的提示词输出 JSON，贴进来解析、核对、导入。重复条目会自动标出并跳过。'
+    :'直接运行 JS，用 api 对象读写账本。批量改分类、补账户、清理旧数据都能做。';
+  const t=document.getElementById('ai-code');
+  t.placeholder=PLACEHOLDER[aiMode];
+  document.getElementById('ai-run').textContent=aiMode==='json'?'解析':'运行';
+}
+
+function aiPrompt(){
+  const acc=accts.map(a=>`  - "${a.name}"（${a.currency}，${a.owner==='self'?'存款':'副卡'}）`).join('\n');
+  return `你是我的记账助手。我会给你一份银行流水（可能是截图、CSV 或纯文本），请把它转成 JSON 数组。
+
+只输出 JSON 本身，不要解释，不要 markdown 代码块。
+
+每条记录的字段：
+- date: "YYYY-MM-DD"
+- type: "expense"（支出）或 "income"（收入）
+- amount: 正数，两位小数
+- account: 必须原样使用下面其中一个名称
+${acc}
+- category: 支出从 [${CAT_EXPENSE.join('、')}] 里选；收入从 [${CAT_INCOME.join('、')}] 里选
+- note: 商户名或摘要，没有就写 ""
+
+规则：
+1. amount 一律填正数，收支方向由 type 区分，不要用负数。
+2. 账户按币种和卡片来源判断，判断不了就选 "${accts[0]?accts[0].name:''}"。
+3. 账户之间的转账、信用卡还款属于内部划转，直接忽略，不要记。
+4. 同一笔被拆成多行的（如手续费单列），合并成一条。
+5. 日期无法确定年份时，按我给的账单期间推断。`;
+}
+
+function resolveAcct(v){
+  if(!v)return null;
+  const k=String(v).trim().toLowerCase();
+  return accts.find(a=>a.id===v)||accts.find(a=>a.name.toLowerCase()===k)
+    ||accts.find(a=>a.name.toLowerCase().includes(k))||null;
+}
+const dupKey=r=>[r.date,r.amount,r.acctId,r.category,r.note||''].join('|');
+
+function parseJson(){
+  aoClear();pending=[];
+  let raw=document.getElementById('ai-code').value.trim();
+  raw=raw.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+  let data;
+  try{data=JSON.parse(raw)}catch(e){ao('JSON 解析失败：'+e.message,'err');return}
+  if(!Array.isArray(data)){ao('顶层必须是数组','err');return}
+  const have=new Set(rows.map(dupKey));
+  let bad=0,dup=0;
+  data.forEach((r,i)=>{
+    const n=i+1;
+    const a=resolveAcct(r.account??r.acctId);
+    const amt=Math.round(Number(r.amount)*100)/100;
+    if(!a){ao(`#${n} 账户对不上：${JSON.stringify(r.account??r.acctId)}`,'err');bad++;return}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')){ao(`#${n} 日期格式不对：${r.date}`,'err');bad++;return}
+    if(!(amt>0)){ao(`#${n} 金额必须是正数：${r.amount}`,'err');bad++;return}
+    const type=r.type==='income'?'income':'expense';
+    const cats=type==='expense'?CAT_EXPENSE:CAT_INCOME;
+    let cat=r.category;
+    if(!cats.includes(cat)){ao(`#${n} 分类「${cat}」不在列表里，改为「其他」`,'warn');cat='其他'}
+    if(type==='income'&&a.owner==='card'){ao(`#${n} 副卡不能记收入，已跳过`,'err');bad++;return}
+    const rec={id:'ai'+Date.now()+'_'+n,date:r.date,type,amount:amt,currency:a.currency,
+      acctId:a.id,category:cat,note:(r.note||'').trim(),spread:1};
+    if(have.has(dupKey(rec))){ao(`#${n} 已存在，跳过：${rec.date} ${rec.category} ${fmt(rec.amount)}`,'warn');dup++;return}
+    have.add(dupKey(rec));pending.push(rec);
+  });
+  ao(`—— 可导入 ${pending.length} 条，重复 ${dup} 条，错误 ${bad} 条 ——`,pending.length?'ok':'');
+  if(pending.length){
+    const sum={};pending.forEach(r=>{sum[r.currency]=(sum[r.currency]||0)+(r.type==='expense'?r.amount:-r.amount)});
+    ao('净支出：'+Object.entries(sum).map(([k,v])=>`${k} ${fmt(v)}`).join('　'));
+    pending.slice(0,8).forEach(r=>ao(`  ${r.date}  ${r.type==='income'?'+':'−'}${ci(r.currency).sym}${fmt(r.amount)}  ${r.category}  ${ai(r.acctId).name}${r.note?'  '+r.note:''}`));
+    if(pending.length>8)ao(`  …… 其余 ${pending.length-8} 条`);
+    document.getElementById('ai-out').insertAdjacentHTML('beforeend',
+      `<div class="ai-confirm"><button id="ai-commit">确认导入 ${pending.length} 条</button></div>`);
+  }
+}
+
+async function commitImport(){
+  for(const r of pending)await txPut(r),rows.push(r);
+  const n=pending.length;pending=[];
+  aoClear();ao(`已导入 ${n} 条`,'ok');
+  document.getElementById('ai-code').value='';
+  toast(`已导入 ${n} 条`);paintAll();
+}
+
+async function runScript(){
+  aoClear();
+  const api={
+    get rows(){return rows.map(r=>({...r}))},
+    get accounts(){return accts.map(a=>({...a}))},
+    get recurring(){return recs.map(r=>({...r}))},
+    categories:{expense:CAT_EXPENSE,income:CAT_INCOME},
+    account:resolveAcct,
+    find:fn=>rows.filter(fn).map(r=>({...r})),
+    log:(...a)=>ao(a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ')),
+    async add(o){
+      const a=resolveAcct(o.account??o.acctId);
+      if(!a)throw new Error('账户对不上：'+(o.account??o.acctId));
+      const rec={id:'ai'+Date.now()+Math.random().toString(36).slice(2,6),
+        date:o.date,type:o.type==='income'?'income':'expense',
+        amount:Math.round(Number(o.amount)*100)/100,currency:a.currency,acctId:a.id,
+        category:o.category||'其他',note:(o.note||'').trim(),spread:1};
+      await txPut(rec);rows.push(rec);return rec;
+    },
+    async update(id,patch){
+      const r=rows.find(x=>String(x.id)===String(id));
+      if(!r)throw new Error('找不到流水 '+id);
+      Object.assign(r,patch);
+      if(patch.account||patch.acctId){const a=resolveAcct(patch.account??patch.acctId);
+        if(a){r.acctId=a.id;r.currency=a.currency}}
+      await txPut(r);return {...r};
+    },
+    async remove(id){
+      const key=String(id);await txDel(key);
+      if(key.includes('#')){skip.push(key);await kvPut('skip',skip)}
+      rows=rows.filter(x=>String(x.id)!==key);
+    }
+  };
+  try{
+    await new AsyncFn('api',document.getElementById('ai-code').value)(api);
+    ao('运行完成','ok');
+  }catch(e){ao('运行出错：'+e.message,'err')}
+  paintAll();
+}
+
+document.getElementById('ai-run').onclick=()=>aiMode==='json'?parseJson():runScript();
+document.getElementById('ai-clear').onclick=()=>{document.getElementById('ai-code').value='';aoClear();pending=[]};
+document.getElementById('ai-prompt').onclick=async()=>{
+  const t=aiPrompt();
+  try{await navigator.clipboard.writeText(t);toast('提示词已复制')}
+  catch{document.getElementById('ai-code').value=t;toast('已填入下方，请手动复制')}
+};
 
 /* ═══ 管理：流水编辑 ═══ */
 let editId=null;
@@ -884,6 +1001,8 @@ document.body.addEventListener('click',async e=>{
     document.querySelectorAll('.switch button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.view===d.view))}
   if(d.del){const id=d.del;await txDel(id);rows=rows.filter(r=>String(r.id)!==id);
     if(id.includes('#')){skip.push(id);await kvPut('skip',skip)}paintAll()}
+  if(d.ai){aiMode=d.ai;aoClear();pending=[];paintAI();return}
+  if(b.id==='ai-commit'){commitImport();return}
   if(d.edit){editId=d.edit;paintAdminTx();return}
   if(d.cancel){editId=null;paintAdminTx();return}
   if(d.save){
@@ -902,11 +1021,8 @@ document.body.addEventListener('click',async e=>{
   if(d.rdel){await rcDel(d.rdel);recs=recs.filter(x=>x.id!==d.rdel);paintRecur()}
   if(d.adel){
     const gone=rows.filter(r=>r.acctId===d.adel);
-    const recurring=recs.filter(x=>x.acctId===d.adel);
-    const target=ai(d.adel);
-    if(!target||!window.confirm(`删除账户“${target.name}”？这会同时永久删除 ${gone.length} 条流水和 ${recurring.length} 个定期项目。`))return;
     for(const r of gone)await txDel(r.id);
-    for(const r of recurring)await rcDel(r.id);
+    for(const r of recs.filter(x=>x.acctId===d.adel))await rcDel(r.id);
     await acDel(d.adel);
     rows=rows.filter(r=>r.acctId!==d.adel);
     recs=recs.filter(r=>r.acctId!==d.adel);
@@ -928,7 +1044,7 @@ document.body.addEventListener('change',async e=>{
 async function addAcct(){
   const g=i=>document.getElementById(i).value;
   if(!g('a-name').trim()){toast('填写账户名称');return}
-  const a={id:newId('a'),name:g('a-name').trim(),owner:g('a-owner'),currency:g('a-cur'),
+  const a={id:'a'+Date.now(),name:g('a-name').trim(),owner:g('a-owner'),currency:g('a-cur'),
     opening:parseFloat(g('a-open'))||0,openDate:g('a-date')||ymd(new Date())};
   await acPut(a);accts.push(a);
   document.getElementById('a-name').value='';document.getElementById('a-open').value='';
@@ -938,7 +1054,7 @@ async function addRecur(){
   const g=i=>document.getElementById(i).value;
   const amt=parseFloat(g('r-amt')),a=ai(g('r-acct'));
   if(!g('r-name').trim()||!(amt>0)||!a){toast('填写名称、金额和账户');return}
-  const r={id:newId('r'),name:g('r-name').trim(),kind:g('r-kind'),
+  const r={id:'r'+Date.now(),name:g('r-name').trim(),kind:g('r-kind'),
     amount:Math.round(amt*100)/100,currency:a.currency,acctId:a.id,cycle:+g('r-cycle'),
     firstDate:g('r-date')||ymd(new Date()),category:g('r-cat'),active:true};
   await rcPut(r);recs.push(r);await postDue();
@@ -966,12 +1082,9 @@ document.getElementById('tq').addEventListener('input',paintAdminTx);
 ['amt','note'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{
   if(e.key==='Enter'){e.preventDefault();commit()}}));
 
-['rate-cny','rate-trend'].forEach(id=>document.getElementById(id).addEventListener('change',async e=>{
-  const next=parseFloat(e.target.value);
-  if(!(next>0)){e.target.value=rateCny;toast('汇率必须大于 0');return}
-  rateCny=next;await kvPut('rateCny',rateCny);
-  document.getElementById('rate-cny').value=rateCny;document.getElementById('rate-trend').value=rateCny;
-  paintWallet();paintTrend()}));
+document.getElementById('rate-trend').addEventListener('change',async e=>{
+  rateCny=parseFloat(e.target.value)||rateCny;await kvPut('rateCny',rateCny);
+  e.target.value=rateCny;paintTrend()});
 
 document.getElementById('btn-export').onclick=()=>{
   const a=document.createElement('a');
@@ -981,66 +1094,35 @@ document.getElementById('btn-import').onclick=()=>document.getElementById('file'
 document.getElementById('file').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   try{
-    if(f.size>5_000_000)throw new Error('large');
     const data=JSON.parse(await f.text());
     if(!Array.isArray(data.rows))throw new Error('bad');
-    let invalid=0;
-    if(Array.isArray(data.accts)){const seen=new Set(accts.map(a=>String(a.id)));
-      for(const input of data.accts){
-        if(seen.has(String(input&&input.id)))continue;
-        const account=normalizeAccount(input);
-        if(!account){invalid++;continue}
-        await acPut(account);accts.push(account);seen.add(String(account.id));
-      }}
-    await ensureLegacyAccounts(data.rows);
+    if(Array.isArray(data.accts)){const s=new Set(accts.map(a=>a.id));
+      for(const a of data.accts)if(!s.has(a.id)){await acPut(a);accts.push(a)}}
     const seen=new Set(rows.map(r=>String(r.id)));let n=0;
-    for(const input of data.rows){
-      if(seen.has(String(input&&input.id)))continue;
-      const row=normalizeRow(input);
-      if(!row){invalid++;continue}
-      await txPut(row);rows.push(row);seen.add(String(row.id));n++;
-    }
-    if(Array.isArray(data.recs)){const seenRec=new Set(recs.map(r=>String(r.id)));
-      for(const input of data.recs){
-        if(seenRec.has(String(input&&input.id)))continue;
-        const recurring=normalizeRecurring(input);
-        if(!recurring){invalid++;continue}
-        await rcPut(recurring);recs.push(recurring);seenRec.add(String(recurring.id));
-      }}
-    const importedRate=Number(data.rateCny||data.rates?.cny);
-    if(Number.isFinite(importedRate)&&importedRate>0){rateCny=importedRate;await kvPut('rateCny',rateCny)}
-    if(Array.isArray(data.skip)){skip=[...new Set([...skip,...data.skip.filter(x=>typeof x==='string'&&x.length<=200)])];await kvPut('skip',skip)}
-    await postDue();
-    document.getElementById('rate-cny').value=rateCny;
+    for(const r of data.rows)if(!seen.has(String(r.id))){await txPut(r);rows.push(r);n++}
+    if(Array.isArray(data.recs)){const s=new Set(recs.map(r=>r.id));
+      for(const r of data.recs)if(!s.has(r.id)){await rcPut(r);recs.push(r)}}
+    if(data.rateCny){rateCny=data.rateCny;await kvPut('rateCny',rateCny)}
+    if(Array.isArray(data.skip)){skip=[...new Set([...skip,...data.skip])];await kvPut('skip',skip)}
     document.getElementById('rate-trend').value=rateCny;
-    buildEntry();paintAll();toast(`已导入 ${n} 条流水${invalid?`，跳过 ${invalid} 条无效数据`:''}`);
+    buildEntry();paintAll();toast('已导入 '+n+' 条流水');
   }catch{toast('这个文件不是本工具导出的数据')}
   e.target.value='';};
 
 /* ═══ 启动 ═══ */
 (async()=>{
   db=await openDB();
-  const rawRows=await allOf(TX),rawRecs=await allOf(RC),rawAccts=await allOf(AC);
-  accts=rawAccts.map(normalizeAccount).filter(Boolean);
-  const savedRate=Number(await kvGet('rateCny'));
-  const legacyRates=await kvGet('rates'),legacyRate=Number(legacyRates&&legacyRates.cny);
-  rateCny=savedRate>0?savedRate:(legacyRate>0?legacyRate:rateCny);
-  const savedSkip=await kvGet('skip');
-  skip=Array.isArray(savedSkip)?savedSkip.filter(x=>typeof x==='string'&&x.length<=200):[];
+  rows=await allOf(TX);recs=await allOf(RC);accts=await allOf(AC);
+  rateCny=(await kvGet('rateCny'))||rateCny;skip=(await kvGet('skip'))||[];
   if(!accts.length){
-    const dates=rawRows.map(r=>r&&r.date).filter(validDate).sort();
-    const openDate=dates[0]||ymd(new Date());
-    const seeds=rawRows.some(r=>r&&r.currency==='USD')?
-      [...SEED,{name:'现金 USD',owner:'self',currency:'USD'}]:SEED;
-    for(const s of seeds){const a={id:newId('a'),...s,opening:0,openDate};
+    for(const s of SEED){const a={id:'a'+Math.random().toString(36).slice(2,9),...s,opening:0,openDate:ymd(new Date())};
       await acPut(a);accts.push(a)}
   }
-  await ensureLegacyAccounts(rawRows);
-  // v1 记录没有 type、acctId 和 spread；升级时补齐，但不删除无法识别的原始数据。
-  rows=[];
-  for(const input of rawRows){const row=normalizeRow(input);if(row){await txPut(row);rows.push(row)}}
-  recs=[];
-  for(const input of rawRecs){const recurring=normalizeRecurring(input);if(recurring){await rcPut(recurring);recs.push(recurring)}}
+  // 旧数据补账户
+  for(const r of rows) if(!r.acctId){
+    const a=accts.find(x=>x.currency===r.currency&&x.owner===(r.source||'self'))||accts[0];
+    if(a){r.acctId=a.id;await txPut(r)}
+  }
   await postDue();
   CURRENCIES.forEach(c=>{const o=`<option value="${c.code}">${c.code}</option>`;
     document.getElementById('a-cur').insertAdjacentHTML('beforeend',o)});
@@ -1049,10 +1131,9 @@ document.getElementById('file').onchange=async e=>{
   document.getElementById('date').value=ymd(new Date());
   document.getElementById('r-date').value=ymd(new Date());
   document.getElementById('a-date').value=ymd(new Date());
-  document.getElementById('rate-cny').value=rateCny;
   document.getElementById('rate-trend').value=rateCny;
-  buildEntry();paintAmount();paintAll();
-  if(!db)toast('当前浏览器为临时模式，请导出备份');
+  document.getElementById('rate-trend').value=rateCny;
+  buildEntry();paintAmount();paintAI();paintAll();
 })();
 </script>
 </body>
