@@ -242,9 +242,48 @@ html.is-site-landing body {
   transition: opacity 180ms ease;
 }
 
-body.has-site-sidebar[data-page="home"].home-paged .hero-home,
-body.has-site-sidebar[data-page="home"].home-paged #homePath {
-  left: var(--site-sidebar-collapsed-width);
+.anu-section-back {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  z-index: 4999;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 13px 0 10px;
+  border: 1px solid rgba(223, 226, 224, 0.94);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 7px 24px rgba(15, 23, 42, 0.1);
+  color: #262b28;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+  backdrop-filter: blur(12px);
+}
+
+.anu-section-back:hover,
+.anu-section-back:focus-visible {
+  background: #f4f6f5;
+  color: #111512;
+}
+
+.anu-section-back:focus-visible {
+  outline: 2px solid #2f7358;
+  outline-offset: 2px;
+}
+
+.anu-section-back svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 body.has-site-sidebar .information-full-screen__close {
@@ -266,6 +305,23 @@ body.has-site-sidebar .information-full-screen__close {
   .site-sidebar.is-expanded + .site-sidebar-backdrop {
     opacity: 1;
     pointer-events: auto;
+  }
+
+  .anu-section-back {
+    top: max(10px, env(safe-area-inset-top));
+    left: max(10px, env(safe-area-inset-left));
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .anu-section-back span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 

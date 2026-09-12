@@ -6,26 +6,25 @@ const sitePagesConfigPaths = [
 ];
 
 const fallbackNavItems = [
-  { key: "home", label: "Residence Finder", href: "index.html?home=1" },
-  { key: "explore", label: "Map", href: "explore.html" },
-  { key: "information", label: "Information", href: "information.html" },
+  { key: "anu-explore", label: "ANU Explore", href: "index.html?home=1" },
   { key: "course-builder", label: "Course Builder", href: "course-builder.html" },
-  { key: "ledger", label: "Balance", href: "ledger.html" },
-  { key: "question", label: "Question", href: "question.html" }
+  { key: "ledger", label: "Balance", href: "ledger.html" }
 ];
 
 const navSections = [
-  {
-    key: "anu-explore",
-    label: "ANU Explore",
-    pageKeys: ["home", "explore", "information", "question"]
-  },
-  { key: "course-builder", label: "", pageKeys: ["course-builder"] },
-  { key: "balance", label: "", pageKeys: ["ledger"] }
+  { key: "anu-explore", pageKeys: ["anu-explore"] },
+  { key: "course-builder", pageKeys: ["course-builder"] },
+  { key: "balance", pageKeys: ["ledger"] }
 ];
 
+const currentProduct = {
+  "course-builder": "course-builder",
+  "course-builder-login": "course-builder",
+  ledger: "ledger"
+}[currentPage] || "";
+
 const navIcons = {
-  home: `
+  "anu-explore": `
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 17.5V9.8L12 4l8 5.8v7.7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
       <path d="M9 19.5v-6h6v6" />
@@ -106,7 +105,7 @@ function renderNav(navItems) {
         <section class="site-sidebar-group" aria-label="${escapeHtml(section.label || section.items[0].label)}">
           ${section.label ? `<h2 class="site-sidebar-group__title">${escapeHtml(section.label)}</h2>` : ""}
           ${section.items.map((item) => {
-            const active = item.key === currentPage;
+            const active = item.key === currentProduct;
             return `
               <a
                 class="site-sidebar-link ${active ? "active" : ""}"
@@ -170,13 +169,13 @@ async function loadNavItems() {
     try {
       const data = await fetchSitePagesConfig(path);
       const pages = Array.isArray(data.pages) ? data.pages : [];
-      return pages
-        .filter((page) => page.showInNavigation !== false && page.status !== "hidden")
-        .map((page) => ({
-          key: page.key,
-          label: page.label,
-          href: page.href
-        }));
+      const pagesByKey = new Map(pages.map((page) => [page.key, page]));
+      return fallbackNavItems.map((item) => {
+        const sourceKey = item.key === "anu-explore" ? "home" : item.key;
+        const page = pagesByKey.get(sourceKey);
+        if (!page || page.showInNavigation === false || page.status === "hidden") return null;
+        return { ...item, href: page.href || item.href };
+      }).filter(Boolean);
     } catch (error) {
       console.warn(`Failed to load site pages config from ${path}.`, error);
     }
@@ -186,7 +185,9 @@ async function loadNavItems() {
   return fallbackNavItems;
 }
 
-if (siteNavRoot) {
+const anuExplorePages = new Set(["home", "explore", "information", "question", "map-tool"]);
+
+if (siteNavRoot && !anuExplorePages.has(currentPage)) {
   document.body.classList.add("has-site-sidebar");
   loadNavItems().then(renderNav);
 }

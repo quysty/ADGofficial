@@ -4,18 +4,18 @@
   "pages": [
     {
       "key": "home",
-      "label": "Residence Finder",
+      "label": "ANU Explore",
       "href": "index.html?home=1",
       "status": "public",
       "showInNavigation": true,
-      "role": "residence"
+      "role": "product"
     },
     {
       "key": "explore",
       "label": "Map",
       "href": "explore.html",
       "status": "public",
-      "showInNavigation": true,
+      "showInNavigation": false,
       "role": "map"
     },
     {
@@ -23,7 +23,7 @@
       "label": "Information",
       "href": "information.html",
       "status": "public",
-      "showInNavigation": true,
+      "showInNavigation": false,
       "role": "content"
     },
     {
@@ -31,7 +31,7 @@
       "label": "Question",
       "href": "question.html",
       "status": "public",
-      "showInNavigation": true,
+      "showInNavigation": false,
       "role": "content"
     },
     {
