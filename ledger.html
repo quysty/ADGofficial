@@ -39,6 +39,19 @@ button{cursor:pointer;background:none;border:none;padding:0}
 .links{display:flex;gap:11px}
 .links button{font-size:12.5px;color:var(--faint)}
 .links button:hover{color:var(--ink)}
+.cloud-sync{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:104px;
+  font-family:var(--num);font-size:11.5px;color:var(--faint);white-space:nowrap}
+.cloud-dot{width:7px;height:7px;border-radius:50%;background:var(--soft);flex:none}
+.cloud-sync[data-state="saving"] .cloud-dot{background:#A27B22}
+.cloud-sync[data-state="saved"] .cloud-dot{background:var(--pos)}
+.cloud-sync[data-state="error"] .cloud-dot{background:var(--neg)}
+.cloud-action{font-size:11.5px;color:var(--ink);text-decoration:underline;text-underline-offset:2px}
+.cloud-action[hidden]{display:none}
+@media(max-width:620px){
+  .bar{gap:8px;padding-left:12px;padding-right:12px}
+  .cloud-sync{min-width:auto}
+  .cloud-copy{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
 
 .cols{flex:1}
 #entry,#stats,#flow,#admin{display:none;flex-direction:column}
@@ -317,6 +330,11 @@ body[data-view="admin"] #admin{display:flex}
       <button data-view="flow" aria-pressed="false">流水</button>
       <button data-view="admin" aria-pressed="false">管理</button>
     </div>
+    <div class="cloud-sync" id="cloud-sync" data-state="checking" role="status" aria-live="polite">
+      <span class="cloud-dot" aria-hidden="true"></span>
+      <span class="cloud-copy" id="cloud-copy">检查云端</span>
+      <button class="cloud-action" id="cloud-action" type="button" hidden>登录</button>
+    </div>
   </div>
 
   <div class="cols">
@@ -471,7 +489,11 @@ const SEED=[
   {name:'副卡',owner:'card',currency:'AUD'}];
 
 /* ═══ 存储 ═══ */
-const DB='anuexplore-ledger',TX='tx',RC='rec',AC='acct',KV='kv';let db;
+const DB='anuexplore-ledger',TX='tx',RC='rec',AC='acct',KV='kv';
+const CLOUD_OWNER_KEY='cloudOwnerId',CLOUD_SYNCED_KEY='cloudSyncedAt',CLOUD_DIRTY_KEY='cloudDirtyAt';
+let db;
+const cloud={module:null,client:null,user:null,ready:false,syncing:false,pending:false,
+  applying:false,revision:0,timer:null,subscription:null,dirtyAt:'',lastSyncedAt:''};
 const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open(DB,3);
   r.onupgradeneeded=e=>{const d=e.target.result;
     if(!d.objectStoreNames.contains(TX))d.createObjectStore(TX,{keyPath:'id'});
@@ -481,17 +503,173 @@ const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open(DB,3);
   r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const os=(s,m)=>db.transaction(s,m).objectStore(s);
 const rq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-const txPut=r=>rq(os(TX,'readwrite').put(r)),txDel=i=>rq(os(TX,'readwrite').delete(i));
-const rcPut=r=>rq(os(RC,'readwrite').put(r)),rcDel=i=>rq(os(RC,'readwrite').delete(i));
-const acPut=r=>rq(os(AC,'readwrite').put(r)),acDel=i=>rq(os(AC,'readwrite').delete(i));
+const rawKvPut=(k,v)=>rq(os(KV,'readwrite').put(v,k));
+const rawKvDel=k=>rq(os(KV,'readwrite').delete(k));
+const changed=p=>p.then(v=>{markLocalMutation();return v});
+const txPut=r=>changed(rq(os(TX,'readwrite').put(r))),txDel=i=>changed(rq(os(TX,'readwrite').delete(i)));
+const rcPut=r=>changed(rq(os(RC,'readwrite').put(r))),rcDel=i=>changed(rq(os(RC,'readwrite').delete(i)));
+const acPut=r=>changed(rq(os(AC,'readwrite').put(r))),acDel=i=>changed(rq(os(AC,'readwrite').delete(i)));
 const allOf=s=>rq(os(s,'readonly').getAll());
-const kvGet=k=>rq(os(KV,'readonly').get(k)),kvPut=(k,v)=>rq(os(KV,'readwrite').put(v,k));
+const kvGet=k=>rq(os(KV,'readonly').get(k)),kvPut=(k,v)=>changed(rawKvPut(k,v));
 
 /* ═══ 状态 ═══ */
 let rows=[],recs=[],accts=[],skip=[],rateCny=4.70;
 let cursor=new Date();cursor.setDate(1);
 let distCur='AUD',jAcct='all',trendRange=6;
 const draft={mode:'expense',acct:null,cat:'餐饮'};
+
+/* ═══ 云端同步 ═══ */
+function setCloudStatus(state,message,action=''){
+  const box=document.getElementById('cloud-sync'),copy=document.getElementById('cloud-copy');
+  const button=document.getElementById('cloud-action');
+  box.dataset.state=state;box.title=message;copy.textContent=message;
+  button.hidden=!action;button.textContent=action;
+}
+function cloudErrorMessage(error){
+  const message=String(error?.message||error||'未知错误');
+  if(/failed to fetch|network|timeout|terminated/i.test(message))return '网络不可用，账本会留在本机并稍后重试。';
+  if(/ledger_states|relation .* does not exist|schema cache/i.test(message))return '云端账本尚未初始化。';
+  if(/row-level security|permission|not allowed|jwt/i.test(message))return '当前账户没有云端账本权限。';
+  return message;
+}
+function ledgerSnapshot(){
+  return JSON.parse(JSON.stringify({schemaVersion:'3',rateCny,skip,accts,recs,rows}));
+}
+function freshLedgerSnapshot(){
+  return {schemaVersion:'3',rateCny:4.70,skip:[],rows:[],recs:[],accts:SEED.map(s=>({
+    id:'a'+Math.random().toString(36).slice(2,9),...s,opening:0,openDate:ymd(new Date())
+  }))};
+}
+function meaningfulLedgerState(state){
+  if(state.rows.length||state.recs.length||state.skip.length||Number(state.rateCny)!==4.70)return true;
+  if(state.accts.length!==SEED.length)return true;
+  return state.accts.some(a=>Number(a.opening)!==0||!SEED.some(s=>
+    s.name===a.name&&s.owner===a.owner&&s.currency===a.currency));
+}
+function mergeById(remote,local){
+  const merged=new Map();
+  [...remote,...local].forEach(item=>{if(item&&item.id!=null)merged.set(String(item.id),item)});
+  return [...merged.values()];
+}
+function mergeLedgerStates(remote,local){
+  return {schemaVersion:'3',rateCny:Number(local.rateCny)||Number(remote.rateCny)||4.70,
+    skip:[...new Set([...(remote.skip||[]),...(local.skip||[])])],
+    accts:mergeById(remote.accts||[],local.accts||[]),
+    recs:mergeById(remote.recs||[],local.recs||[]),
+    rows:mergeById(remote.rows||[],local.rows||[])};
+}
+async function replaceLocalLedgerState(input){
+  const state=JSON.parse(JSON.stringify(input));
+  cloud.applying=true;
+  try{
+    await new Promise((resolve,reject)=>{
+      const transaction=db.transaction([TX,RC,AC,KV],'readwrite');
+      transaction.oncomplete=()=>resolve();transaction.onerror=()=>reject(transaction.error);
+      transaction.onabort=()=>reject(transaction.error||new Error('本机账本写入已中止。'));
+      const tx=transaction.objectStore(TX),rc=transaction.objectStore(RC);
+      const ac=transaction.objectStore(AC),kv=transaction.objectStore(KV);
+      tx.clear();rc.clear();ac.clear();kv.clear();
+      state.rows.forEach(row=>tx.put(row));state.recs.forEach(row=>rc.put(row));
+      state.accts.forEach(row=>ac.put(row));kv.put(Number(state.rateCny)||4.70,'rateCny');
+      kv.put(state.skip||[],'skip');
+    });
+    rows=state.rows;recs=state.recs;accts=state.accts;skip=state.skip||[];
+    rateCny=Number(state.rateCny)||4.70;
+  }finally{cloud.applying=false}
+}
+async function storeCloudMetadata(ownerId,syncedAt){
+  cloud.lastSyncedAt=syncedAt||new Date().toISOString();cloud.dirtyAt='';
+  await Promise.all([rawKvPut(CLOUD_OWNER_KEY,ownerId),
+    rawKvPut(CLOUD_SYNCED_KEY,cloud.lastSyncedAt),rawKvPut(CLOUD_DIRTY_KEY,'')]);
+}
+function isAfter(a,b){
+  const left=Date.parse(a||''),right=Date.parse(b||'');
+  return Number.isFinite(left)&&(!Number.isFinite(right)||left>right);
+}
+function markLocalMutation(){
+  if(cloud.applying)return;
+  cloud.revision++;cloud.pending=true;cloud.dirtyAt=new Date().toISOString();
+  rawKvPut(CLOUD_DIRTY_KEY,cloud.dirtyAt).catch(error=>console.warn('Ledger dirty marker failed:',error));
+  if(cloud.ready){setCloudStatus('saving','等待保存');scheduleCloudSave()}
+}
+function scheduleCloudSave(delay=650){
+  if(!cloud.ready||!cloud.user)return;
+  clearTimeout(cloud.timer);cloud.timer=setTimeout(()=>saveCloudNow(),delay);
+}
+async function saveCloudNow(){
+  if(!cloud.ready||!cloud.user||!cloud.client)return;
+  if(cloud.syncing){cloud.pending=true;return}
+  clearTimeout(cloud.timer);cloud.timer=null;cloud.syncing=true;
+  const revision=cloud.revision,state=ledgerSnapshot();
+  setCloudStatus('saving','正在保存');
+  try{
+    const result=await cloud.module.saveLedgerState(cloud.client,cloud.user.id,state);
+    await storeCloudMetadata(cloud.user.id,result.updatedAt);
+    cloud.pending=cloud.revision!==revision;
+    setCloudStatus('saved',cloud.pending?'等待保存':'已保存到云端');
+  }catch(error){
+    cloud.pending=true;console.error('Ledger cloud save failed:',error);
+    setCloudStatus('error','云端待同步','重试');
+    return;
+  }finally{cloud.syncing=false}
+  if(cloud.pending)scheduleCloudSave(150);
+}
+async function connectCloudUser(user){
+  if(!user||user.is_anonymous)return;
+  if(cloud.ready&&cloud.user?.id===user.id){if(cloud.pending)scheduleCloudSave(0);return}
+  cloud.user=user;cloud.ready=false;setCloudStatus('checking','读取云端');
+  const local=ledgerSnapshot();
+  const [ownerId,syncedAt,dirtyAt,remote]=await Promise.all([
+    kvGet(CLOUD_OWNER_KEY),kvGet(CLOUD_SYNCED_KEY),kvGet(CLOUD_DIRTY_KEY),
+    cloud.module.loadLedgerState(cloud.client)
+  ]);
+  cloud.lastSyncedAt=syncedAt||'';cloud.dirtyAt=dirtyAt||'';
+  let next=local,shouldUpload=false;
+  if(!remote){
+    if(ownerId&&ownerId!==user.id)next=freshLedgerSnapshot();
+    shouldUpload=true;
+  }else if(ownerId&&ownerId!==user.id){
+    next=remote.state;
+  }else if(!ownerId&&meaningfulLedgerState(local)){
+    next=mergeLedgerStates(remote.state,local);shouldUpload=true;
+  }else if(ownerId===user.id&&isAfter(dirtyAt,syncedAt)){
+    next=isAfter(remote.updatedAt,syncedAt)?mergeLedgerStates(remote.state,local):local;
+    shouldUpload=true;
+  }else{
+    next=remote.state;
+  }
+  if(next!==local)await replaceLocalLedgerState(next);
+  if(remote&&!shouldUpload)await storeCloudMetadata(user.id,remote.updatedAt);
+  cloud.ready=true;cloud.pending=shouldUpload;
+  buildEntry();paintAmount();paintAll();
+  const revisionBeforeDue=cloud.revision;await postDue();
+  if(cloud.revision!==revisionBeforeDue){buildEntry();paintAmount();paintAll()}
+  if(shouldUpload||cloud.pending)await saveCloudNow();
+  else setCloudStatus('saved','已保存到云端');
+}
+async function refreshCloudAuth(){
+  try{
+    const context=await cloud.module.getLedgerCloudContext();cloud.client=context.client;
+    if(context.user){await connectCloudUser(context.user);return}
+    cloud.user=null;cloud.ready=false;setCloudStatus('local','仅保存在本机','登录');
+  }catch(error){
+    console.error('Ledger cloud connection failed:',error);cloud.ready=false;
+    setCloudStatus('error','云端连接失败','重试');
+  }
+}
+async function initialiseCloudSync(){
+  try{
+    cloud.module=await import('./src/backend/ledgerCloud.js?v=ledger-cloud-v1');
+    const context=await cloud.module.getLedgerCloudContext();cloud.client=context.client;
+    const {data}=cloud.client.auth.onAuthStateChange(()=>setTimeout(refreshCloudAuth,0));
+    cloud.subscription=data.subscription;
+    if(context.user)await connectCloudUser(context.user);
+    else setCloudStatus('local','仅保存在本机','登录');
+  }catch(error){
+    console.error('Ledger cloud initialisation failed:',error);
+    setCloudStatus('error','云端连接失败','重试');
+  }
+}
 
 const p2=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
@@ -1095,6 +1273,20 @@ document.getElementById('btn-export').onclick=()=>{
   a.href=URL.createObjectURL(new Blob([JSON.stringify({v:3,rateCny,skip,accts,recs,rows},null,2)],{type:'application/json'}));
   a.download=`ledger-${ymd(new Date())}.json`;a.click();URL.revokeObjectURL(a.href)};
 document.getElementById('btn-import').onclick=()=>document.getElementById('file').click();
+document.getElementById('cloud-action').onclick=()=>{
+  if(cloud.user||document.getElementById('cloud-sync').dataset.state==='error'){
+    if(cloud.module)refreshCloudAuth();else initialiseCloudSync();
+    return;
+  }
+  const url=new URL('course-builder-login.html',window.location.href);
+  url.searchParams.set('next','ledger.html');window.location.assign(url.toString());
+};
+window.addEventListener('online',()=>{
+  if(cloud.pending)scheduleCloudSave(0);else if(cloud.module)refreshCloudAuth();
+});
+window.addEventListener('pagehide',()=>{
+  if(cloud.pending)saveCloudNow();cloud.subscription?.unsubscribe();
+},{once:true});
 document.getElementById('file').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   try{
@@ -1138,6 +1330,7 @@ document.getElementById('file').onchange=async e=>{
   document.getElementById('rate-trend').value=rateCny;
   document.getElementById('rate-trend').value=rateCny;
   buildEntry();paintAmount();paintAI();paintAll();
+  await initialiseCloudSync();
 })();
 </script>
 </body>

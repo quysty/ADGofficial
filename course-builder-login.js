@@ -13,6 +13,11 @@ const retryButton = document.querySelector("#courseLoginRetry");
 const migrationBanner = document.querySelector("#courseLoginMigration");
 const migrationText = document.querySelector("#courseLoginMigrationText");
 const status = document.querySelector("#courseLoginStatus");
+const loginTitle = document.querySelector("#courseLoginTitle");
+const loginDescription = document.querySelector(".course-login-header p");
+const loginHelp = document.querySelector(".course-login-help");
+const footerItems = document.querySelectorAll(".course-login-footer span");
+const ALLOWED_NEXT_FILENAMES = new Set(["course-builder.html", "ledger.html"]);
 
 let supabase = null;
 let finishingLogin = false;
@@ -63,12 +68,16 @@ function safeNextUrl() {
   try {
     const candidate = new URL(requested, window.location.href);
     const filename = candidate.pathname.split("/").pop();
-    return candidate.origin === window.location.origin && filename === "course-builder.html"
+    return candidate.origin === window.location.origin && ALLOWED_NEXT_FILENAMES.has(filename)
       ? candidate
       : fallback;
   } catch {
     return fallback;
   }
+}
+
+function isLedgerTarget() {
+  return safeNextUrl().pathname.split("/").pop() === "ledger.html";
 }
 
 function saveAnonymousSession(session) {
@@ -292,21 +301,24 @@ async function finishLogin() {
   finishingLogin = true;
   retryButton.hidden = true;
   setBusy(true);
-  setStatus("登录成功，正在连接你的云端方案…");
+  setStatus(isLedgerTarget() ? "登录成功，正在连接你的云端账本…" : "登录成功，正在连接你的云端方案…");
 
   try {
     const { data, error } = await supabase.auth.getUser();
     if (error) throw error;
     if (!data.user || data.user.is_anonymous) throw new Error("账户登录尚未完成。");
 
-    const migration = await migrateAnonymousPlans(data.user);
+    const migration = !isLedgerTarget()
+      ? await migrateAnonymousPlans(data.user)
+      : { found: false, total: 0, copied: 0, matched: 0, pending: 0 };
     redirectToCourseBuilder(migration);
   } catch (error) {
     console.error(error);
     finishingLogin = false;
     setBusy(false);
     retryButton.hidden = false;
-    setStatus(`账户已登录，但旧方案同步尚未完成：${friendlyError(error)}`, "error");
+    const label = isLedgerTarget() ? "云端账本连接" : "旧方案同步";
+    setStatus(`账户已登录，但${label}尚未完成：${friendlyError(error)}`, "error");
   }
 }
 
@@ -318,6 +330,8 @@ async function showAnonymousMigration(session) {
     return;
   }
 
+  if (isLedgerTarget()) return;
+
   const { count, error } = await supabase
     .from(TABLE_NAME)
     .select("slot", { count: "exact", head: true });
@@ -327,6 +341,16 @@ async function showAnonymousMigration(session) {
     migrationBanner.hidden = false;
     migrationText.textContent = `检测到 ${count} 个方案。登录成功后会从云端复制到你的账户，不覆盖账户已有方案。`;
   }
+}
+
+function configureTargetCopy() {
+  if (!isLedgerTarget()) return;
+  document.title = "登录 Balance | ANU Explore";
+  loginTitle.textContent = "Balance";
+  loginDescription.textContent = "登录后自动保存到云端，同一账户可以在不同设备读取同一本账。";
+  loginHelp.textContent = "使用已有 ANU Explore 账户的邮箱和密码登录。";
+  if (footerItems[0]) footerItems[0].textContent = "自动保存";
+  if (footerItems[1]) footerItems[1].textContent = "跨设备同步";
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -405,6 +429,7 @@ async function initialiseLogin() {
 }
 
 setBusy(true);
+configureTargetCopy();
 initialiseLogin();
 
 window.addEventListener("pagehide", () => authSubscription?.unsubscribe(), { once: true });
